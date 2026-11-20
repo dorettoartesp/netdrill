@@ -1,0 +1,269 @@
+[
+  {
+    "topic": "linux",
+    "topic_title": "Administração Linux",
+    "topic_description": "Comandos essenciais de troubleshooting, processos e arquivos no Linux",
+    "module": "diagnostico-processos",
+    "module_title": "Diagnóstico de Processos e Serviços",
+    "items": [
+      {
+        "type": "command",
+        "title": "Listar portas e processos em escuta",
+        "prompt": "Como listar todos os sockets TCP e UDP abertos em modo de escuta com PID e nome do processo?",
+        "target": "ss -tulpn",
+        "explanation": "-t (TCP), -u (UDP), -l (listening), -p (processo/PID), -n (resolução numérica sem DNS).",
+        "tags": "linux,redes,portas,ss"
+      },
+      {
+        "type": "command",
+        "title": "Acompanhar logs de serviço systemd em tempo real",
+        "prompt": "Como monitorar os logs contínuos do serviço Nginx via journalctl?",
+        "target": "journalctl -u nginx -f",
+        "explanation": "-u especifica a unit do serviço e -f acompanha novas entradas em tempo real.",
+        "tags": "linux,systemd,logs"
+      },
+      {
+        "type": "command",
+        "title": "Localizar arquivos de log maiores que 50MB",
+        "prompt": "Como buscar todos os arquivos com extensão .log em /var/log que ultrapassem 50MB de tamanho?",
+        "target": "find /var/log -type f -name \"*.log\" -size +50M",
+        "explanation": "find filtra por tipo arquivo (-type f), padrão de nome (-name) e tamanho maior que 50MB (-size +50M).",
+        "tags": "linux,find,storage"
+      },
+      {
+        "type": "command",
+        "title": "Ajustar permissões seguras para chave SSH privada",
+        "prompt": "Como aplicar permissão estrita somente de leitura/escrita para o proprietário na chave privada id_rsa?",
+        "target": "chmod 600 ~/.ssh/id_rsa",
+        "explanation": "600 concede rw------- ao dono e revoga acesso de grupo e outros, requisito de segurança do OpenSSH.",
+        "tags": "linux,ssh,seguranca,chmod"
+      },
+      {
+        "type": "command",
+        "title": "Criar arquivo compactado com data atual",
+        "prompt": "Como compactar o diretório /etc/nginx em formato tar.gz incluindo a data atual no nome do arquivo?",
+        "target": "tar -czvf backup-$(date +%F).tar.gz /etc/nginx",
+        "explanation": "-c cria, -z compacta com gzip, -v verbose, -f define o nome do arquivo resultante.",
+        "tags": "linux,tar,backup"
+      },
+      {
+        "type": "command",
+        "title": "Top 10 processos por consumo de memória",
+        "prompt": "Como listar os 10 processos que mais consom memória RAM no sistema?",
+        "target": "ps aux --sort=-%mem | head -n 10",
+        "explanation": "ps aux lista todos os processos, --sort=-%mem ordena de forma decrescente por RAM e head limita as 10 primeiras linhas.",
+        "tags": "linux,ps,memoria"
+      },
+      {
+        "type": "command",
+        "title": "Recarregar systemd e reiniciar serviço",
+        "prompt": "Como recarregar as definições de unidades do systemd e reiniciar o serviço app?",
+        "target": "sudo systemctl daemon-reload && sudo systemctl restart app",
+        "explanation": "daemon-reload reprocessa os unit files alterados em disco antes de emitir o restart.",
+        "tags": "linux,systemd,servicos"
+      },
+      {
+        "type": "command",
+        "title": "Buscar ocorrências de ERRO recursivamente em logs",
+        "prompt": "Como buscar recursivamente a palavra ERROR exibindo número de linha em /var/log?",
+        "target": "grep -rn \"ERROR\" /var/log/",
+        "explanation": "-r busca recursivamente em subpastas e -n exibe o número da linha correspondente.",
+        "tags": "linux,grep,logs"
+      },
+      {
+        "type": "command",
+        "title": "Espaço em disco legível excluindo sistemas virtuais",
+        "prompt": "Como visualizar o espaço livre em disco de forma legível por humanos excluindo tmpfs?",
+        "target": "df -hT --exclude-type=tmpfs",
+        "explanation": "-h formata em GB/MB, -T exibe o sistema de arquivos e --exclude-type omite sistemas em RAM temporários.",
+        "tags": "linux,df,disco"
+      },
+      {
+        "type": "command",
+        "title": "Seguir últimas 100 linhas do log do sistema",
+        "prompt": "Como exibir as 100 últimas linhas de /var/log/syslog e continuar acompanhando?",
+        "target": "tail -n 100 -f /var/log/syslog",
+        "explanation": "-n 100 busca as 100 linhas finais e -f mantém o fluxo de leitura aberto.",
+        "tags": "linux,tail,logs"
+      }
+    ]
+  },
+  {
+    "topic": "redes",
+    "topic_title": "Redes de Computadores",
+    "topic_description": "Comandos de diagnóstico de pacotes, rotas e análise de conectividade",
+    "module": "diagnostico-ip",
+    "module_title": "Roteamento e Diagnóstico de Conexões",
+    "items": [
+      {
+        "type": "command",
+        "title": "Exibir rota padrão do sistema",
+        "prompt": "Como verificar a rota padrão (gateway default) configurada na tabela de roteamento do kernel?",
+        "target": "ip route show default",
+        "explanation": "Filtra especificamente a rota 0.0.0.0/0 e indica a interface e o gateway ativo.",
+        "tags": "redes,ip,rotas"
+      },
+      {
+        "type": "command",
+        "title": "Adicionar endereço IP secundário na interface",
+        "prompt": "Como atribuir o endereço IP 192.168.10.50/24 na interface de rede eth0?",
+        "target": "ip addr add 192.168.10.50/24 dev eth0",
+        "explanation": "ip addr add configura o endereço e máscara CIDR no dispositivo eth0.",
+        "tags": "redes,ip,interfaces"
+      },
+      {
+        "type": "command",
+        "title": "Capturar tráfego HTTPS na porta 443",
+        "prompt": "Como capturar até 10 pacotes de tráfego HTTPS na interface eth0 sem resolver nomes?",
+        "target": "tcpdump -i eth0 -nn -s0 -c 10 port 443",
+        "explanation": "-i seleciona interface, -nn desativa resolução DNS e de portas, -s0 captura pacote inteiro, -c limita a 10 pacotes.",
+        "tags": "redes,tcpdump,sniffing"
+      },
+      {
+        "type": "command",
+        "title": "Traceroute TCP na porta 443",
+        "prompt": "Como traçar a rota até 8.8.8.8 usando pacotes TCP SYN na porta 443 em modo numérico?",
+        "target": "traceroute -n -T -p 443 8.8.8.8",
+        "explanation": "-n desativa resolução reversa DNS, -T usa sondas TCP SYN e -p define a porta de destino.",
+        "tags": "redes,traceroute,tcp"
+      },
+      {
+        "type": "command",
+        "title": "Verificar status físico e velocidade do link de rede",
+        "prompt": "Como consultar a velocidade negociada, duplex e link detectado na interface eth0?",
+        "target": "ethtool eth0",
+        "explanation": "ethtool consulta as propriedades físicas da placa de rede direto no driver.",
+        "tags": "redes,ethtool,hardware"
+      },
+      {
+        "type": "command",
+        "title": "Consultar registro DNS A direto em servidor específico",
+        "prompt": "Como consultar o registro DNS de google.com apontando para o servidor 8.8.8.8 de forma resumida?",
+        "target": "dig +short A google.com @8.8.8.8",
+        "explanation": "+short exibe apenas o IP resolvido e @ define o servidor DNS autoritativo/recursivo.",
+        "tags": "redes,dns,dig"
+      },
+      {
+        "type": "command",
+        "title": "Inspecionar cabeçalhos e certificado TLS via curl",
+        "prompt": "Como verificar o handshake TLS e os cabeçalhos de resposta HTTP de https://example.com?",
+        "target": "curl -Iv https://example.com:443",
+        "explanation": "-I busca apenas cabeçalhos (método HEAD) e -v exibe o handshake TLS e resolução.",
+        "tags": "redes,curl,tls"
+      },
+      {
+        "type": "command",
+        "title": "Exibir tabela de vizinhos ARP",
+        "prompt": "Como visualizar a tabela de correspondência IP para MAC (ARP) no Linux?",
+        "target": "ip neighbour show",
+        "explanation": "Substitui o utilitário arp clássico, exibindo o status de cada entrada da tabela.",
+        "tags": "redes,arp,ip"
+      },
+      {
+        "type": "command",
+        "title": "Redirecionar porta local 80 para 8080 com iptables",
+        "prompt": "Como criar regra de redirecionamento da porta 80 para a porta 8080 na tabela NAT?",
+        "target": "iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8080",
+        "explanation": "Aplica regra no chain PREROUTING da tabela nat para desviar conexões de entrada.",
+        "tags": "redes,iptables,nat"
+      },
+      {
+        "type": "command",
+        "title": "Testar throughput de rede com iperf3",
+        "prompt": "Como iniciar teste de largura de banda contra o servidor 192.168.1.1 na porta 5201 por 10 segundos?",
+        "target": "iperf3 -c 192.168.1.1 -p 5201 -t 10",
+        "explanation": "-c define modo cliente e IP alvo, -p define porta e -t define duração do teste.",
+        "tags": "redes,iperf3,performance"
+      }
+    ]
+  },
+  {
+    "topic": "fortigate",
+    "topic_title": "Firewall FortiGate (FortiOS)",
+    "topic_description": "Comandos de diagnóstico e blocos hierárquicos de configuração no FortiOS",
+    "module": "firewall-e-sistema",
+    "module_title": "Políticas, Roteamento e Interfaces FortiOS",
+    "items": [
+      {
+        "type": "command",
+        "title": "Monitor de processos em tempo real (sys top)",
+        "prompt": "Como exibir os 10 processos que mais consom CPU/memória no FortiOS atualizando a cada 2 segundos?",
+        "target": "diagnose sys top 2 10",
+        "explanation": "diagnose sys top lista processos no FortiOS; '2' é o intervalo em segundos e '10' é o limite de linhas.",
+        "tags": "fortigate,cli,top,diag"
+      },
+      {
+        "type": "command",
+        "title": "Exibir tabela de roteamento ativa",
+        "prompt": "Como listar todas as rotas ativas na tabela de encaminhamento pelo CLI do FortiGate?",
+        "target": "get router info routing-table all",
+        "explanation": "Exibe todas as rotas ativas (conectadas, estáticas, BGP, OSPF) com distância administrativa e métrica.",
+        "tags": "fortigate,rotas,cli"
+      },
+      {
+        "type": "command",
+        "title": "Listar sessões ativas do firewall",
+        "prompt": "Como visualizar as sessões de conexão ativas na tabela de estado do FortiOS?",
+        "target": "diagnose firewall session list",
+        "explanation": "Exibe as sessões ativas com IPs de origem/destino, portas e NAT aplicado.",
+        "tags": "fortigate,firewall,sessions"
+      },
+      {
+        "type": "command",
+        "title": "Consultar status do sistema, versão e licença",
+        "prompt": "Como obter o número de série, versão do firmware FortiOS e status de operação?",
+        "target": "get system status",
+        "explanation": "Retorna informações vitais do equipamento, versão do FortiOS e modo de operação.",
+        "tags": "fortigate,status,firmware"
+      },
+      {
+        "type": "command",
+        "title": "Disparar teste de ping no CLI FortiOS",
+        "prompt": "Como realizar teste de conectividade ICMP para 8.8.8.8 a partir do CLI?",
+        "target": "execute ping 8.8.8.8",
+        "explanation": "execute ping dispara sondas ICMP a partir da interface com rota correspondente.",
+        "tags": "fortigate,ping,diag"
+      },
+      {
+        "type": "block",
+        "title": "Configurar IP e acesso administrativo na porta port2",
+        "prompt": "Como configurar o endereço IP 192.168.10.1/24 na porta port2 habilitando acesso para ping e https?",
+        "target": "config system interface\n    edit port2\n        set ip 192.168.10.1 255.255.255.0\n        set allowaccess ping https\n    next\nend",
+        "explanation": "Abre o contexto de interfaces, seleciona port2, define o IP estático com máscara e libera os protocolos de gerência.",
+        "tags": "fortigate,interface,config"
+      },
+      {
+        "type": "block",
+        "title": "Criar política de firewall LAN para WAN com NAT",
+        "prompt": "Como criar uma política liberando tráfego irrestrito de port2 para port1 com NAT ativado?",
+        "target": "config firewall policy\n    edit 10\n        set name \"LAN_to_WAN\"\n        set srcintf \"port2\"\n        set dstintf \"port1\"\n        set action accept\n        set srcaddr \"all\"\n        set dstaddr \"all\"\n        set schedule \"always\"\n        set service \"ALL\"\n        set nat enable\n    next\nend",
+        "explanation": "Cria regra de firewall com ID 10, liberando saída com NAT habilitado para mascarar IPs privados.",
+        "tags": "fortigate,policy,nat,firewall"
+      },
+      {
+        "type": "block",
+        "title": "Configurar rota estática padrão no FortiOS",
+        "prompt": "Como configurar uma rota padrão apontando para o gateway 203.0.113.1 na interface port1?",
+        "target": "config router static\n    edit 1\n        set gateway 203.0.113.1\n        set device \"port1\"\n    next\nend",
+        "explanation": "Define a rota estática default 0.0.0.0/0 direcionando para o gateway da operadora na port1.",
+        "tags": "fortigate,roteamento,gateway"
+      },
+      {
+        "type": "block",
+        "title": "Criar Virtual IP (DNAT / Port Forwarding)",
+        "prompt": "Como criar um VIP encaminhando tráfego HTTPS público 203.0.113.10 para o servidor interno 192.168.10.80?",
+        "target": "config firewall vip\n    edit \"WebServer_VIP\"\n        set extip 203.0.113.10\n        set mappedip \"192.168.10.80\"\n        set extintf \"port1\"\n        set portforward enable\n        set protocol tcp\n        set extport 443\n        set mappedport 443\n    next\nend",
+        "explanation": "Mapeia o IP público e porta externa para o IP privado interno com port forwarding ativo.",
+        "tags": "fortigate,vip,dnat,portforward"
+      },
+      {
+        "type": "block",
+        "title": "Configurar servidores DNS do sistema no FortiOS",
+        "prompt": "Como configurar os servidores DNS primário (8.8.8.8) e secundário (1.1.1.1) no FortiOS?",
+        "target": "config system dns\n    set primary 8.8.8.8\n    set secondary 1.1.1.1\nend",
+        "explanation": "Define os resolvedores DNS primário e secundário utilizados pelo firewall para consultas internas.",
+        "tags": "fortigate,dns,sistema"
+      }
+    ]
+  }
+]

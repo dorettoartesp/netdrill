@@ -13,6 +13,8 @@
 *.crt
 *.sqlite3
 db.sqlite3
+*.db
+*.db-journal
 
 # Python environments and caches
 .venv/
