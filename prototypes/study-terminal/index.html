@@ -33,6 +33,28 @@
       <p class="text-xs text-gray-400 mt-1">Habilita saída de pacotes mascarando o endereço IP de origem da porta port2 para a porta port1.</p>
     </div>
 
+    <!-- Bloco de Saída Real do Terminal (stdout / Telemetria) -->
+    <div class="bg-[#0f111a] border border-gray-800 rounded-lg p-3">
+      <div class="flex items-center justify-between cursor-pointer select-none" onclick="toggleStdout()">
+        <div class="flex items-center gap-2 font-mono text-xs text-gray-300">
+          <span class="text-green-400 font-bold font-mono">▶ [STDOUT]</span>
+          <span class="font-semibold text-white">Exemplo de Resposta do Ambiente (Terminal Output)</span>
+          <kbd class="bg-gray-800 text-[10px] px-1.5 py-0.5 rounded text-gray-400 border border-gray-700">Ctrl+O</kbd>
+        </div>
+        <span id="stdout-toggle-label" class="text-[11px] text-gray-500 hover:text-gray-300 transition">Ocultar ▲</span>
+      </div>
+      <div id="stdout-content" class="mt-2.5 pt-2 border-t border-gray-800/80 font-mono text-xs text-green-300/90 bg-black/60 p-3 rounded overflow-x-auto leading-relaxed border border-gray-900">
+        <div class="text-gray-500 text-[11px] mb-1 font-mono">// Saída capturada ao rodar 'diagnose sys session list' / 'get' no FortiOS:</div>
+<span class="text-gray-400">FW-DC-01 (policy) #</span> get
+== [ 10 ]
+id: 10   name: LAN-Internet   uuid: 9b128fa4-c819-5a12-87ba-1289fe4a1120
+srcintf: port2 (192.168.10.0/24)   dstintf: port1 (wan1 - 200.180.10.2)
+action: accept   status: enable   schedule: always   service: ALL
+nat: enable (transip: 200.180.10.2:1024-65535)
+packets: 48,192   bytes: 14.8MB   active-sessions: 124
+      </div>
+    </div>
+
     <!-- Layout Dividido com Alturas Idênticas para Código Multi-linhas -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
       <!-- Painel Esquerdo: Snippet de Referência -->
@@ -105,5 +127,26 @@ end</textarea>
       <button class="bg-amber-600 text-white px-4 min-h-[44px] rounded text-sm font-bold">:done</button>
     </div>
   </footer>
+
+  <script>
+    function toggleStdout() {
+      const content = document.getElementById('stdout-content');
+      const label = document.getElementById('stdout-toggle-label');
+      if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        label.textContent = 'Ocultar ▲';
+      } else {
+        content.classList.add('hidden');
+        label.textContent = 'Expandir ▼';
+      }
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'o') {
+        e.preventDefault();
+        toggleStdout();
+      }
+    });
+  </script>
 </body>
 </html>
