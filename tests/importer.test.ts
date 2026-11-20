@@ -19,6 +19,7 @@ describe('Bulk Importer', () => {
           title: 'Liberar LAN para WAN com NAT',
           prompt: 'Configurar firewall policy liberando port2 para port1 com NAT',
           target: 'config firewall policy\nedit 1\nset action accept\nnext\nend',
+          output_sample: 'FW-01 # get\n== [ 1 ]\nid: 1   action: accept',
           explanation: 'Habilita política de saída com NAT.',
           tags: 'fortigate,firewall,nat',
         },
@@ -45,6 +46,7 @@ describe('Bulk Importer', () => {
 
     const items = await db.execute('SELECT * FROM items;');
     expect(items.rows.length).toBe(2);
+    expect(items.rows[0].output_sample).toBe('FW-01 # get\n== [ 1 ]\nid: 1   action: accept');
 
     const progress = await db.execute('SELECT * FROM user_progress;');
     expect(progress.rows.length).toBe(2);

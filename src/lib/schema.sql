@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS items (
     title TEXT NOT NULL,
     prompt TEXT NOT NULL,
     target TEXT NOT NULL,
+    output_sample TEXT,
     explanation TEXT,
     image_url TEXT,
     cloze_data TEXT,

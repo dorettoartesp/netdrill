@@ -16,6 +16,8 @@ export interface QueueItem {
   prompt: string;
   /** Expected target command line or multi-line configuration block. */
   target: string;
+  /** Optional realistic stdout/stderr terminal execution sample. */
+  output_sample?: string;
   /** Detailed technical explanation of flags and arguments. */
   explanation?: string;
   /** Optional screenshot or diagram URL. */
@@ -47,7 +49,7 @@ export async function buildSessionQueue(
 
   let query = `
     SELECT 
-      i.id, i.module_id, i.type, i.title, i.prompt, i.target, i.explanation, i.image_url, i.tags,
+      i.id, i.module_id, i.type, i.title, i.prompt, i.target, i.output_sample, i.explanation, i.image_url, i.tags,
       p.due_date,
       CASE 
         WHEN p.due_date IS NOT NULL AND p.due_date <= ? THEN 1
@@ -78,6 +80,7 @@ export async function buildSessionQueue(
     title: row.title,
     prompt: row.prompt,
     target: row.target,
+    output_sample: row.output_sample ? String(row.output_sample) : undefined,
     explanation: row.explanation,
     image_url: row.image_url,
     tags: row.tags,

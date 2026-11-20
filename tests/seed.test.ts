@@ -26,6 +26,7 @@ describe('Seed Data Verification', () => {
         expect(item.title).toBeDefined();
         expect(item.prompt).toBeDefined();
         expect(item.target).toBeDefined();
+        expect(item.output_sample).toBeDefined();
         expect(item.explanation).toBeDefined();
       }
     }

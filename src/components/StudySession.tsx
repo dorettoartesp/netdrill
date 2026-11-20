@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { QueueItem } from '@/lib/session';
 import { compareBlock } from '@/lib/validator';
 import { TimerHeader } from './TimerHeader';
@@ -27,6 +27,18 @@ export function StudySession({ initialQueue }: StudySessionProps) {
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [completedItemsCount, setCompletedItemsCount] = useState(0);
   const [isSessionFinished, setIsSessionFinished] = useState(false);
+  const [showStdout, setShowStdout] = useState(true);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'o') {
+        e.preventDefault();
+        setShowStdout((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const currentItem = queue[currentIndex];
 
@@ -174,6 +186,31 @@ export function StudySession({ initialQueue }: StudySessionProps) {
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
               )}
               <span>{feedback.message}</span>
+            </div>
+          )}
+
+          {/* Sample Terminal Output Preview */}
+          {currentItem.output_sample && !isBlindTest && (
+            <div className="bg-[#0f111a] border border-gray-800 rounded-lg p-3">
+              <button
+                type="button"
+                onClick={() => setShowStdout((prev) => !prev)}
+                className="flex items-center justify-between w-full text-xs text-gray-400 hover:text-white transition font-mono focus:outline-none"
+              >
+                <span className="flex items-center gap-2">
+                  <span className="text-green-400 font-bold">▶ [STDOUT]</span>
+                  <span className="font-semibold text-white">Exemplo de Resposta do Ambiente (Terminal Output)</span>
+                  <kbd className="bg-gray-800 text-[10px] px-1.5 py-0.5 rounded text-gray-400 border border-gray-700">Ctrl+O</kbd>
+                </span>
+                <span className="text-[11px] text-gray-500 hover:text-gray-300">
+                  {showStdout ? 'Ocultar ▲' : 'Expandir ▼'}
+                </span>
+              </button>
+              {showStdout && (
+                <div className="mt-2.5 pt-2 border-t border-gray-800/80 font-mono text-xs text-green-300/90 bg-black/60 p-3 rounded overflow-x-auto leading-relaxed border border-gray-900 whitespace-pre">
+                  {currentItem.output_sample}
+                </div>
+              )}
             </div>
           )}
 

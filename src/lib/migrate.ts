@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS items (
     title TEXT NOT NULL,
     prompt TEXT NOT NULL,
     target TEXT NOT NULL,
+    output_sample TEXT,
     explanation TEXT,
     image_url TEXT,
     cloze_data TEXT,
@@ -72,5 +73,11 @@ export async function runMigrations(db: Client): Promise<void> {
 
   for (const statement of statements) {
     await db.execute(statement);
+  }
+
+  try {
+    await db.execute('ALTER TABLE items ADD COLUMN output_sample TEXT;');
+  } catch {
+    // Column already exists or table was just created with column, safe to ignore
   }
 }

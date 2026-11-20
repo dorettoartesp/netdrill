@@ -12,6 +12,8 @@ export interface BulkItemPayload {
   prompt: string;
   /** Exact target command line or multi-line configuration block. */
   target: string;
+  /** Optional realistic stdout/stderr terminal execution sample. */
+  output_sample?: string;
   /** Detailed technical explanation of flags and arguments. */
   explanation?: string;
   /** Optional screenshot or diagram URL. */
@@ -116,8 +118,8 @@ export async function importBulkData(
       const itemId = `item_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
       await db.execute({
-        sql: `INSERT INTO items (id, module_id, type, title, prompt, target, explanation, image_url, cloze_data, quiz_options, tags)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+        sql: `INSERT INTO items (id, module_id, type, title, prompt, target, output_sample, explanation, image_url, cloze_data, quiz_options, tags)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
         args: [
           itemId,
           moduleId,
@@ -125,6 +127,7 @@ export async function importBulkData(
           item.title,
           item.prompt,
           item.target,
+          item.output_sample || null,
           item.explanation || null,
           item.image_url || null,
           item.cloze_data ? JSON.stringify(item.cloze_data) : null,
