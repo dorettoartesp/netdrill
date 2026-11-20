@@ -16,6 +16,8 @@ interface MobileKeyboardBarProps {
   onExitBlindTest?: () => void;
   /** Optional callback to open the floating man modal. */
   onOpenMan?: () => void;
+  /** True in typing mode: rendered as the last row of a viewport-pinned column instead of sticky. */
+  docked?: boolean;
 }
 
 /** Terminal symbols that are hard to reach on mobile virtual keyboards, with their accessible names. */
@@ -43,19 +45,21 @@ export function MobileKeyboardBar({
   isBlindTest = false,
   onExitBlindTest,
   onOpenMan,
+  docked = false,
 }: MobileKeyboardBarProps) {
+  // Prevent buttons from taking focus so the command field (and the virtual keyboard) stays active
+  const keepFocus = (e: React.MouseEvent) => e.preventDefault();
   const showSecondary = !isBlindTest || Boolean(onExitBlindTest);
 
   return (
-    <div className="lg:hidden sticky bottom-0 z-30 -mx-4 md:-mx-6 border-t border-[#262b3d] bg-[#11141c] px-2.5 pt-2 pb-safe space-y-2 font-sans">
+    <div className={`lg:hidden ${docked ? 'shrink-0 pb-2' : 'sticky bottom-0 pb-safe'} z-30 -mx-4 md:-mx-6 border-t border-[#262b3d] bg-[#11141c] px-2.5 pt-2 space-y-2 font-sans`}>
       <div className="flex gap-1.5 overflow-x-auto scrollbar-none" aria-label="Símbolos do terminal">
         {SYMBOL_KEYS.map((k) => (
           <button
             key={k.aria}
             type="button"
             aria-label={k.aria}
-            // Keep focus (and the virtual keyboard) on the command field while inserting
-            onMouseDown={(e) => e.preventDefault()}
+            onMouseDown={keepFocus}
             onClick={() => onInsertChar(k.insert)}
             className="min-w-[44px] min-h-[44px] shrink-0 px-2.5 rounded-lg border border-[#262b3d] bg-[#1a1e29] active:bg-[#283144] text-slate-100 font-mono text-base font-semibold select-none"
           >
@@ -65,6 +69,7 @@ export function MobileKeyboardBar({
         {onOpenMan && (
           <button
             type="button"
+            onMouseDown={keepFocus}
             onClick={onOpenMan}
             className="min-h-[44px] shrink-0 px-3 rounded-lg border border-cyan-900 bg-[#0b1a22] active:bg-cyan-950 text-sky-300 font-mono text-sm font-semibold"
           >
@@ -78,7 +83,8 @@ export function MobileKeyboardBar({
           (!isBlindTest ? (
             <button
               type="button"
-              onClick={onDoneTrigger}
+              onMouseDown={keepFocus}
+            onClick={onDoneTrigger}
               className="col-span-2 min-h-[48px] rounded-xl border border-amber-800 text-amber-400 active:bg-amber-950/40 text-sm font-semibold flex items-center justify-center gap-1.5"
             >
               <Lock className="w-4 h-4" aria-hidden="true" />
@@ -87,7 +93,8 @@ export function MobileKeyboardBar({
           ) : (
             <button
               type="button"
-              onClick={onExitBlindTest}
+              onMouseDown={keepFocus}
+            onClick={onExitBlindTest}
               className="col-span-2 min-h-[48px] rounded-xl border border-slate-700 text-slate-300 active:bg-slate-800 text-sm font-semibold"
             >
               <span>Ver gabarito</span>
@@ -95,7 +102,8 @@ export function MobileKeyboardBar({
           ))}
         <button
           type="button"
-          onClick={onSubmit}
+          onMouseDown={keepFocus}
+            onClick={onSubmit}
           className={`${showSecondary ? 'col-span-3' : 'col-span-5'} min-h-[48px] rounded-xl bg-green-500 active:bg-green-600 text-green-950 text-[15px] font-bold flex items-center justify-center gap-2`}
         >
           <span>{isBlindTest ? 'Validar bloco' : 'Validar'}</span>

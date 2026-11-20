@@ -9,6 +9,8 @@ import { TerminalPrompt } from './TerminalPrompt';
 import { MobileKeyboardBar } from './MobileKeyboardBar';
 import { AnnotatedOutput } from './AnnotatedOutput';
 import { UseCaseList } from './UseCaseList';
+import { StudyTypingLayout } from './StudyTypingLayout';
+import { useKeyboardInset } from './useKeyboardInset';
 import { ManModal } from './ManModal';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -56,6 +58,19 @@ export function StudySession({
   const [isSessionFinished, setIsSessionFinished] = useState(false);
   const [showStdout, setShowStdout] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  // Mobile typing mode: the session is pinned above the virtual keyboard while the field has focus
+  const [isTyping, setIsTyping] = useState(false);
+  const keyboard = useKeyboardInset();
+  const handleFieldFocusChange = useCallback((focused: boolean) => {
+    setIsTyping(focused && window.matchMedia('(max-width: 1023px)').matches);
+  }, []);
+
+  // Keep the focused command field in view whenever the keyboard opens or changes height
+  useEffect(() => {
+    if (!isTyping) return;
+    const el = document.activeElement;
+    if (el instanceof HTMLTextAreaElement) el.scrollIntoView({ block: 'nearest' });
+  }, [isTyping, keyboard.visibleHeight, keyboard.offsetTop]);
 
   // 3-Tab Educational Workspace State
   const [activeTab, setActiveTab] = useState<'treino' | 'casos' | 'stdout'>('treino');
@@ -403,8 +418,13 @@ export function StudySession({
   );
 
   return (
-    <div className="min-h-screen flex flex-col justify-between max-w-6xl mx-auto px-4 pt-0 lg:p-6 font-mono text-gray-200">
-      <div>
+    <StudyTypingLayout
+      isTyping={isTyping}
+      visibleHeight={keyboard.visibleHeight}
+      offsetTop={keyboard.offsetTop}
+      className={`${isTyping ? '' : 'min-h-screen justify-between'} flex flex-col max-w-6xl mx-auto px-4 pt-0 lg:p-6 font-mono text-gray-200`}
+    >
+      <div className={isTyping ? 'flex-1 min-h-0 overflow-y-auto' : undefined}>
         <TimerHeader
           initialMinutes={initialMinutes}
           onTimeExpired={() => setIsSessionFinished(true)}
@@ -423,7 +443,7 @@ export function StudySession({
         />
 
         {/* Study modes: equal segmented control on mobile, labelled tabs with shortcuts on desktop */}
-        <div className="flex items-center justify-between gap-2 pt-2 lg:pt-0 lg:border-b lg:border-gray-800 lg:pb-3 lg:mb-4">
+        <div className={`${isTyping ? 'hidden' : 'flex'} items-center justify-between gap-2 pt-2 lg:pt-0 lg:border-b lg:border-gray-800 lg:pb-3 lg:mb-4`}>
           <nav
             aria-label="Modos de estudo"
             className="grid grid-cols-3 flex-1 gap-1 p-1 rounded-xl bg-[#161922] border border-[#262b3d] lg:flex lg:flex-none lg:gap-2 lg:p-0 lg:bg-transparent lg:border-0"
@@ -607,8 +627,8 @@ export function StudySession({
                   </div>
                 </div>
 
-                <h2 className="text-[17px] lg:text-base leading-snug font-semibold text-white font-sans lg:font-mono">{currentItem.prompt}</h2>
-                {currentItem.explanation && (
+                <h2 className={`text-[17px] lg:text-base leading-snug font-semibold text-white font-sans lg:font-mono whitespace-pre-line ${isTyping ? 'line-clamp-3 text-[15px]' : ''}`}>{currentItem.prompt}</h2>
+                {currentItem.explanation && !isTyping && (
                   <p className="text-[13px] lg:text-xs font-sans lg:font-mono text-slate-400 pt-1 leading-relaxed">
                     {currentItem.explanation}
                   </p>
@@ -636,7 +656,7 @@ export function StudySession({
             )}
 
             {/* Sample Terminal Output Preview (Collapsed by Default) */}
-            {currentItem.output_sample && !isBlindTest && (
+            {currentItem.output_sample && !isBlindTest && !isTyping && (
               <div className="bg-[#0f111a] border border-gray-800 rounded-lg px-3 lg:p-3">
                 <button
                   type="button"
@@ -692,6 +712,7 @@ export function StudySession({
                 isBlindTest={isBlindTest}
                 repetitionCount={repetitionCount}
                 onOpenMan={handleOpenManModal}
+                onFocusChange={handleFieldFocusChange}
               />
             </div>
           </div>
@@ -706,6 +727,7 @@ export function StudySession({
           isBlindTest={isBlindTest}
           onExitBlindTest={handleExitBlindTest}
           onOpenMan={() => handleOpenManModal()}
+          docked={isTyping}
         />
       )}
 
@@ -715,6 +737,6 @@ export function StudySession({
         initialCommand={manCmd}
         onClose={() => setIsManOpen(false)}
       />
-    </div>
+    </StudyTypingLayout>
   );
 }

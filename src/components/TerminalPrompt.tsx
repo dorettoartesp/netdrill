@@ -14,6 +14,8 @@ interface TerminalPromptProps {
   isBlindTest?: boolean;
   repetitionCount?: number;
   onOpenMan?: (cmd: string) => void;
+  /** Called when the command field gains (true) or loses (false) focus. */
+  onFocusChange?: (focused: boolean) => void;
 }
 
 /**
@@ -32,6 +34,7 @@ export function TerminalPrompt({
   isBlindTest = false,
   repetitionCount = 1,
   onOpenMan,
+  onFocusChange,
 }: TerminalPromptProps) {
   const singleLineRef = useRef<HTMLTextAreaElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -191,6 +194,8 @@ export function TerminalPrompt({
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
                 onKeyDown={handleKeyDown}
+                onFocus={() => onFocusChange?.(true)}
+                onBlur={() => onFocusChange?.(false)}
                 placeholder={
                   isBlindTest
                     ? 'Digite o bloco completo de memória...'
@@ -289,6 +294,8 @@ export function TerminalPrompt({
             value={value}
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={handleKeyDown}
+                onFocus={() => onFocusChange?.(true)}
+                onBlur={() => onFocusChange?.(false)}
             placeholder={isBlindTest ? 'Digite o comando de memória...' : 'Digite o comando'}
             className="flex-1 min-w-0 max-h-[168px] bg-transparent border-none outline-none resize-none text-green-300 focus:ring-0 font-mono p-0 leading-relaxed whitespace-pre-wrap break-all"
             autoCorrect="off"
