@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { Lock, CornerDownLeft } from 'lucide-react';
 
 interface MobileKeyboardBarProps {
   /** Callback to append special terminal character into the current input. */
@@ -9,8 +10,6 @@ interface MobileKeyboardBarProps {
   onDoneTrigger: () => void;
   /** Callback to validate the current command or configuration block (Enter). */
   onSubmit: () => void;
-  /** Optional callback to clear the input field. */
-  onClear?: () => void;
   /** Whether the session is currently in blind recall test mode. */
   isBlindTest?: boolean;
   /** Optional callback to exit blind recall test mode and restore reference. */
@@ -19,89 +18,88 @@ interface MobileKeyboardBarProps {
   onOpenMan?: () => void;
 }
 
+/** Terminal symbols that are hard to reach on mobile virtual keyboards, with their accessible names. */
+const SYMBOL_KEYS: ReadonlyArray<{ label: string; insert: string; aria: string }> = [
+  { label: '-', insert: '-', aria: 'Hífen' },
+  { label: '_', insert: '_', aria: 'Sublinhado' },
+  { label: '/', insert: '/', aria: 'Barra' },
+  { label: '|', insert: '|', aria: 'Pipe' },
+  { label: '"', insert: '"', aria: 'Aspas' },
+  { label: '$', insert: '$', aria: 'Cifrão' },
+  { label: ':', insert: ':', aria: 'Dois-pontos' },
+  { label: '>', insert: '>', aria: 'Redirecionamento' },
+  { label: '⇥', insert: '    ', aria: 'Tabulação' },
+];
+
 /**
- * Mobile-optimized accessory action dock placed directly above or below the terminal.
- * Features large >= 48px touch targets for Enter validation, :done mode, escape hatch, and terminal symbols.
+ * Mobile accessory dock rendered directly above the virtual keyboard (hidden on desktop).
+ * Row 1 scrolls horizontally with terminal symbols and the man shortcut; row 2 holds the
+ * two primary actions (blind test or reveal reference, and validate). All targets are >= 44px.
  */
 export function MobileKeyboardBar({
   onInsertChar,
   onDoneTrigger,
   onSubmit,
-  onClear,
   isBlindTest = false,
   onExitBlindTest,
   onOpenMan,
 }: MobileKeyboardBarProps) {
-  const keys = ['-', '_', '/', '|', '"', '$', ':', 'Tab'];
+  const showSecondary = !isBlindTest || Boolean(onExitBlindTest);
 
   return (
-    <div className="lg:hidden sticky bottom-0 z-30 w-full border-t border-gray-800 bg-[#0c0e14]/95 backdrop-blur-md pt-2 pb-safe px-3 shadow-2xl space-y-2 font-mono">
-      {/* Row 1: Horizontal scroll of frequent CLI characters */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-        {keys.map((k) => (
+    <div className="lg:hidden sticky bottom-0 z-30 -mx-4 md:-mx-6 border-t border-[#262b3d] bg-[#11141c] px-2.5 pt-2 pb-safe space-y-2 font-sans">
+      <div className="flex gap-1.5 overflow-x-auto scrollbar-none" aria-label="Símbolos do terminal">
+        {SYMBOL_KEYS.map((k) => (
           <button
-            key={k}
+            key={k.aria}
             type="button"
-            onClick={() => onInsertChar(k === 'Tab' ? '    ' : k)}
-            className="min-w-[44px] min-h-[44px] px-2.5 bg-[#12151e] hover:bg-[#1e2433] active:bg-[#283144] border border-gray-800 text-white font-mono font-bold rounded-lg text-sm select-none transition shadow"
+            aria-label={k.aria}
+            // Keep focus (and the virtual keyboard) on the command field while inserting
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => onInsertChar(k.insert)}
+            className="min-w-[44px] min-h-[44px] shrink-0 px-2.5 rounded-lg border border-[#262b3d] bg-[#1a1e29] active:bg-[#283144] text-slate-100 font-mono text-base font-semibold select-none"
           >
-            {k}
+            {k.label}
           </button>
         ))}
         {onOpenMan && (
           <button
             type="button"
             onClick={onOpenMan}
-            className="min-w-[44px] min-h-[44px] px-2.5 bg-[#12151e] hover:bg-cyan-950/40 active:bg-cyan-900/60 border border-cyan-800/80 text-cyan-300 font-mono text-xs font-bold rounded-lg transition shadow"
-            title="Abrir Manual (man)"
+            className="min-h-[44px] shrink-0 px-3 rounded-lg border border-cyan-900 bg-[#0b1a22] active:bg-cyan-950 text-sky-300 font-mono text-sm font-semibold"
           >
-            📖 man
-          </button>
-        )}
-        {onClear && (
-          <button
-            type="button"
-            onClick={onClear}
-            className="min-w-[44px] min-h-[44px] px-3 bg-[#12151e] hover:bg-red-950/40 active:bg-red-900/60 border border-gray-800 text-red-400 font-mono text-xs rounded-lg transition"
-          >
-            Limpar
+            man
           </button>
         )}
       </div>
 
-      {/* Row 2: Dedicated tactile buttons for Enter/Validar, :done, and Blind Test Escape Hatch */}
-      <div className="grid grid-cols-2 gap-2">
-        {!isBlindTest ? (
-          <button
-            type="button"
-            onClick={onDoneTrigger}
-            className="min-h-[48px] px-3 bg-[#12151e] active:bg-[#1a202c] border border-amber-600/80 text-amber-400 font-mono font-bold rounded-lg transition text-xs flex items-center justify-center gap-1.5 shadow active:scale-[0.98]"
-          >
-            <span>🔒 :done (Teste Cego)</span>
-          </button>
-        ) : onExitBlindTest ? (
-          <button
-            type="button"
-            onClick={onExitBlindTest}
-            className="min-h-[48px] px-2 bg-[#12151e] active:bg-[#1a202c] border border-gray-700 text-gray-300 font-mono font-bold rounded-lg transition text-xs flex items-center justify-center gap-1 shadow active:scale-[0.98]"
-          >
-            <span>[ Esc ] Ver Gabarito</span>
-          </button>
-        ) : null}
-
+      <div className="grid grid-cols-5 gap-2">
+        {showSecondary &&
+          (!isBlindTest ? (
+            <button
+              type="button"
+              onClick={onDoneTrigger}
+              className="col-span-2 min-h-[48px] rounded-xl border border-amber-800 text-amber-400 active:bg-amber-950/40 text-sm font-semibold flex items-center justify-center gap-1.5"
+            >
+              <Lock className="w-4 h-4" aria-hidden="true" />
+              <span>Teste cego</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onExitBlindTest}
+              className="col-span-2 min-h-[48px] rounded-xl border border-slate-700 text-slate-300 active:bg-slate-800 text-sm font-semibold"
+            >
+              <span>Ver gabarito</span>
+            </button>
+          ))}
         <button
           type="button"
           onClick={onSubmit}
-          className={`min-h-[48px] px-4 font-mono font-bold rounded-lg transition text-sm flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] ${
-            isBlindTest && !onExitBlindTest
-              ? 'col-span-2 bg-green-500 hover:bg-green-400 text-black text-base'
-              : 'bg-green-600 hover:bg-green-500 text-black'
-          }`}
+          className={`${showSecondary ? 'col-span-3' : 'col-span-5'} min-h-[48px] rounded-xl bg-green-500 active:bg-green-600 text-green-950 text-[15px] font-bold flex items-center justify-center gap-2`}
         >
-          <span>{isBlindTest ? 'Validar Bloco' : 'Validar'}</span>
-          <span className="text-xs font-normal bg-black/20 px-1.5 py-0.5 rounded">
-            ↵ Enter
-          </span>
+          <span>{isBlindTest ? 'Validar bloco' : 'Validar'}</span>
+          <CornerDownLeft className="w-4 h-4" aria-hidden="true" />
         </button>
       </div>
     </div>

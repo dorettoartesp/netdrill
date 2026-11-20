@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Seleção de tópicos</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#22c55e}a:hover{color:#4ade80}
+button{font:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible{outline:2px solid #22c55e;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden; background: #0c0e14; color: #e2e8f0; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column">
+
+  <header style="height: 56px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 8px 0 20px; border-bottom: 1px solid #1d2230">
+    <span style="font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 17px; color: #22c55e; letter-spacing: 0.02em">NetDrill</span>
+    <div style="display: flex; gap: 4px">
+      <a href="#" aria-label="Importar decks" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 10px; color: #94a3b8">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      </a>
+      <button type="button" aria-label="Sair" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 10px; color: #94a3b8; background: transparent; border: 0">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main style="flex: 1; overflow-y: auto; padding: 24px 20px 160px; display: flex; flex-direction: column; gap: 28px">
+    <section style="display: flex; flex-direction: column; gap: 6px">
+      <h1 style="margin: 0; font-size: 26px; line-height: 1.2; font-weight: 700; color: #f8fafc; letter-spacing: -0.01em">Treino de hoje</h1>
+      <p style="margin: 0; font-size: 14px; color: #94a3b8">{{dueSummary}}</p>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 10px">
+      <h2 style="margin: 0; font-size: 13px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em">Duração</h2>
+      <div role="radiogroup" aria-label="Duração da sessão" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; padding: 4px; background: #161922; border: 1px solid #262b3d; border-radius: 12px">
+        <sc-for list="{{durations}}" as="d" hint-placeholder-count="4">
+          <button type="button" role="radio" aria-checked="{{d.checked}}" onClick="{{d.pick}}" style="{{d.style}}">{{d.label}}</button>
+        </sc-for>
+      </div>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; align-items: center; justify-content: space-between">
+        <h2 style="margin: 0; font-size: 13px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em">Tópicos</h2>
+        <button type="button" onClick="{{toggleAll}}" style="min-height: 44px; padding: 0 4px; background: transparent; border: 0; color: #22c55e; font-size: 14px; font-weight: 600">{{toggleAllLabel}}</button>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <sc-for list="{{topics}}" as="t" hint-placeholder-count="4">
+          <button type="button" aria-pressed="{{t.on}}" onClick="{{t.pick}}" style="{{t.rowStyle}}">
+            <span style="{{t.boxStyle}}" aria-hidden="true">
+              <sc-if value="{{t.on}}" hint-placeholder-val="{{true}}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0c0e14" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              </sc-if>
+            </span>
+            <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; text-align: left">
+              <span style="font-size: 16px; font-weight: 600; color: #f1f5f9">{{t.title}}</span>
+              <span style="font-size: 13px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{t.desc}}</span>
+              <span style="display: flex; gap: 12px; font-size: 12px; font-family: 'JetBrains Mono', monospace; padding-top: 2px">
+                <span style="color: #94a3b8">{{t.count}} exercícios</span>
+                <span style="{{t.dueStyle}}">{{t.dueLabel}}</span>
+              </span>
+            </span>
+          </button>
+        </sc-for>
+      </div>
+    </section>
+  </main>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 20px 28px; background: #0c0e14; border-top: 1px solid #1d2230; display: flex; flex-direction: column; gap: 10px">
+    <p style="margin: 0; font-size: 13px; color: #94a3b8; text-align: center; font-family: 'JetBrains Mono', monospace">{{summary}}</p>
+    <button type="button" disabled="{{noneSelected}}" style="{{ctaStyle}}">
+      <span>Iniciar treino</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+    </button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    this.state = { sel: { linux: true, redes: true, fortigate: false, 'linux-avancado': true }, dur: 15 };
+  }
+  renderVals() {
+    const data = [
+      { slug: 'linux', title: 'Administração Linux', desc: 'Comandos essenciais de troubleshooting, processos e arquivos no Linux', count: 10, due: 3 },
+      { slug: 'redes', title: 'Redes de Computadores', desc: 'Diagnóstico de pacotes, rotas e análise de conectividade', count: 10, due: 0 },
+      { slug: 'fortigate', title: 'Firewall FortiGate (FortiOS)', desc: 'Diagnóstico e blocos hierárquicos de configuração no FortiOS', count: 10, due: 5 },
+      { slug: 'linux-avancado', title: 'Linux Avançado', desc: 'Estados, árvore de processos, CPU, memória, I/O, systemd, cgroups e sinais', count: 300, due: 12 }
+    ];
+    const sel = this.state.sel;
+    const topics = data.map((t) => {
+      const on = !!sel[t.slug];
+      return {
+        ...t, on,
+        dueLabel: t.due > 0 ? t.due + (t.due === 1 ? ' revisão' : ' revisões') : 'Em dia',
+        dueStyle: t.due > 0 ? 'color: #fbbf24' : 'color: #4ade80',
+        rowStyle: 'width: 100%; min-height: 76px; display: flex; align-items: flex-start; gap: 14px; padding: 14px 16px; border-radius: 12px; text-align: left; color: inherit; background: ' + (on ? '#121a16' : '#12141c') + '; border: 1px solid ' + (on ? '#166534' : '#262b3d'),
+        boxStyle: 'width: 22px; height: 22px; flex-shrink: 0; margin-top: 1px; border-radius: 6px; display: flex; align-items: center; justify-content: center; ' + (on ? 'background: #22c55e; border: 1.5px solid #22c55e' : 'background: transparent; border: 1.5px solid #4b5563'),
+        pick: () => this.setState({ sel: { ...sel, [t.slug]: !on } })
+      };
+    });
+    const chosen = topics.filter((t) => t.on);
+    const total = chosen.reduce((s, t) => s + t.count, 0);
+    const allOn = chosen.length === topics.length;
+    const durOpts = [{ v: 15, l: '15 min' }, { v: 30, l: '30 min' }, { v: 45, l: '45 min' }, { v: 0, l: 'Livre' }];
+    const durations = durOpts.map((o) => {
+      const on = this.state.dur === o.v;
+      return {
+        label: o.l, checked: on ? 'true' : 'false',
+        style: 'min-height: 44px; border-radius: 9px; border: 0; font-size: 14px; font-weight: ' + (on ? '700' : '500') + '; background: ' + (on ? '#22c55e' : 'transparent') + '; color: ' + (on ? '#052e16' : '#cbd5e1'),
+        pick: () => this.setState({ dur: o.v })
+      };
+    });
+    const dueTotal = data.reduce((s, t) => s + t.due, 0);
+    const none = chosen.length === 0;
+    const durText = this.state.dur === 0 ? 'sem limite' : this.state.dur + ' min';
+    return {
+      topics, durations,
+      dueSummary: dueTotal + ' revisões pendentes em 4 tópicos',
+      toggleAllLabel: allOn ? 'Limpar seleção' : 'Selecionar todos',
+      toggleAll: () => {
+        const next = {};
+        data.forEach((t) => { next[t.slug] = !allOn; });
+        this.setState({ sel: next });
+      },
+      noneSelected: none,
+      summary: none ? 'Selecione ao menos um tópico' : chosen.length + (chosen.length === 1 ? ' tópico' : ' tópicos') + ' · ' + total + ' exercícios · ' + durText,
+      ctaStyle: 'width: 100%; min-height: 54px; border-radius: 14px; border: 0; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 16px; font-weight: 700; ' + (none ? 'background: #1f2937; color: #8b95a7; cursor: not-allowed' : 'background: #22c55e; color: #052e16')
+    };
+  }
+}
+</script>
+</body>
+</html>

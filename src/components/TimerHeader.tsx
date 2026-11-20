@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Clock, LogOut, LayoutGrid, Pause, Play } from 'lucide-react';
+import { BookOpen, ChevronLeft, Clock, LogOut, LayoutGrid, Pause, Play } from 'lucide-react';
 
 interface TimerHeaderProps {
   initialMinutes?: number;
@@ -62,7 +62,60 @@ export function TimerHeader({
     : 0;
 
   return (
-    <header className="flex justify-between items-center border-b border-gray-800 pb-4 mb-6">
+    <>
+      {/* Mobile header: back, topic + queue position, tappable timer (pause), logout; full-width progress */}
+      <header className="lg:hidden -mx-4 md:-mx-6 border-b border-[#1d2230] font-sans">
+        <div className="h-14 flex items-center justify-between px-1">
+          <Link
+            href="/"
+            aria-label="Mudar tópicos"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-slate-400 hover:text-white"
+          >
+            <ChevronLeft className="w-6 h-6" aria-hidden="true" />
+          </Link>
+
+          <div className="min-w-0 flex-1 flex flex-col items-center px-2">
+            <span className="max-w-full truncate text-xs text-slate-400">{topicTitle}</span>
+            {totalItems !== undefined && totalItems > 0 && (
+              <span className="font-mono text-sm font-semibold text-slate-100">{currentDisplay} de {totalItems}</span>
+            )}
+          </div>
+
+          <div className="flex items-center">
+            {!isUnlimited && onTogglePause ? (
+              <button
+                type="button"
+                onClick={onTogglePause}
+                aria-label={isPaused ? 'Retomar cronômetro' : 'Pausar cronômetro'}
+                className={`min-h-[44px] px-2.5 flex items-center gap-1.5 font-mono text-[15px] font-semibold ${
+                  isPaused ? 'text-amber-400' : 'text-green-400'
+                }`}
+              >
+                {isPaused ? <Play className="w-3.5 h-3.5 fill-current" aria-hidden="true" /> : <Pause className="w-3.5 h-3.5 fill-current" aria-hidden="true" />}
+                <span>{formattedTime}</span>
+              </button>
+            ) : (
+              <span className="px-2.5 font-mono text-[15px] font-semibold text-green-400">{formattedTime}</span>
+            )}
+            {onLogout && (
+              <button
+                type="button"
+                onClick={onLogout}
+                aria-label="Sair"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-slate-400 hover:text-white"
+              >
+                <LogOut className="w-5 h-5" aria-hidden="true" />
+              </button>
+            )}
+          </div>
+        </div>
+        <div className="h-[3px] bg-[#1d2230]" aria-hidden="true">
+          <div className={`h-full transition-all duration-300 ${isPaused ? 'bg-amber-500' : 'bg-green-500'}`} style={{ width: `${progressPercent}%` }} />
+        </div>
+      </header>
+
+      {/* Desktop header */}
+      <header className="hidden lg:flex justify-between items-center border-b border-gray-800 pb-4 mb-6">
       <div className="flex items-center space-x-3">
         <span className="text-xl font-bold text-green-400 font-mono tracking-wider">
           NetDrill
@@ -101,8 +154,8 @@ export function TimerHeader({
           title="Consultar manual do Linux (man)"
           className="text-xs text-cyan-400 hover:text-cyan-300 border border-cyan-800/80 hover:border-cyan-600 bg-cyan-950/30 px-2.5 py-1.5 rounded transition flex items-center gap-1 font-mono"
         >
-          <span>📖</span>
-          <span className="hidden sm:inline">Man</span>
+          <BookOpen className="w-3.5 h-3.5" aria-hidden="true" />
+          <span>Man</span>
         </Link>
 
         {/* Timer Container */}
@@ -148,5 +201,6 @@ export function TimerHeader({
         )}
       </div>
     </header>
+    </>
   );
 }

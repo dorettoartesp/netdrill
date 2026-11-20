@@ -14,14 +14,15 @@ body {
 }
 
 @layer base {
-  /* Prevent iOS Safari from auto-zooming on input and textarea focus by enforcing 16px font-size on mobile */
+  /* Prevent iOS Safari from auto-zooming on input and textarea focus by enforcing 16px font-size on touch devices.
+     Gated by pointer type, not width: a landscape iPhone or an iPad exceeds 768px and would otherwise zoom. */
   input,
   textarea,
   select {
     font-size: 16px !important;
   }
 
-  @media (min-width: 768px) {
+  @media (hover: hover) and (pointer: fine) {
     input,
     textarea,
     select {
@@ -41,4 +42,12 @@ body {
 /* Safe area support for iOS devices with notch and home swipe indicator */
 .pb-safe {
   padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0.75rem));
+}
+
+/* Horizontally scrolling toolbars (mobile symbol dock) without a visible scrollbar */
+.scrollbar-none {
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
 }

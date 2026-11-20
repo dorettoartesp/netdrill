@@ -1,0 +1,18 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-11-20T12:00:00Z"},
+  "title": "NetDrill Mobile",
+  "launch": {"view": "canvas"},
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {"x": 0, "y": 0, "w": 390, "h": 844, "title": "1 · Seleção de tópicos", "is_interactive": true, "radius": 28},
+    "Treino.dc.html": {"x": 470, "y": 0, "w": 390, "h": 844, "title": "2 · Treino (leitura)", "radius": 28},
+    "Digitando.dc.html": {"x": 940, "y": 0, "w": 390, "h": 844, "title": "3 · Digitando (teclado aberto)", "radius": 28},
+    "Estudo.dc.html": {"x": 1410, "y": 0, "w": 390, "h": 844, "title": "4 · Saída anotada", "is_interactive": true, "radius": 28}
+  },
+  "order": ["Main.dc.html", "Treino.dc.html", "Digitando.dc.html", "Estudo.dc.html"],
+  "notes": {
+    "flow": {"x": 0, "y": -300, "text": "NetDrill — redesenho mobile", "kind": "title1", "maxW": 1800}
+  },
+  "designSystems": []
+}

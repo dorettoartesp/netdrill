@@ -8,13 +8,13 @@ export const metadata: Metadata = {
 
 /**
  * Mobile-optimized viewport settings.
- * Disables iOS Safari automatic zooming on input focus and adjusts for on-screen virtual keyboards.
+ * Resizes content for on-screen virtual keyboards and keeps pinch-zoom available (WCAG 1.4.4);
+ * iOS focus zoom is prevented by the 16px form-field rule in globals.css instead.
  */
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  viewportFit: 'cover',
   interactiveWidget: 'resizes-content',
 };
 

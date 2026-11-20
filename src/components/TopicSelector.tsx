@@ -54,9 +54,7 @@ export function TopicSelector({ topics }: TopicSelectorProps) {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-        return;
-      }
+      if (isShortcutBlocked(e.key, e.target)) return;
 
       // Check number keys 1 to topics.length
       const num = parseInt(e.key, 10);
@@ -82,229 +80,241 @@ export function TopicSelector({ topics }: TopicSelectorProps) {
   const totalSelectedItems = topics
     .filter((t) => selectedSlugs.has(t.slug))
     .reduce((sum, t) => sum + t.itemCount, 0);
+  const allSelected = selectedSlugs.size === topics.length;
+  const totalDue = topics.reduce((sum, t) => sum + t.dueCount, 0);
+  const durationOptions: ReadonlyArray<{ value: number; label: string }> = [
+    { value: 15, label: '15 min' },
+    { value: 30, label: '30 min' },
+    { value: 45, label: '45 min' },
+    { value: 0, label: 'Livre' },
+  ];
 
   return (
-    <div className="min-h-screen bg-[#0c0e14] text-[#e2e8f0] flex flex-col justify-between p-4 md:p-8">
+    <div className="min-h-screen bg-[#0c0e14] text-[#e2e8f0] flex flex-col lg:justify-between lg:p-8 font-sans lg:font-mono">
       {/* Header */}
-      <header className="flex justify-between items-center border-b border-gray-800 pb-4 max-w-5xl mx-auto w-full">
+      <header className="h-14 lg:h-auto flex justify-between items-center border-b border-[#1d2230] lg:border-gray-800 pl-5 pr-2 lg:px-0 lg:pb-4 max-w-5xl mx-auto w-full">
         <div className="flex items-center space-x-3">
-          <span className="text-green-400 font-bold text-xl tracking-wider font-mono">
-            NetDrill
-          </span>
-          <span className="text-xs bg-gray-800 text-gray-300 px-2 py-1 rounded font-mono">
-            Painel de Estudo
-          </span>
+          <span className="text-green-400 font-bold text-[17px] lg:text-xl tracking-wider font-mono">NetDrill</span>
+          <span className="hidden lg:inline text-xs bg-gray-800 text-gray-300 px-2 py-1 rounded font-mono">Painel de Estudo</span>
         </div>
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center lg:space-x-4">
           <Link
             href="/import"
-            className="text-xs text-gray-400 hover:text-white border border-gray-700 hover:border-gray-500 px-3 py-1.5 rounded transition flex items-center gap-1 font-mono"
+            aria-label="Importar decks"
+            className="min-w-[44px] min-h-[44px] lg:min-w-0 lg:min-h-0 justify-center text-xs text-slate-400 hover:text-white lg:border lg:border-gray-700 lg:hover:border-gray-500 lg:px-3 lg:py-1.5 rounded transition flex items-center gap-1 font-mono"
           >
-            <PlusCircle className="w-3.5 h-3.5" />
-            <span>Importar Decks</span>
-            <kbd className="text-[10px] bg-gray-800 px-1 rounded ml-1 text-gray-300">I</kbd>
+            <PlusCircle className="w-5 h-5 lg:w-3.5 lg:h-3.5" aria-hidden="true" />
+            <span className="hidden lg:inline">Importar Decks</span>
+            <kbd className="hidden lg:inline text-[10px] bg-gray-800 px-1 rounded ml-1 text-gray-300">I</kbd>
           </Link>
           <button
+            type="button"
             onClick={handleLogout}
-            className="text-xs text-red-400 hover:text-red-300 transition flex items-center gap-1 font-mono"
+            aria-label="Sair"
+            className="min-w-[44px] min-h-[44px] lg:min-w-0 lg:min-h-0 justify-center text-xs text-slate-400 lg:text-red-400 hover:text-red-300 transition flex items-center gap-1 font-mono"
           >
-            <LogOut className="w-3.5 h-3.5" />
-            <span>Sair</span>
+            <LogOut className="w-5 h-5 lg:w-3.5 lg:h-3.5" aria-hidden="true" />
+            <span className="hidden lg:inline">Sair</span>
           </button>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="my-auto max-w-5xl mx-auto w-full py-8 space-y-6">
-        <div className="space-y-1">
-          <div className="text-xs uppercase tracking-wider text-green-400 font-bold font-mono">
-            Fase de Preparação
-          </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight font-mono">
-            Selecione os Tópicos para o Treino
+      <main className="flex-1 lg:flex-none lg:my-auto max-w-5xl mx-auto w-full px-5 pt-6 pb-6 lg:px-0 lg:py-8 space-y-7 lg:space-y-6">
+        <div className="space-y-1.5 lg:space-y-1">
+          <div className="hidden lg:block text-xs uppercase tracking-wider text-green-400 font-bold font-mono">Fase de Preparação</div>
+          <h1 className="text-[26px] lg:text-2xl font-bold text-white tracking-tight lg:font-mono">
+            <span className="lg:hidden">Treino de hoje</span>
+            <span className="hidden lg:inline">Selecione os Tópicos para o Treino</span>
           </h1>
-          <p className="text-xs text-gray-400 font-mono">
-            Escolha quais assuntos você deseja praticar hoje. Use o teclado (
-            <kbd className="bg-gray-800 px-1 py-0.5 rounded text-gray-300">1</kbd>,{' '}
-            <kbd className="bg-gray-800 px-1 py-0.5 rounded text-gray-300">2</kbd>,{' '}
-            <kbd className="bg-gray-800 px-1 py-0.5 rounded text-gray-300">3</kbd>
-            ) ou clique nos cartões para alternar.
+          <p className="text-sm lg:text-xs text-slate-400 lg:font-mono">
+            <span className="lg:hidden">{totalDue} {totalDue === 1 ? 'revisão pendente' : 'revisões pendentes'}</span>
+            <span className="hidden lg:inline">
+              Use o teclado (<kbd className="hidden lg:inline bg-gray-800 px-1 py-0.5 rounded text-gray-300">1</kbd>,{' '}
+              <kbd className="hidden lg:inline bg-gray-800 px-1 py-0.5 rounded text-gray-300">2</kbd>,{' '}
+              <kbd className="hidden lg:inline bg-gray-800 px-1 py-0.5 rounded text-gray-300">3</kbd>) ou clique nos cartões para alternar.
+            </span>
           </p>
         </div>
 
-        {/* Quick Action Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 text-xs border-y border-gray-800/80 py-3 font-mono">
+        {/* Duration */}
+        <section className="space-y-2.5 lg:space-y-0 lg:flex lg:items-center lg:justify-between lg:gap-3 lg:border-y lg:border-gray-800/80 lg:py-3 text-xs">
+          <h2 className="text-[13px] lg:text-xs font-semibold text-slate-400 uppercase lg:normal-case tracking-wider lg:tracking-normal lg:font-normal">
+            Duração
+          </h2>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={selectAll}
-              className="bg-gray-800 hover:bg-gray-700 text-gray-200 px-3 py-1.5 rounded transition font-medium"
+            <div
+              role="radiogroup"
+              aria-label="Duração da sessão"
+              className="grid grid-cols-4 flex-1 gap-1 p-1 rounded-xl bg-[#161922] border border-[#262b3d] lg:flex lg:flex-none"
             >
-              Selecionar Todos <kbd className="text-[10px] bg-gray-900 px-1 rounded ml-1">A</kbd>
-            </button>
-            <button
-              type="button"
-              onClick={clearAll}
-              className="bg-gray-900 hover:bg-gray-800 text-gray-400 hover:text-gray-200 px-3 py-1.5 rounded transition"
-            >
-              Desmarcar Todos
-            </button>
-          </div>
+              {durationOptions.map((opt) => {
+                const checked = durationMinutes === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={checked}
+                    onClick={() => setDurationMinutes(opt.value)}
+                    className={`min-h-[44px] lg:min-h-[32px] lg:px-3 rounded-lg text-sm lg:text-xs transition ${
+                      checked ? 'bg-green-500 text-green-950 font-bold' : 'text-slate-300 font-medium hover:bg-gray-800'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
 
-          {/* Session Duration Selector */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-gray-400">Tempo:</span>
-            {[15, 30, 45].map((mins) => (
-              <button
-                key={mins}
-                type="button"
-                onClick={() => setDurationMinutes(mins)}
-                className={`px-2.5 py-1 rounded text-xs transition ${
-                  durationMinutes === mins
-                    ? 'bg-green-950/80 border border-green-600 text-green-300 font-bold'
-                    : 'bg-gray-900 hover:bg-gray-800 text-gray-400'
-                }`}
-              >
-                {mins}m
-              </button>
-            ))}
-            <button
-              type="button"
-              onClick={() => setDurationMinutes(0)}
-              className={`px-2.5 py-1 rounded text-xs transition ${
-                durationMinutes === 0
-                  ? 'bg-green-950/80 border border-green-600 text-green-300 font-bold'
-                  : 'bg-gray-900 hover:bg-gray-800 text-gray-400'
-              }`}
-            >
-              Livre
-            </button>
-
-            {/* Custom Minutes Input */}
-            <div className="flex items-center gap-1 bg-gray-900 border border-gray-800 px-2 py-0.5 rounded focus-within:border-green-600">
+            {/* Custom minutes (desktop only) */}
+            <div className="hidden lg:flex items-center gap-1 bg-gray-900 border border-gray-800 px-2 py-0.5 rounded focus-within:border-green-600">
               <input
                 type="number"
                 min={1}
                 max={180}
+                aria-label="Duração personalizada em minutos"
                 value={durationMinutes > 0 ? durationMinutes : ''}
                 onChange={(e) => {
                   const val = parseInt(e.target.value, 10);
                   setDurationMinutes(isNaN(val) ? 0 : Math.max(1, Math.min(180, val)));
                 }}
                 placeholder="15"
-                className="w-14 bg-transparent text-white text-[16px] md:text-xs outline-none text-right font-mono"
+                className="w-14 bg-transparent text-white outline-none text-right font-mono"
               />
               <span className="text-gray-500 text-xs">min</span>
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* Topics Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {topics.map((topic, index) => {
-            const isSelected = selectedSlugs.has(topic.slug);
-            const hotkey = index < 9 ? String(index + 1) : null;
-
-            return (
-              <div
-                key={topic.id}
-                onClick={() => toggleTopic(topic.slug)}
-                className={`cursor-pointer border-2 p-5 rounded-lg flex flex-col justify-between transition group relative select-none shadow-md ${
-                  isSelected
-                    ? 'border-green-500 bg-gray-900/70 hover:bg-gray-900'
-                    : 'border-gray-800 bg-[#12141c]/60 hover:bg-[#12141c]'
-                }`}
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div
-                    className={`w-8 h-8 rounded flex items-center justify-center font-bold text-sm font-mono ${
-                      isSelected
-                        ? 'bg-green-500/10 text-green-400'
-                        : 'bg-gray-800 text-gray-400'
-                    }`}
-                  >
-                    {hotkey || index + 1}
-                  </div>
-                  <span
-                    className={`text-[11px] px-2 py-0.5 rounded font-mono ${
-                      isSelected
-                        ? 'bg-green-900/60 text-green-300 border border-green-700 font-semibold'
-                        : 'bg-gray-800 text-gray-400 border border-gray-700 font-normal'
-                    }`}
-                  >
-                    {isSelected ? 'Selecionado ✓' : 'Não Selecionado'}
-                  </span>
-                </div>
-
-                <div className="space-y-1">
-                  <h2
-                    className={`text-base font-bold font-mono transition ${
-                      isSelected ? 'text-white group-hover:text-green-300' : 'text-gray-400'
-                    }`}
-                  >
-                    {topic.title}
-                  </h2>
-                  {topic.description && (
-                    <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed">
-                      {topic.description}
-                    </p>
-                  )}
-                </div>
-
-                <div className="mt-4 pt-3 border-t border-gray-800 flex justify-between items-center text-[11px] font-mono text-gray-500">
-                  <span>{topic.itemCount} exercícios</span>
-                  {topic.dueCount > 0 ? (
-                    <span className="text-amber-400">{topic.dueCount} revisão(ões)</span>
-                  ) : (
-                    <span className="text-green-400">Em dia</span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Start Button & Summary */}
-        <div className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="text-xs text-gray-400 flex items-center gap-2 font-mono">
-            <span>Resumo:</span>
-            <strong className="text-white font-bold">
-              {selectedSlugs.size} tópico(s) ({totalSelectedItems} exercícios)
-            </strong>
-            <span>selecionados.</span>
+        {/* Topics */}
+        <section className="space-y-2.5">
+          <div className="flex items-center justify-between">
+            <h2 className="text-[13px] lg:text-xs font-semibold text-slate-400 uppercase tracking-wider">Tópicos</h2>
+            <button
+              type="button"
+              onClick={allSelected ? clearAll : selectAll}
+              className="min-h-[44px] px-1 text-sm lg:text-xs font-semibold text-green-400 hover:text-green-300"
+            >
+              {allSelected ? 'Limpar seleção' : 'Selecionar todos'}
+              <kbd className="hidden lg:inline text-[10px] bg-gray-800 text-gray-300 px-1 rounded ml-1.5">A</kbd>
+            </button>
           </div>
 
-          <Button
-            onClick={handleStart}
-            disabled={selectedSlugs.size === 0}
-            className="w-full sm:w-auto px-8 py-3 text-sm font-bold flex items-center justify-center gap-2"
-          >
-            <span>Iniciar Treino de Fixação</span>
-            <ArrowRight className="w-4 h-4 ml-1" />
-            <kbd className="bg-green-700/60 text-black px-1.5 py-0.5 rounded text-xs font-mono font-normal">
-              Enter ↵
-            </kbd>
-          </Button>
-        </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 lg:gap-4">
+            {topics.map((topic, index) => {
+              const isSelected = selectedSlugs.has(topic.slug);
+              const hotkey = index < 9 ? String(index + 1) : null;
+
+              return (
+                <button
+                  key={topic.id}
+                  type="button"
+                  aria-pressed={isSelected}
+                  onClick={() => toggleTopic(topic.slug)}
+                  className={`w-full min-h-[76px] text-left flex items-start gap-3.5 px-4 py-3.5 lg:p-5 rounded-xl border transition select-none ${
+                    isSelected
+                      ? 'bg-[#121a16] border-green-800 lg:border-green-500 hover:bg-[#15201a]'
+                      : 'bg-[#12141c] border-[#262b3d] hover:bg-[#161922]'
+                  }`}
+                >
+                  <span
+                    aria-hidden="true"
+                    className={`mt-0.5 w-[22px] h-[22px] shrink-0 rounded-md flex items-center justify-center border-[1.5px] ${
+                      isSelected ? 'bg-green-500 border-green-500' : 'border-gray-600'
+                    }`}
+                  >
+                    {isSelected && <Check className="w-3.5 h-3.5 text-[#0c0e14]" strokeWidth={3.5} />}
+                  </span>
+                  <span className="flex-1 min-w-0 flex flex-col gap-1">
+                    <span className="flex items-center justify-between gap-2">
+                      <span className={`text-base font-semibold lg:font-bold ${isSelected ? 'text-slate-100' : 'text-slate-300'}`}>
+                        {topic.title}
+                      </span>
+                      {hotkey && <kbd className="hidden lg:inline text-[10px] bg-gray-800 text-gray-300 px-1.5 rounded font-mono">{hotkey}</kbd>}
+                    </span>
+                    {topic.description && (
+                      <span className="text-[13px] lg:text-xs text-slate-400 truncate lg:whitespace-normal lg:line-clamp-2">{topic.description}</span>
+                    )}
+                    <span className="flex gap-3 pt-0.5 text-xs font-mono">
+                      <span className="text-slate-400">{topic.itemCount} exercícios</span>
+                      {topic.dueCount > 0 ? (
+                        <span className="text-amber-400">
+                          {topic.dueCount} {topic.dueCount === 1 ? 'revisão' : 'revisões'}
+                        </span>
+                      ) : (
+                        <span className="text-green-400">Em dia</span>
+                      )}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-gray-800 pt-4 max-w-5xl mx-auto w-full text-xs text-gray-500 flex flex-wrap justify-between items-center gap-2 font-mono">
+      {/* Start action: sticky on mobile, inline on desktop */}
+      <div className="sticky bottom-0 z-20 lg:static border-t border-[#1d2230] lg:border-0 bg-[#0c0e14] px-5 pt-3 pb-safe lg:p-0 lg:pb-4 max-w-5xl mx-auto w-full flex flex-col lg:flex-row items-stretch lg:items-center lg:justify-between gap-2.5 lg:gap-4">
+        <p className="text-[13px] lg:text-xs text-slate-400 font-mono text-center lg:text-left">
+          {formatSelectionSummary(selectedSlugs.size, totalSelectedItems, durationMinutes)}
+        </p>
+        <Button
+          onClick={handleStart}
+          disabled={selectedSlugs.size === 0}
+          className="w-full lg:w-auto min-h-[54px] lg:min-h-0 rounded-xl lg:rounded-md bg-green-500 hover:bg-green-400 text-green-950 px-8 py-3 text-base lg:text-sm font-bold flex items-center justify-center gap-2"
+        >
+          <span>Iniciar treino</span>
+          <ArrowRight className="w-[18px] h-[18px] lg:w-4 lg:h-4" aria-hidden="true" />
+          <kbd className="hidden lg:inline bg-green-700/60 text-black px-1.5 py-0.5 rounded text-xs font-mono font-normal">Enter ↵</kbd>
+        </Button>
+      </div>
+
+      {/* Footer (desktop only: keyboard shortcuts) */}
+      <footer className="hidden lg:flex border-t border-gray-800 pt-4 max-w-5xl mx-auto w-full text-xs text-gray-500 flex-wrap justify-between items-center gap-2 font-mono">
         <div className="flex items-center gap-3">
           <span>
-            <kbd className="bg-gray-800 text-gray-300 px-1.5 py-0.5 rounded">1-{topics.length}</kbd>{' '}
-            Alternar Tópico
+            <kbd className="hidden lg:inline bg-gray-800 text-gray-300 px-1.5 py-0.5 rounded">1-{topics.length}</kbd> Alternar Tópico
           </span>
           <span>
-            <kbd className="bg-gray-800 text-gray-300 px-1.5 py-0.5 rounded">A</kbd> Selecionar
-            Todos
+            <kbd className="hidden lg:inline bg-gray-800 text-gray-300 px-1.5 py-0.5 rounded">A</kbd> Selecionar Todos
           </span>
           <span>
-            <kbd className="bg-gray-800 text-gray-300 px-1.5 py-0.5 rounded">Enter</kbd> Iniciar
+            <kbd className="hidden lg:inline bg-gray-800 text-gray-300 px-1.5 py-0.5 rounded">Enter</kbd> Iniciar
           </span>
         </div>
         <div>NetDrill &bull; Repetição Espaçada &amp; Memória Muscular</div>
       </footer>
     </div>
   );
+}
+
+/**
+ * Builds the pt-BR selection summary shown above the start action.
+ *
+ * @param topicCount - Number of selected topics.
+ * @param exerciseCount - Total exercises across the selected topics.
+ * @param minutes - Session duration in minutes (0 means no time limit).
+ * @returns A summary such as "2 tópicos · 20 exercícios · 15 min", or a prompt when nothing is selected.
+ */
+export function formatSelectionSummary(topicCount: number, exerciseCount: number, minutes: number): string {
+  if (topicCount === 0) return 'Selecione ao menos um tópico';
+  const topicsLabel = `${topicCount} ${topicCount === 1 ? 'tópico' : 'tópicos'}`;
+  const exercisesLabel = `${exerciseCount} ${exerciseCount === 1 ? 'exercício' : 'exercícios'}`;
+  const durationLabel = minutes > 0 ? `${minutes} min` : 'sem limite';
+  return `${topicsLabel} · ${exercisesLabel} · ${durationLabel}`;
+}
+
+/**
+ * Decides whether a global lobby shortcut must be ignored for the event target.
+ * Typing fields swallow every shortcut; a focused button keeps Enter for its own activation.
+ *
+ * @param key - The pressed key (KeyboardEvent.key).
+ * @param target - The event target.
+ * @returns True when the shortcut must not run.
+ */
+export function isShortcutBlocked(key: string, target: EventTarget | null): boolean {
+  const tag = (target as { tagName?: string } | null)?.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+  return key === 'Enter' && tag === 'BUTTON';
 }

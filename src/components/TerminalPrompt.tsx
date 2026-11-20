@@ -33,16 +33,24 @@ export function TerminalPrompt({
   repetitionCount = 1,
   onOpenMan,
 }: TerminalPromptProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const singleLineRef = useRef<HTMLTextAreaElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (isMultiLine && textareaRef.current) {
       textareaRef.current.focus();
-    } else if (!isMultiLine && inputRef.current) {
-      inputRef.current.focus();
+    } else if (!isMultiLine && singleLineRef.current) {
+      singleLineRef.current.focus();
     }
   }, [isMultiLine, isBlindTest]);
+
+  // Grow the single-line textarea with its wrapped content (CSS max-height caps it and enables scrolling)
+  useEffect(() => {
+    const el = singleLineRef.current;
+    if (isMultiLine || !el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [value, isMultiLine]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     // Escape hatch from blind test
@@ -85,7 +93,7 @@ export function TerminalPrompt({
       return;
     }
 
-    // Single-line keyboard controls
+    // Single-line keyboard controls: Enter (with or without Shift) submits, since commands never span lines
     if (e.key === 'Enter') {
       e.preventDefault();
       const trimmed = value.trim();
@@ -113,8 +121,8 @@ export function TerminalPrompt({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
           {/* Reference Snippet (Hidden or Replaced in Blind Test) */}
           <div
-            style={{ minHeight: `${minHeightPx}px` }}
-            className={`border rounded-lg p-4 flex flex-col justify-between transition-colors ${
+            style={{ '--ref-min-h': `${minHeightPx}px` } as React.CSSProperties}
+            className={`lg:min-h-[var(--ref-min-h)] border rounded-lg p-4 flex flex-col justify-between transition-colors ${
               isBlindTest
                 ? 'bg-[#0f111a] border-amber-500/40 border-dashed'
                 : 'bg-[#12141c] border-gray-800'
@@ -133,7 +141,7 @@ export function TerminalPrompt({
               {isBlindTest ? (
                 <div className="py-12 px-4 text-center space-y-3">
                   <div className="text-amber-400 font-bold text-sm tracking-wider">
-                    🔒 MODO TESTE CEGO ATIVO
+                    MODO TESTE CEGO ATIVO
                   </div>
                   <p className="text-xs text-gray-400">
                     O gabarito foi ocultado. Digite a configuração completa de memória.
@@ -149,7 +157,7 @@ export function TerminalPrompt({
                   )}
                 </div>
               ) : (
-                <pre className="text-xs md:text-sm text-green-300 font-mono leading-relaxed overflow-x-auto whitespace-pre selection:bg-transparent">
+                <pre className="text-[13px] md:text-sm text-green-300 font-mono leading-relaxed whitespace-pre-wrap break-all lg:whitespace-pre lg:break-normal lg:overflow-x-auto selection:bg-transparent">
                   {target}
                 </pre>
               )}
@@ -163,8 +171,8 @@ export function TerminalPrompt({
 
           {/* User Typing Textarea */}
           <div
-            style={{ minHeight: `${minHeightPx}px` }}
-            className="bg-black border border-green-500/40 rounded-lg p-4 flex flex-col justify-between shadow-lg focus-within:border-green-400 transition"
+            style={{ '--ref-min-h': `${minHeightPx}px` } as React.CSSProperties}
+            className="lg:min-h-[var(--ref-min-h)] bg-black border border-green-500/40 rounded-lg p-4 flex flex-col justify-between shadow-lg focus-within:border-green-400 transition"
           >
             <div>
               <div className="flex justify-between items-center text-xs text-gray-400 mb-2 border-b border-gray-800/60 pb-2">
@@ -188,7 +196,7 @@ export function TerminalPrompt({
                     ? 'Digite o bloco completo de memória...'
                     : 'Digite o código ao lado linha a linha...'
                 }
-                rows={Math.max(8, lineCount)}
+                rows={Math.max(6, lineCount)}
                 className="w-full bg-transparent text-green-300 font-mono text-[16px] md:text-sm leading-relaxed border-none outline-none resize-none focus:ring-0 p-0 placeholder-gray-600"
                 autoCorrect="off"
                 autoCapitalize="none"
@@ -204,8 +212,8 @@ export function TerminalPrompt({
           </div>
         </div>
 
-        {/* Action bar below split layout */}
-        <div className="flex flex-wrap justify-between items-center text-xs text-gray-400 gap-2 pt-1">
+        {/* Action bar below split layout (desktop only: the mobile dock provides these actions) */}
+        <div className="hidden lg:flex flex-wrap justify-between items-center text-xs text-gray-400 gap-2 pt-1">
           <div className="hidden sm:flex items-center gap-4">
             <span>
               <kbd className="bg-gray-800 px-1.5 py-0.5 rounded text-gray-200 border border-gray-700">Ctrl+↵</kbd> Validar Bloco
@@ -227,7 +235,7 @@ export function TerminalPrompt({
                 onClick={onExitTrigger}
                 className="text-amber-400 hover:text-amber-300 text-xs font-mono font-bold border border-amber-500/40 bg-amber-500/10 px-3 py-2 rounded transition flex items-center gap-1.5"
               >
-                <span>🔒 Avançar (:done)</span>
+                <span>Avançar (:done)</span>
               </button>
             ) : (
               onExitBlindTest && (
@@ -254,43 +262,45 @@ export function TerminalPrompt({
     );
   }
 
-  // Single line command layout
+  // Single line command layout: auto-growing, word-wrapping textarea (Enter submits)
   return (
-    <div className="w-full space-y-4 font-mono">
+    <div className="w-full space-y-3 lg:space-y-4 font-mono">
       {!isBlindTest && (
-        <div className="bg-[#12141c] border border-gray-800 rounded-lg p-4 text-sm text-green-300">
-          <div className="text-xs text-gray-500 mb-1">Gabarito de Referência:</div>
-          <div>{target}</div>
+        <div className="bg-[#12141c] border border-gray-800 rounded-lg px-4 py-3 lg:p-4 text-sm text-green-300">
+          <div className="text-xs text-gray-400 mb-1">Gabarito de Referência:</div>
+          <code className="block whitespace-pre-wrap break-all text-[15px] lg:text-sm leading-relaxed">{target}</code>
         </div>
       )}
 
-      <div className="bg-black border border-green-500/40 rounded-lg p-4 shadow-lg focus-within:border-green-400 transition">
+      <div className="bg-black border border-green-500/40 rounded-lg px-4 py-3 lg:p-4 shadow-lg focus-within:border-green-400 transition">
         <div className="flex justify-between text-xs text-gray-400 mb-2">
-          <span className="text-amber-400 font-semibold">
+          <label htmlFor="terminal-command" className="text-amber-400 font-semibold">
             {isBlindTest ? 'Teste de Memória (Sem gabarito)' : `[Tentativa #${repetitionCount}] Digite o comando`}
-          </span>
-          <span className="text-gray-400">Pressione Enter ou clique em Validar</span>
+          </label>
+          <span className="text-gray-400 hidden lg:inline">Pressione Enter ou clique em Validar</span>
         </div>
 
-        <div className="flex items-center text-green-300 text-base gap-2">
-          <span className="text-green-500 font-bold">&gt;</span>
-          <input
-            ref={inputRef}
-            type="text"
+        <div className="flex items-start text-green-300 text-base gap-2">
+          <span className="text-green-500 font-bold leading-relaxed" aria-hidden="true">&gt;</span>
+          <textarea
+            id="terminal-command"
+            ref={singleLineRef}
+            rows={2}
             value={value}
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={isBlindTest ? 'Digite o comando de memória...' : target}
-            className="flex-1 bg-transparent border-none outline-none text-green-300 focus:ring-0 text-[16px] md:text-sm font-mono p-0"
+            placeholder={isBlindTest ? 'Digite o comando de memória...' : 'Digite o comando'}
+            className="flex-1 min-w-0 max-h-[168px] bg-transparent border-none outline-none resize-none text-green-300 focus:ring-0 font-mono p-0 leading-relaxed whitespace-pre-wrap break-all"
             autoCorrect="off"
             autoCapitalize="none"
             spellCheck={false}
             autoComplete="off"
+            enterKeyHint="send"
           />
           <button
             type="button"
             onClick={onSubmit}
-            className="bg-green-600 hover:bg-green-500 active:bg-green-700 text-black font-bold px-3.5 py-1.5 rounded text-xs flex items-center gap-1 shrink-0 transition select-none shadow active:scale-95"
+            className="hidden lg:flex bg-green-600 hover:bg-green-500 active:bg-green-700 text-black font-bold px-3.5 py-1.5 rounded text-xs items-center gap-1 shrink-0 transition select-none shadow active:scale-95"
           >
             <span>Validar</span>
             <span className="text-[10px] font-normal bg-black/20 px-1 py-0.5 rounded">↵</span>
@@ -298,7 +308,7 @@ export function TerminalPrompt({
         </div>
       </div>
 
-      <div className="flex flex-wrap justify-between items-center text-xs text-gray-400 gap-2 pt-1">
+      <div className="hidden lg:flex flex-wrap justify-between items-center text-xs text-gray-400 gap-2 pt-1">
         <span>
           Pressione <kbd className="bg-gray-800 px-1 py-0.5 rounded text-gray-300">Enter</kbd> ou digite <kbd className="bg-gray-800 px-1 py-0.5 rounded text-gray-300">:done</kbd> para o teste cego.
         </span>

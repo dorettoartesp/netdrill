@@ -7,6 +7,7 @@ import { parseAnnotatedOutput } from '@/lib/telemetry-glossary';
 import { TimerHeader } from './TimerHeader';
 import { TerminalPrompt } from './TerminalPrompt';
 import { MobileKeyboardBar } from './MobileKeyboardBar';
+import { AnnotatedOutput } from './AnnotatedOutput';
 import { ManModal } from './ManModal';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,6 +24,7 @@ import {
   Layers,
   Info,
   AlertTriangle,
+  ChevronDown,
 } from 'lucide-react';
 
 interface StudySessionProps {
@@ -392,8 +394,50 @@ export function StudySession({
   const isEducationalMode = activeTab !== 'treino' || isManOpen;
   const effectiveUseCases = getEffectiveUseCases(currentItem);
 
+  const tabs: ReadonlyArray<{
+    id: 'treino' | 'casos' | 'stdout';
+    label: string;
+    shortcut: string;
+    Icon: typeof Terminal;
+    active: string;
+  }> = [
+    { id: 'treino', label: 'Treino', shortcut: 'Ctrl+1', Icon: Terminal, active: 'lg:bg-emerald-950/80 lg:border-emerald-600 lg:text-emerald-300' },
+    { id: 'casos', label: 'Casos de uso', shortcut: 'Ctrl+2', Icon: Layers, active: 'lg:bg-amber-950/80 lg:border-amber-600 lg:text-amber-300' },
+    { id: 'stdout', label: 'Saída anotada', shortcut: 'Ctrl+3', Icon: Activity, active: 'lg:bg-cyan-950/80 lg:border-cyan-600 lg:text-cyan-300' },
+  ];
+
+  const pausedNotice = (tone: 'amber' | 'cyan', desktopText: string) => (
+    <div
+      role="status"
+      className={`flex items-center justify-between gap-3 rounded-lg border pl-3 pr-1 py-1 lg:p-3 text-xs ${
+        tone === 'amber'
+          ? 'bg-amber-950/30 border-amber-800/60 text-amber-300'
+          : 'bg-cyan-950/30 border-cyan-800/60 text-cyan-300'
+      }`}
+    >
+      <span className="flex items-center gap-2">
+        {tone === 'amber' ? (
+          <AlertTriangle className="hidden lg:block w-4 h-4 flex-shrink-0" aria-hidden="true" />
+        ) : (
+          <Info className="hidden lg:block w-4 h-4 flex-shrink-0" aria-hidden="true" />
+        )}
+        <span className="lg:hidden">Cronômetro pausado</span>
+        <span className="hidden lg:inline">{desktopText}</span>
+      </span>
+      <button
+        type="button"
+        onClick={() => setActiveTab('treino')}
+        className={`min-h-[40px] lg:min-h-0 px-3 lg:px-2.5 lg:py-1 rounded font-bold text-xs transition cursor-pointer lg:text-black ${
+          tone === 'amber' ? 'text-amber-400 lg:bg-amber-500 lg:hover:bg-amber-400' : 'text-cyan-400 lg:bg-cyan-500 lg:hover:bg-cyan-400'
+        }`}
+      >
+        Voltar ao treino<span className="hidden lg:inline"> (Ctrl+1)</span>
+      </button>
+    </div>
+  );
+
   return (
-    <div className="min-h-screen flex flex-col justify-between max-w-6xl mx-auto p-4 md:p-6 pb-28 lg:pb-6 font-mono text-gray-200">
+    <div className="min-h-screen flex flex-col justify-between max-w-6xl mx-auto px-4 pt-0 lg:p-6 font-mono text-gray-200">
       <div>
         <TimerHeader
           initialMinutes={initialMinutes}
@@ -412,76 +456,49 @@ export function StudySession({
           totalItems={queue.length}
         />
 
-        {/* 3-Tab Navigation & Man Modal Launcher */}
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-800 pb-3 mb-4">
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setActiveTab('treino')}
-              className={`px-3 py-1.5 rounded text-xs font-bold transition flex items-center gap-1.5 cursor-pointer border ${
-                activeTab === 'treino'
-                  ? 'bg-emerald-950/80 border-emerald-600 text-emerald-300'
-                  : 'bg-[#10141f] border-gray-800 text-gray-400 hover:text-gray-200 hover:border-gray-700'
-              }`}
-            >
-              <Terminal className="w-3.5 h-3.5" />
-              <span>[ Ctrl+1 ] ⌨️ Treino</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab('casos')}
-              className={`px-3 py-1.5 rounded text-xs font-bold transition flex items-center gap-1.5 cursor-pointer border ${
-                activeTab === 'casos'
-                  ? 'bg-amber-950/80 border-amber-600 text-amber-300'
-                  : 'bg-[#10141f] border-gray-800 text-gray-400 hover:text-gray-200 hover:border-gray-700'
-              }`}
-            >
-              <Layers className="w-3.5 h-3.5" />
-              <span>[ Ctrl+2 ] 💡 Casos de Uso</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab('stdout')}
-              className={`px-3 py-1.5 rounded text-xs font-bold transition flex items-center gap-1.5 cursor-pointer border ${
-                activeTab === 'stdout'
-                  ? 'bg-cyan-950/80 border-cyan-600 text-cyan-300'
-                  : 'bg-[#10141f] border-gray-800 text-gray-400 hover:text-gray-200 hover:border-gray-700'
-              }`}
-            >
-              <Activity className="w-3.5 h-3.5" />
-              <span>[ Ctrl+3 ] 🔍 STDOUT Anotado</span>
-            </button>
-          </div>
+        {/* Study modes: equal segmented control on mobile, labelled tabs with shortcuts on desktop */}
+        <div className="flex items-center justify-between gap-2 pt-2 lg:pt-0 lg:border-b lg:border-gray-800 lg:pb-3 lg:mb-4">
+          <nav
+            aria-label="Modos de estudo"
+            className="grid grid-cols-3 flex-1 gap-1 p-1 rounded-xl bg-[#161922] border border-[#262b3d] lg:flex lg:flex-none lg:gap-2 lg:p-0 lg:bg-transparent lg:border-0"
+          >
+            {tabs.map(({ id, label, shortcut, Icon, active }) => {
+              const isActive = activeTab === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  aria-current={isActive ? 'page' : undefined}
+                  onClick={() => setActiveTab(id)}
+                  className={`min-h-[40px] lg:min-h-0 px-2 lg:px-3 lg:py-1.5 rounded-lg lg:rounded text-[13px] lg:text-xs font-sans lg:font-mono transition flex items-center justify-center gap-1.5 cursor-pointer lg:border ${
+                    isActive
+                      ? `bg-[#0c0e14] text-slate-50 font-semibold shadow-[0_0_0_1px_#262b3d] lg:shadow-none ${active}`
+                      : 'text-slate-400 font-medium hover:text-slate-200 lg:bg-[#10141f] lg:border-gray-800 lg:hover:border-gray-700'
+                  }`}
+                >
+                  <Icon className="hidden lg:block w-3.5 h-3.5" aria-hidden="true" />
+                  <span className="hidden lg:inline">[ {shortcut} ]</span>
+                  <span>{label}</span>
+                </button>
+              );
+            })}
+          </nav>
 
           <button
             type="button"
             onClick={() => handleOpenManModal()}
-            className="bg-[#12151e] hover:bg-[#1a202c] border border-cyan-500/50 text-cyan-400 px-3 py-1.5 rounded font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow"
+            className="hidden lg:flex bg-[#12151e] hover:bg-[#1a202c] border border-cyan-500/50 text-cyan-400 px-3 py-1.5 rounded font-bold text-xs items-center gap-1.5 transition cursor-pointer shadow"
             title="Pressione M para abrir o manual de qualquer comando"
           >
-            <BookOpen className="w-3.5 h-3.5" />
-            <span>[ M ] 📖 Man Modal</span>
+            <BookOpen className="w-3.5 h-3.5" aria-hidden="true" />
+            <span>[ M ] Manual (man)</span>
           </button>
         </div>
 
         {/* Tab 2: Casos de Uso em Produção */}
         {activeTab === 'casos' && (
-          <div className="space-y-4 my-4">
-            <div className="bg-amber-950/30 border border-amber-800/60 rounded-lg p-3 text-xs text-amber-300 flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0" />
-                <span>⏱️ O cronômetro do treino está pausado enquanto você estuda os cenários reais de aplicação.</span>
-              </span>
-              <button
-                type="button"
-                onClick={() => setActiveTab('treino')}
-                className="bg-amber-500 hover:bg-amber-400 text-black px-2.5 py-1 rounded font-bold text-xs transition cursor-pointer"
-              >
-                Voltar ao Treino (Ctrl+1)
-              </button>
-            </div>
+          <div className="space-y-3 my-3 lg:space-y-4 lg:my-4">
+            {pausedNotice('amber', 'O cronômetro do treino está pausado enquanto você estuda os cenários reais de aplicação.')}
 
             <div className="space-y-3">
               {effectiveUseCases.map((uc, idx) => {
@@ -492,22 +509,19 @@ export function StudySession({
                   : 'bg-amber-950/80 border-amber-800 text-amber-300';
 
                 return (
-                  <div
-                    key={idx}
-                    className={`bg-[#0f121a] border ${cardBorder} rounded-lg p-4 space-y-2`}
-                  >
-                    <div className="flex items-center justify-between">
+                  <div key={idx} className={`bg-[#0f121a] border ${cardBorder} rounded-lg p-3 lg:p-4 space-y-2`}>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
                       <span className="text-white font-bold text-sm">{uc.title}</span>
                       <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded border ${badgeColor}`}>
                         {isCritical ? 'Alerta de Produção' : 'Rotina & Troubleshooting'}
                       </span>
                     </div>
 
-                    <p className="text-xs text-gray-300 leading-relaxed">{uc.description}</p>
+                    <p className="text-[13px] lg:text-xs font-sans lg:font-mono text-gray-300 leading-relaxed">{uc.description}</p>
 
-                    <div className="bg-[#07090e] border border-gray-855 rounded p-2 text-xs font-mono text-emerald-300 flex items-center justify-between">
-                      <span>$ {currentItem.target}</span>
-                      <span className="text-[10px] text-gray-500">Comando em estudo</span>
+                    <div className="bg-[#07090e] border border-gray-800 rounded p-2 text-xs font-mono text-emerald-300 flex items-start justify-between gap-2">
+                      <code className="whitespace-pre-wrap break-all">$ {currentItem.target}</code>
+                      <span className="hidden lg:inline shrink-0 text-[10px] text-gray-500">Comando em estudo</span>
                     </div>
                   </div>
                 );
@@ -518,64 +532,28 @@ export function StudySession({
 
         {/* Tab 3: STDOUT Anotado & Telemetria */}
         {activeTab === 'stdout' && (
-          <div className="space-y-4 my-4">
-            <div className="bg-cyan-950/30 border border-cyan-800/60 rounded-lg p-3 text-xs text-cyan-300 flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <Info className="w-4 h-4 text-cyan-400 flex-shrink-0" />
-                <span>⏱️ O cronômetro do treino está pausado. Clique nos tokens sublinhados para inspecionar métricas.</span>
-              </span>
-              <button
-                type="button"
-                onClick={() => setActiveTab('treino')}
-                className="bg-cyan-500 hover:bg-cyan-400 text-black px-2.5 py-1 rounded font-bold text-xs transition cursor-pointer"
-              >
-                Voltar ao Treino (Ctrl+1)
-              </button>
+          <div className="flex flex-col gap-2 my-2 lg:gap-4 lg:my-4">
+            <div className="hidden lg:block">
+              {pausedNotice('cyan', 'O cronômetro do treino está pausado. Clique nos tokens sublinhados para inspecionar métricas.')}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {/* Left Column: Raw Output with Interactive Hotspots */}
-              <div className="bg-[#0c0e14] border border-gray-800 rounded-lg p-4 space-y-3">
-                <div className="flex items-center justify-between border-b border-gray-800 pb-2 text-xs">
-                  <span className="text-cyan-400 font-bold">$ {currentItem.target}</span>
-                  <span className="text-gray-500">Terminal Output Real</span>
-                </div>
+            <div className="flex flex-col gap-2 lg:grid lg:grid-cols-2 lg:gap-4 lg:items-start">
+              <AnnotatedOutput
+                command={currentItem.target}
+                segments={parsedStdout.segments}
+                selectedKey={selectedMetricKey}
+                onSelect={setSelectedMetricKey}
+              />
 
-                <div className="bg-[#06080d] border border-gray-850 rounded p-3 text-xs font-mono leading-relaxed overflow-x-auto whitespace-pre">
-                  {parsedStdout.segments.map((seg, idx) => {
-                    if (!seg.metricKey) {
-                      return <span key={idx} className="text-gray-300">{seg.text}</span>;
-                    }
-
-                    const isSelected = selectedMetricKey === seg.metricKey;
-                    const isAlert = seg.isAlert;
-
-                    return (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => setSelectedMetricKey(seg.metricKey || null)}
-                        className={`inline px-1 py-0.5 rounded cursor-pointer transition underline decoration-dotted font-bold ${
-                          isSelected
-                            ? 'bg-cyan-500 text-black underline-offset-2'
-                            : isAlert
-                            ? 'bg-red-950/80 text-red-300 border border-red-700/80 hover:bg-red-900'
-                            : 'bg-cyan-950/80 text-cyan-300 border border-cyan-700/80 hover:bg-cyan-900'
-                        }`}
-                        title="Clique para ver significado e anomalias"
-                      >
-                        {seg.text}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Right Column: Telemetry Inspector */}
-              <div className="bg-[#0f121a] border border-gray-800 rounded-lg p-4 space-y-3">
-                <div className="flex items-center justify-between border-b border-gray-800 pb-2 text-xs">
+              {/* Telemetry Inspector */}
+              <section
+                aria-label="Inspetor de telemetria"
+                aria-live="polite"
+                className="shrink-0 bg-[#161922] lg:bg-[#0f121a] border border-gray-800 rounded-lg p-3 lg:p-4 space-y-2 lg:space-y-3"
+              >
+                <div className="hidden lg:flex items-center justify-between border-b border-gray-800 pb-2 text-xs">
                   <span className="text-cyan-300 font-bold flex items-center gap-1.5">
-                    <Activity className="w-3.5 h-3.5" />
+                    <Activity className="w-3.5 h-3.5" aria-hidden="true" />
                     <span>Inspetor de Telemetria</span>
                   </span>
                   <span className="text-gray-500">Linha de Base & Anomalias</span>
@@ -593,117 +571,105 @@ export function StudySession({
                       : 'bg-cyan-950 text-cyan-300 border-cyan-700';
 
                     return (
-                      <div className="space-y-3 text-xs">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-bold text-white font-mono">{m.label}</span>
+                      <div className="space-y-2 lg:space-y-3 text-xs">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-base lg:text-sm font-bold text-white font-mono">{m.label}</span>
                           <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded border ${badgeColor}`}>
                             {m.severity}
                           </span>
                         </div>
 
-                        <p className="text-gray-300 leading-relaxed">{m.description}</p>
+                        <p className="text-sm lg:text-xs font-sans lg:font-mono text-gray-300 leading-relaxed">{m.description}</p>
 
-                        <div className="bg-[#121622] border border-emerald-800/40 p-2.5 rounded">
-                          <span className="text-emerald-400 font-bold block mb-1">
-                            ✓ Linha de Base Normal:
-                          </span>
-                          <span className="text-gray-300">{m.normalBaseline}</span>
-                        </div>
-
-                        <div className="bg-[#121622] border border-red-800/40 p-2.5 rounded">
-                          <span className="text-red-400 font-bold block mb-1">
-                            ⚠ Alerta de Anomalia / Perigo:
-                          </span>
-                          <span className="text-gray-300">{m.anomalyAlert}</span>
+                        <div className="grid grid-cols-2 gap-2 lg:grid-cols-1">
+                          <div className="bg-[#0f1a14] lg:bg-[#121622] border border-emerald-800/40 p-2.5 rounded">
+                            <span className="text-emerald-400 font-bold block mb-1">Linha de base normal</span>
+                            <span className="text-gray-300 font-sans lg:font-mono">{m.normalBaseline}</span>
+                          </div>
+                          <div className="bg-[#1f0f12] lg:bg-[#121622] border border-red-800/40 p-2.5 rounded">
+                            <span className="text-red-400 font-bold block mb-1">Alerta de anomalia</span>
+                            <span className="text-gray-300 font-sans lg:font-mono">{m.anomalyAlert}</span>
+                          </div>
                         </div>
                       </div>
                     );
                   })()
                 ) : (
-                  <div className="py-8 text-center text-xs text-gray-500">
-                    Clique em qualquer métrica destacada no terminal ao lado para inspecionar sua linha de base.
+                  <div className="py-6 lg:py-8 text-center text-xs text-gray-400">
+                    Selecione uma métrica destacada na saída para inspecionar sua linha de base.
                   </div>
                 )}
-              </div>
+              </section>
             </div>
           </div>
         )}
 
         {/* Tab 1: Treino (Core Muscle Memory Drill) */}
         {activeTab === 'treino' && (
-          <div className="space-y-4 my-4">
-            {/* Objective Box with Favorite and Needs-Review Action Controls */}
+          <div className="space-y-3 my-3 lg:space-y-4 lg:my-4">
+            {/* Scenario with favorite and needs-review toggles */}
             <Card>
-              <CardContent className="p-4 space-y-2">
-                <div className="flex justify-between items-center text-xs text-slate-400 font-mono">
-                  <div className="flex items-center gap-2">
-                    <span className="uppercase tracking-wider font-bold">Cenário / Objetivo</span>
+              <CardContent className="p-3 lg:p-4 space-y-2">
+                <div className="flex justify-between items-center gap-2 text-xs text-slate-400 font-mono">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="uppercase tracking-wider font-bold">Cenário<span className="hidden lg:inline"> / Objetivo</span></span>
                     {currentItem.isDue && (
                       <span className="text-amber-400 bg-amber-950/60 border border-amber-800 px-2 py-0.5 rounded text-xs font-semibold">
                         Revisão Pendente
                       </span>
                     )}
                     {isCurrentFavorite && (
-                      <span className="text-yellow-400 bg-yellow-950/60 border border-yellow-800 px-2 py-0.5 rounded text-xs flex items-center gap-1 font-semibold">
-                        ★ Favorito
+                      <span className="hidden lg:flex text-yellow-400 bg-yellow-950/60 border border-yellow-800 px-2 py-0.5 rounded text-xs items-center gap-1 font-semibold">
+                        Favorito
                       </span>
                     )}
                     {isCurrentNeedsReview && (
-                      <span className="text-red-400 bg-red-950/60 border border-red-800 px-2 py-0.5 rounded text-xs flex items-center gap-1 font-semibold">
-                        ⚑ Revisar
+                      <span className="hidden lg:flex text-red-400 bg-red-950/60 border border-red-800 px-2 py-0.5 rounded text-xs items-center gap-1 font-semibold">
+                        Revisar
                       </span>
                     )}
                   </div>
 
-                  {/* Flagging Buttons */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center lg:gap-2 -mr-2 lg:mr-0">
                     <button
                       type="button"
                       onClick={toggleFavorite}
+                      aria-label="Favoritar exercício"
+                      aria-pressed={isCurrentFavorite}
                       title="Favoritar questão (F ou Ctrl+F)"
-                      className={`p-1.5 rounded transition border text-xs flex items-center gap-1 font-mono cursor-pointer ${
+                      className={`min-w-[44px] min-h-[44px] lg:min-w-0 lg:min-h-0 justify-center lg:p-1.5 rounded transition lg:border text-xs flex items-center gap-1 font-mono cursor-pointer ${
                         isCurrentFavorite
-                          ? 'bg-yellow-950/80 border-yellow-700 text-yellow-300'
-                          : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white'
+                          ? 'text-yellow-300 lg:bg-yellow-950/80 lg:border-yellow-700'
+                          : 'text-gray-400 hover:text-white lg:bg-gray-800 lg:border-gray-700'
                       }`}
                     >
-                      <Star
-                        className={`w-3.5 h-3.5 ${
-                          isCurrentFavorite ? 'fill-yellow-400 text-yellow-400' : ''
-                        }`}
-                      />
-                      <span className="hidden sm:inline">Favoritar</span>
-                      <kbd className="text-[9px] bg-black/40 px-1 py-0.5 rounded text-gray-400">
-                        F
-                      </kbd>
+                      <Star className={`w-5 h-5 lg:w-3.5 lg:h-3.5 ${isCurrentFavorite ? 'fill-yellow-400 text-yellow-400' : ''}`} aria-hidden="true" />
+                      <span className="hidden lg:inline">Favoritar</span>
+                      <kbd className="hidden lg:inline text-[9px] bg-black/40 px-1 py-0.5 rounded text-gray-400">F</kbd>
                     </button>
 
                     <button
                       type="button"
                       onClick={toggleNeedsReview}
+                      aria-label="Marcar para revisão"
+                      aria-pressed={isCurrentNeedsReview}
                       title="Marcar que precisa de revisão (R ou Ctrl+R)"
-                      className={`p-1.5 rounded transition border text-xs flex items-center gap-1 font-mono cursor-pointer ${
+                      className={`min-w-[44px] min-h-[44px] lg:min-w-0 lg:min-h-0 justify-center lg:p-1.5 rounded transition lg:border text-xs flex items-center gap-1 font-mono cursor-pointer ${
                         isCurrentNeedsReview
-                          ? 'bg-red-950/80 border-red-700 text-red-300'
-                          : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white'
+                          ? 'text-red-300 lg:bg-red-950/80 lg:border-red-700'
+                          : 'text-gray-400 hover:text-white lg:bg-gray-800 lg:border-gray-700'
                       }`}
                     >
-                      <Flag
-                        className={`w-3.5 h-3.5 ${
-                          isCurrentNeedsReview ? 'fill-red-400 text-red-400' : ''
-                        }`}
-                      />
-                      <span className="hidden sm:inline">Revisar</span>
-                      <kbd className="text-[9px] bg-black/40 px-1 py-0.5 rounded text-gray-400">
-                        R
-                      </kbd>
+                      <Flag className={`w-5 h-5 lg:w-3.5 lg:h-3.5 ${isCurrentNeedsReview ? 'fill-red-400 text-red-400' : ''}`} aria-hidden="true" />
+                      <span className="hidden lg:inline">Revisar</span>
+                      <kbd className="hidden lg:inline text-[9px] bg-black/40 px-1 py-0.5 rounded text-gray-400">R</kbd>
                     </button>
                   </div>
                 </div>
 
-                <h2 className="text-base font-semibold text-white font-mono">{currentItem.prompt}</h2>
+                <h2 className="text-[17px] lg:text-base leading-snug font-semibold text-white font-sans lg:font-mono">{currentItem.prompt}</h2>
                 {currentItem.explanation && (
-                  <p className="text-xs text-slate-400 pt-1 leading-relaxed">
+                  <p className="text-[13px] lg:text-xs font-sans lg:font-mono text-slate-400 pt-1 leading-relaxed">
                     {currentItem.explanation}
                   </p>
                 )}
@@ -713,44 +679,47 @@ export function StudySession({
             {/* Feedback Banner */}
             {feedback && (
               <div
-                className={`p-3 rounded-lg border text-xs font-mono flex items-center space-x-2 ${
+                role="status"
+                className={`p-3 rounded-lg border text-xs font-mono flex items-start gap-2 ${
                   feedback.type === 'success'
                     ? 'bg-green-950/60 border-green-800 text-green-300'
                     : 'bg-red-950/60 border-red-800 text-red-300'
                 }`}
               >
                 {feedback.type === 'success' ? (
-                  <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                  <CheckCircle2 className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
                 ) : (
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
                 )}
-                <span>{feedback.message}</span>
+                <span className="break-words min-w-0">{feedback.message}</span>
               </div>
             )}
 
             {/* Sample Terminal Output Preview (Collapsed by Default) */}
             {currentItem.output_sample && !isBlindTest && (
-              <div className="bg-[#0f111a] border border-gray-800 rounded-lg p-3">
+              <div className="bg-[#0f111a] border border-gray-800 rounded-lg px-3 lg:p-3">
                 <button
                   type="button"
+                  aria-expanded={showStdout}
                   onClick={() => setShowStdout((prev) => !prev)}
-                  className="flex items-center justify-between w-full text-xs text-gray-400 hover:text-white transition font-mono focus:outline-none cursor-pointer"
+                  className="min-h-[48px] lg:min-h-0 flex items-center justify-between w-full text-xs text-gray-400 hover:text-white transition font-mono focus:outline-none cursor-pointer"
                 >
                   <span className="flex items-center gap-2">
-                    <span className="text-cyan-400 font-bold">▶ [STDOUT]</span>
+                    <span className="text-cyan-400 font-bold">[STDOUT]</span>
                     <span className="font-semibold text-white">
-                      Exemplo de Resposta do Ambiente (Terminal Output)
+                      Exemplo de saída<span className="hidden lg:inline"> do ambiente (Terminal Output)</span>
                     </span>
-                    <kbd className="bg-gray-800 text-[10px] px-1.5 py-0.5 rounded text-gray-400 border border-gray-700">
+                    <kbd className="hidden lg:inline bg-gray-800 text-[10px] px-1.5 py-0.5 rounded text-gray-400 border border-gray-700">
                       Ctrl+O
                     </kbd>
                   </span>
-                  <span className="text-xs text-gray-400 hover:text-gray-200">
-                    {showStdout ? 'Ocultar ▲' : 'Mostrar ▼'}
+                  <span className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-200">
+                    <span className="hidden lg:inline">{showStdout ? 'Ocultar' : 'Mostrar'}</span>
+                    <ChevronDown className={`w-4 h-4 transition-transform ${showStdout ? 'rotate-180' : ''}`} aria-hidden="true" />
                   </span>
                 </button>
                 {showStdout && (
-                  <div className="mt-2.5 pt-2 border-t border-gray-800 font-mono text-xs text-slate-300 bg-[#0c0e14] p-3.5 border border-cyan-800/50 overflow-x-auto leading-relaxed whitespace-pre rounded">
+                  <div className="mb-3 lg:mb-0 lg:mt-2.5 font-mono text-xs text-slate-300 bg-[#0c0e14] p-3 border border-cyan-800/50 overflow-x-auto leading-relaxed whitespace-pre rounded">
                     {currentItem.output_sample}
                   </div>
                 )}
@@ -761,13 +730,13 @@ export function StudySession({
             <div className="relative">
               {isPaused && (
                 <div className="absolute inset-0 bg-black/80 backdrop-blur-[2px] z-20 flex flex-col items-center justify-center rounded-lg border border-amber-800/60 text-center p-6 space-y-3 font-mono">
-                  <div className="text-amber-400 font-bold text-lg">⏸ Treino Pausado</div>
+                  <div className="text-amber-400 font-bold text-lg">Treino pausado</div>
                   <p className="text-xs text-gray-400 max-w-sm">
                     O tempo foi congelado e sua questão atual está preservada.
                   </p>
-                  <Button onClick={togglePause} className="space-x-1.5">
+                  <Button onClick={togglePause} className="space-x-1.5 min-h-[44px]">
                     <span>Retomar Treino</span>
-                    <kbd className="text-xs bg-black/40 px-1.5 py-0.5 rounded ml-1">P</kbd>
+                    <kbd className="hidden lg:inline text-xs bg-black/40 px-1.5 py-0.5 rounded ml-1">P</kbd>
                   </Button>
                 </div>
               )}
@@ -789,15 +758,16 @@ export function StudySession({
         )}
       </div>
 
-      <MobileKeyboardBar
-        onInsertChar={(char) => setCurrentInput((prev) => prev + char)}
-        onDoneTrigger={handleTriggerDone}
-        onSubmit={handleValidate}
-        onClear={() => setCurrentInput('')}
-        isBlindTest={isBlindTest}
-        onExitBlindTest={handleExitBlindTest}
-        onOpenMan={() => handleOpenManModal()}
-      />
+      {activeTab === 'treino' && (
+        <MobileKeyboardBar
+          onInsertChar={(char) => setCurrentInput((prev) => prev + char)}
+          onDoneTrigger={handleTriggerDone}
+          onSubmit={handleValidate}
+          isBlindTest={isBlindTest}
+          onExitBlindTest={handleExitBlindTest}
+          onOpenMan={() => handleOpenManModal()}
+        />
+      )}
 
       {/* Floating Terminal Man Modal */}
       <ManModal
