@@ -96,6 +96,15 @@ export function TimerHeader({
           <span className="hidden sm:inline">Mudar Tópicos</span>
         </Link>
 
+        <Link
+          href="/man"
+          title="Consultar manual do Linux (man)"
+          className="text-xs text-cyan-400 hover:text-cyan-300 border border-cyan-800/80 hover:border-cyan-600 bg-cyan-950/30 px-2.5 py-1.5 rounded transition flex items-center gap-1 font-mono"
+        >
+          <span>📖</span>
+          <span className="hidden sm:inline">Man</span>
+        </Link>
+
         {/* Timer Container */}
         <div
           className={`flex items-center space-x-1.5 font-mono px-3 py-1 rounded-md text-sm font-semibold border ${

@@ -193,14 +193,14 @@ export function parseAnnotatedOutput(
 
   // Collect all searchable tokens
   const tokenEntries: Array<{ searchStr: string; key: string; def: MetricDefinition }> = [];
-  for (const [key, def] of glossaryMap.entries()) {
+  glossaryMap.forEach((def, key) => {
     tokenEntries.push({ searchStr: def.token, key, def });
     if (def.alternativeTokens) {
       for (const alt of def.alternativeTokens) {
         tokenEntries.push({ searchStr: alt, key, def });
       }
     }
-  }
+  });
 
   // Sort by token length descending to match longer strings first
   tokenEntries.sort((a, b) => b.searchStr.length - a.searchStr.length);
