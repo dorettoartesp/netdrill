@@ -13,13 +13,13 @@ const html = renderToStaticMarkup(<TopicSelector topics={topics} />);
 
 describe('formatSelectionSummary', () => {
   it('summarizes topics, exercises and duration', () => {
-    expect(formatSelectionSummary(2, 20, 15)).toBe('2 tópicos · 20 exercícios · 15 min');
+    expect(formatSelectionSummary(2, 20, 15)).toBe('2 topics · 20 drills · 15 min');
   });
   it('uses singular forms and the free-time label', () => {
-    expect(formatSelectionSummary(1, 1, 0)).toBe('1 tópico · 1 exercício · sem limite');
+    expect(formatSelectionSummary(1, 1, 0)).toBe('1 topic · 1 drill · no limit');
   });
   it('asks for a selection when nothing is chosen', () => {
-    expect(formatSelectionSummary(0, 0, 15)).toBe('Selecione ao menos um tópico');
+    expect(formatSelectionSummary(0, 0, 15)).toBe('Select at least one topic');
   });
 });
 
@@ -37,7 +37,7 @@ describe('TopicSelector (mobile)', () => {
   });
 
   it('keeps a sticky start action with the selection summary on mobile', () => {
-    expect(html).toMatch(/class="[^"]*sticky bottom-0[^"]*"[\s\S]*2 tópicos · 20 exercícios · 15 min[\s\S]*Iniciar treino/);
+    expect(html).toMatch(/class="[^"]*sticky bottom-0[^"]*"[\s\S]*2 topics · 20 drills · 15 min[\s\S]*Start session/);
   });
 
   it('hides keyboard shortcut hints on mobile', () => {

@@ -13,14 +13,14 @@ export async function POST(req: NextRequest) {
 
     if (!verifyPassword(password)) {
       return NextResponse.json(
-        { error: 'Senha incorreta. Verifique os dados informados e tente novamente.' },
+        { error: 'Incorrect password. Please try again.' },
         { status: 401 }
       );
     }
 
     const token = generateSessionToken();
     const response = NextResponse.json({
-      message: 'Autenticação realizada com sucesso.',
+      message: 'Signed in.',
     });
 
     response.cookies.set('netdrill_session', token, {
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     return response;
   } catch {
     return NextResponse.json(
-      { error: 'Falha interna ao processar autenticação.' },
+      { error: 'Sign-in could not be completed. Please try again.' },
       { status: 500 }
     );
   }

@@ -30,7 +30,7 @@ Mandatory rules and engineering guidelines for human contributors and automated 
 - **Language and Localization Governance:**
   - **Source Code, Comments, Docstrings, Tests, and Commit Messages:** Strictly in **English**.
   - **All Repository Documentation:** (`AGENTS.md`, `CONTRIBUTING.md`, `README.md`, `SECURITY.md`, `docs/*`, `.agents/*`) strictly in **English**.
-  - **Application User Interface (UI):** User-facing strings, buttons, form labels, notifications, error banners, and UI internationalization strictly in **Brazilian Portuguese (pt-BR)** using **formal and technical register**.
+  - **Application User Interface (UI):** User-facing strings, buttons, form labels, notifications, error banners, and UI internationalization strictly in **English** using **formal and technical register** (owner decision, 2026-11-20; uploaded content packs are English too).
 - **Commits:** Conventional Commits are mandatory (`feat:`, `fix:`, `docs:`, `build:`, `chore:`, `refactor:`, `test:`, `perf:`).
 - **The Inviolable Quality Gate (`make check`):** The command `make check` must be executed and pass with exit code 0 before any commit is finalized.
 - **Cross-Platform Portability:** Zero hardcoded local machine paths (`/home/`, `/Users/`, `file:///...`) are permitted in tracked files, enforced automatically by `scripts/check-portability.sh`.
@@ -71,7 +71,7 @@ Mandatory rules and engineering guidelines for human contributors and automated 
 - Under no circumstances shall production UI code or view templates be written for any new screen, page, modal flow, or major UI overhaul without prior visual approval from the user/product owner based on a viewable artifact.
 
 ### 3.2. Viewable Artifact Requirement
-- The prototype presented for approval must be an interactive or visualizable artifact displaying concrete layout, typography, real contextual copy (in pt-BR), responsive behavior, and theme support.
+- The prototype presented for approval must be an interactive or visualizable artifact displaying concrete layout, typography, real contextual copy (in English), responsive behavior, and theme support.
 
 ### 3.3. Tooling Hierarchy (Native Tools vs. OpenDesign)
 - **Native Design Tools (Priority):** If the running AI agent harness provides native design or artifact preview capabilities (e.g., Antigravity visual artifacts, Claude HTML artifacts, v0 rendering), the agent **MUST** prioritize and utilize them to render and preview the artifact directly for the user.
@@ -80,7 +80,7 @@ Mandatory rules and engineering guidelines for human contributors and automated 
 ### 3.4. Mandatory Versioning of All Screen Prototypes
 - All visual artifacts, wireframes, and prototypes must be committed and versioned in Git under `prototypes/<screen-slug>/`.
 - Canonical structure:
-  - `prototypes/<screen-slug>/index.html`: Runnable, self-contained interactive prototype adhering to three-screen breakpoints (Desktop, Tablet, Mobile) and pt-BR localization.
+  - `prototypes/<screen-slug>/index.html`: Runnable, self-contained interactive prototype adhering to three-screen breakpoints (Desktop, Tablet, Mobile) and English copy.
   - `prototypes/<screen-slug>/README.md`: Screen metadata, route path, user stories, responsive breakdown, state matrix (default, hover, focus, loading, empty, error), and explicit approval audit log (`Status: APPROVED`, `Approved by:`, `Date:`).
 
 ### 3.5. Responsive Design, Accessibility (a11y), and Themes
@@ -90,9 +90,9 @@ Mandatory rules and engineering guidelines for human contributors and automated 
 - **Disable on Action:** Any button triggering async requests or form submissions must disable immediately (`disabled = true`) with visual feedback to prevent duplicate submissions.
 
 ### 3.6. UI Microcopy, Anti-Redundancy, and Information Leakage Prevention
-- **Formal and Technical Portuguese Register:** All user-facing UI text, buttons, alerts, form labels, and feedback messages must strictly use **formal and technical Brazilian Portuguese (pt-BR)**. Prohibit colloquialisms, playful slang, diminutive expressions ("cliquezinho"), or overly informal conversational AI fillers.
+- **Formal and Technical English Register:** All user-facing UI text, buttons, alerts, form labels, and feedback messages must strictly use **formal and technical English**. Prohibit colloquialisms, playful slang, or overly informal conversational AI fillers. `tests/ui-language.test.ts` fails on Portuguese strings in `src/`.
 - **Anti-Redundancy (Do Not State the Obvious):** UI text, helper copy, and labels must never patronize users with obvious explanations (e.g., "Clique aqui para clicar", "Esta tabela lista registros", "Preencha o campo nome com seu nome"). Microcopy must be purposeful, concise, and respectful.
-- **Information Leakage Prevention (Never Expose Business Rules or Internals):** Error banners, notifications, and tooltips must NEVER expose backend implementation details, raw SQL errors, stack traces, database schema names, internal formula thresholds, or confidential business rules. Feedback must be actionable, dignified, and user-focused in technical pt-BR (e.g., "Não foi possível concluir a operação. Verifique os parâmetros informados e tente novamente.").
+- **Information Leakage Prevention (Never Expose Business Rules or Internals):** Error banners, notifications, and tooltips must NEVER expose backend implementation details, raw SQL errors, stack traces, database schema names, internal formula thresholds, or confidential business rules. Feedback must be actionable, dignified, and user-focused in technical English (e.g., "The operation could not be completed. Check the provided values and try again.").
 
 ## 4. Security and Secrets Management
 - **Zero Secrets in Version Control:** Never commit `.secrets/`, `.data/`, `.env` files, credentials, or cryptographic keys.

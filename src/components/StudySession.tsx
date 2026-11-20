@@ -38,7 +38,7 @@ interface StudySessionProps {
 
 /**
  * Main interactive study session container managing drill repetitions,
- * blind recall testing, educational tabs (Casos de Uso, STDOUT Anotado),
+ * blind recall testing, educational tabs (use cases, annotated output),
  * embedded man modal, SM-2 updates, and state persistence.
  */
 export function StudySession({
@@ -73,7 +73,7 @@ export function StudySession({
   }, [isTyping, keyboard.visibleHeight, keyboard.offsetTop]);
 
   // 3-Tab Educational Workspace State
-  const [activeTab, setActiveTab] = useState<'treino' | 'casos' | 'stdout'>('treino');
+  const [activeTab, setActiveTab] = useState<'drill' | 'cases' | 'stdout'>('drill');
   const [isManOpen, setIsManOpen] = useState(false);
   const [manCmd, setManCmd] = useState('ps');
   const [selectedMetricKey, setSelectedMetricKey] = useState<string | null>(null);
@@ -196,7 +196,7 @@ export function StudySession({
     setIsBlindTest(false);
     setFeedback({
       type: 'success',
-      message: 'Gabarito restaurado. Continue treinando o comando.',
+      message: 'Answer restored. Keep practicing the command.',
     });
   }, []);
 
@@ -217,10 +217,10 @@ export function StudySession({
 
       if ((e.ctrlKey || e.metaKey) && e.key === '1') {
         e.preventDefault();
-        setActiveTab('treino');
+        setActiveTab('drill');
       } else if ((e.ctrlKey || e.metaKey) && e.key === '2') {
         e.preventDefault();
-        setActiveTab('casos');
+        setActiveTab('cases');
       } else if ((e.ctrlKey || e.metaKey) && e.key === '3') {
         e.preventDefault();
         setActiveTab('stdout');
@@ -291,10 +291,10 @@ export function StudySession({
       setRepetitionCount(1);
       setIsBlindTest(false);
       setShowStdout(false);
-      setActiveTab('treino');
+      setActiveTab('drill');
       setFeedback({
         type: 'success',
-        message: 'Item graduado com sucesso! Próximo desafio carregado.',
+        message: 'Drill completed. Next drill loaded.',
       });
     } else {
       try {
@@ -305,7 +305,7 @@ export function StudySession({
   }, [currentItem, currentIndex, queue.length, storageKey]);
 
   const handleValidate = () => {
-    if (!currentItem || isPaused || activeTab !== 'treino') return;
+    if (!currentItem || isPaused || activeTab !== 'drill') return;
 
     const inputLines = currentInput.split('\n').filter((l) => l.trim().length > 0);
     const result = compareBlock(inputLines, currentItem.target);
@@ -319,7 +319,7 @@ export function StudySession({
       } else {
         setFeedback({
           type: 'success',
-          message: `Repetição #${repetitionCount} concluída com sucesso! Digite novamente ou :done para o teste cego.`,
+          message: `Repetition #${repetitionCount} correct. Type it again, or run :done for the blind test.`,
         });
         setRepetitionCount((prev) => prev + 1);
         setCurrentInput('');
@@ -328,19 +328,19 @@ export function StudySession({
       setFeedback({
         type: 'error',
         message: result.expectedLine
-          ? `Divergência na linha ${(result.mismatchLine || 0) + 1}. Esperado: "${result.expectedLine}"`
-          : 'Sintaxe divergente do gabarito. Verifique e tente novamente.',
+          ? `Mismatch on line ${(result.mismatchLine || 0) + 1}. Expected: "${result.expectedLine}"`
+          : 'The command does not match the answer. Check it and try again.',
       });
     }
   };
 
   const handleTriggerDone = () => {
-    if (isPaused || activeTab !== 'treino') return;
+    if (isPaused || activeTab !== 'drill') return;
     setIsBlindTest(true);
     setCurrentInput('');
     setFeedback({
       type: 'success',
-      message: 'Gabarito ocultado! Digite a configuração completa de memória para validar.',
+      message: 'Answer hidden. Type the full command from memory to validate.',
     });
   };
 
@@ -355,17 +355,17 @@ export function StudySession({
         <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center text-green-400 mx-auto">
           <Trophy className="w-8 h-8" />
         </div>
-        <h2 className="text-2xl font-bold font-mono text-white">Sessão Concluída!</h2>
+        <h2 className="text-2xl font-bold font-mono text-white">Session complete</h2>
         <p className="text-gray-400 text-sm font-mono">
-          Você completou {completedItemsCount} exercícios de fixação muscular nesta sessão.
+          You completed {completedItemsCount} drills in this session.
         </p>
         <div className="pt-4 flex justify-center gap-4">
           <Button onClick={() => window.location.reload()} className="space-x-2">
             <RefreshCw className="w-4 h-4" />
-            <span>Iniciar Nova Sessão</span>
+            <span>Start a new session</span>
           </Button>
           <Button variant="outline" onClick={() => (window.location.href = '/import')}>
-            Importar Novos Tópicos
+            Import content
           </Button>
         </div>
       </div>
@@ -373,18 +373,18 @@ export function StudySession({
   }
 
   const isMulti = currentItem.isMultiLine;
-  const isEducationalMode = activeTab !== 'treino' || isManOpen;
+  const isEducationalMode = activeTab !== 'drill' || isManOpen;
 
   const tabs: ReadonlyArray<{
-    id: 'treino' | 'casos' | 'stdout';
+    id: 'drill' | 'cases' | 'stdout';
     label: string;
     shortcut: string;
     Icon: typeof Terminal;
     active: string;
   }> = [
-    { id: 'treino', label: 'Treino', shortcut: 'Ctrl+1', Icon: Terminal, active: 'lg:bg-emerald-950/80 lg:border-emerald-600 lg:text-emerald-300' },
-    { id: 'casos', label: 'Casos de uso', shortcut: 'Ctrl+2', Icon: Layers, active: 'lg:bg-amber-950/80 lg:border-amber-600 lg:text-amber-300' },
-    { id: 'stdout', label: 'Saída anotada', shortcut: 'Ctrl+3', Icon: Activity, active: 'lg:bg-cyan-950/80 lg:border-cyan-600 lg:text-cyan-300' },
+    { id: 'drill', label: 'Drill', shortcut: 'Ctrl+1', Icon: Terminal, active: 'lg:bg-emerald-950/80 lg:border-emerald-600 lg:text-emerald-300' },
+    { id: 'cases', label: 'Use cases', shortcut: 'Ctrl+2', Icon: Layers, active: 'lg:bg-amber-950/80 lg:border-amber-600 lg:text-amber-300' },
+    { id: 'stdout', label: 'Annotated output', shortcut: 'Ctrl+3', Icon: Activity, active: 'lg:bg-cyan-950/80 lg:border-cyan-600 lg:text-cyan-300' },
   ];
 
   const pausedNotice = (tone: 'amber' | 'cyan', desktopText: string) => (
@@ -402,17 +402,17 @@ export function StudySession({
         ) : (
           <Info className="hidden lg:block w-4 h-4 flex-shrink-0" aria-hidden="true" />
         )}
-        <span className="lg:hidden">Cronômetro pausado</span>
+        <span className="lg:hidden">Timer paused</span>
         <span className="hidden lg:inline">{desktopText}</span>
       </span>
       <button
         type="button"
-        onClick={() => setActiveTab('treino')}
+        onClick={() => setActiveTab('drill')}
         className={`min-h-[40px] lg:min-h-0 px-3 lg:px-2.5 lg:py-1 rounded font-bold text-xs transition cursor-pointer lg:text-black ${
           tone === 'amber' ? 'text-amber-400 lg:bg-amber-500 lg:hover:bg-amber-400' : 'text-cyan-400 lg:bg-cyan-500 lg:hover:bg-cyan-400'
         }`}
       >
-        Voltar ao treino<span className="hidden lg:inline"> (Ctrl+1)</span>
+        Back to drill<span className="hidden lg:inline"> (Ctrl+1)</span>
       </button>
     </div>
   );
@@ -430,9 +430,9 @@ export function StudySession({
           onTimeExpired={() => setIsSessionFinished(true)}
           topicTitle={
             isManOpen
-              ? `[PAUSADO (MAN)] ${currentItem.title}`
-              : activeTab !== 'treino'
-              ? `[EM ESTUDO] ${currentItem.title}`
+              ? `[PAUSED · MAN] ${currentItem.title}`
+              : activeTab !== 'drill'
+              ? `[STUDYING] ${currentItem.title}`
               : currentItem.title
           }
           onLogout={handleLogout}
@@ -445,7 +445,7 @@ export function StudySession({
         {/* Study modes: equal segmented control on mobile, labelled tabs with shortcuts on desktop */}
         <div className={`${isTyping ? 'hidden' : 'flex'} items-center justify-between gap-2 pt-2 lg:pt-0 lg:border-b lg:border-gray-800 lg:pb-3 lg:mb-4`}>
           <nav
-            aria-label="Modos de estudo"
+            aria-label="Study modes"
             className="grid grid-cols-3 flex-1 gap-1 p-1 rounded-xl bg-[#161922] border border-[#262b3d] lg:flex lg:flex-none lg:gap-2 lg:p-0 lg:bg-transparent lg:border-0"
           >
             {tabs.map(({ id, label, shortcut, Icon, active }) => {
@@ -474,17 +474,17 @@ export function StudySession({
             type="button"
             onClick={() => handleOpenManModal()}
             className="hidden lg:flex bg-[#12151e] hover:bg-[#1a202c] border border-cyan-500/50 text-cyan-400 px-3 py-1.5 rounded font-bold text-xs items-center gap-1.5 transition cursor-pointer shadow"
-            title="Pressione M para abrir o manual de qualquer comando"
+            title="Press M to open the manual for any command"
           >
             <BookOpen className="w-3.5 h-3.5" aria-hidden="true" />
             <span>[ M ] Manual (man)</span>
           </button>
         </div>
 
-        {/* Tab 2: Casos de Uso em Produção */}
-        {activeTab === 'casos' && (
+        {/* Tab 2: Production use cases */}
+        {activeTab === 'cases' && (
           <div className="space-y-3 my-3 lg:space-y-4 lg:my-4">
-            {pausedNotice('amber', 'O cronômetro do treino está pausado enquanto você estuda os cenários reais de aplicação.')}
+            {pausedNotice('amber', 'The session timer is paused while you study real-world use cases.')}
 
             <UseCaseList useCases={currentItem.use_cases} target={currentItem.target} />
           </div>
@@ -494,7 +494,7 @@ export function StudySession({
         {activeTab === 'stdout' && (
           <div className="flex flex-col gap-2 my-2 lg:gap-4 lg:my-4">
             <div className="hidden lg:block">
-              {pausedNotice('cyan', 'O cronômetro do treino está pausado. Clique nos tokens sublinhados para inspecionar métricas.')}
+              {pausedNotice('cyan', 'The session timer is paused. Select an underlined token to inspect it.')}
             </div>
 
             <div className="flex flex-col gap-2 lg:grid lg:grid-cols-2 lg:gap-4 lg:items-start">
@@ -507,16 +507,16 @@ export function StudySession({
 
               {/* Telemetry Inspector */}
               <section
-                aria-label="Inspetor de telemetria"
+                aria-label="Telemetry inspector"
                 aria-live="polite"
                 className="shrink-0 bg-[#161922] lg:bg-[#0f121a] border border-gray-800 rounded-lg p-3 lg:p-4 space-y-2 lg:space-y-3"
               >
                 <div className="hidden lg:flex items-center justify-between border-b border-gray-800 pb-2 text-xs">
                   <span className="text-cyan-300 font-bold flex items-center gap-1.5">
                     <Activity className="w-3.5 h-3.5" aria-hidden="true" />
-                    <span>Inspetor de Telemetria</span>
+                    <span>Telemetry inspector</span>
                   </span>
-                  <span className="text-gray-500">Linha de Base & Anomalias</span>
+                  <span className="text-gray-500">Baseline & anomalies</span>
                 </div>
 
                 {selectedMetricKey && parsedStdout.activeMetrics[selectedMetricKey] ? (
@@ -543,11 +543,11 @@ export function StudySession({
 
                         <div className="grid grid-cols-2 gap-2 lg:grid-cols-1">
                           <div className="bg-[#0f1a14] lg:bg-[#121622] border border-emerald-800/40 p-2.5 rounded">
-                            <span className="text-emerald-400 font-bold block mb-1">Linha de base normal</span>
+                            <span className="text-emerald-400 font-bold block mb-1">Normal baseline</span>
                             <span className="text-gray-300 font-sans lg:font-mono">{m.normalBaseline}</span>
                           </div>
                           <div className="bg-[#1f0f12] lg:bg-[#121622] border border-red-800/40 p-2.5 rounded">
-                            <span className="text-red-400 font-bold block mb-1">Alerta de anomalia</span>
+                            <span className="text-red-400 font-bold block mb-1">Anomaly alert</span>
                             <span className="text-gray-300 font-sans lg:font-mono">{m.anomalyAlert}</span>
                           </div>
                         </div>
@@ -556,7 +556,7 @@ export function StudySession({
                   })()
                 ) : (
                   <div className="py-6 lg:py-8 text-center text-xs text-gray-400">
-                    Selecione uma métrica destacada na saída para inspecionar sua linha de base.
+                    Select a highlighted token in the output to see its baseline.
                   </div>
                 )}
               </section>
@@ -565,27 +565,27 @@ export function StudySession({
         )}
 
         {/* Tab 1: Treino (Core Muscle Memory Drill) */}
-        {activeTab === 'treino' && (
+        {activeTab === 'drill' && (
           <div className="space-y-3 my-3 lg:space-y-4 lg:my-4">
             {/* Scenario with favorite and needs-review toggles */}
             <Card>
               <CardContent className="p-3 lg:p-4 space-y-2">
                 <div className="flex justify-between items-center gap-2 text-xs text-slate-400 font-mono">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="uppercase tracking-wider font-bold">Cenário<span className="hidden lg:inline"> / Objetivo</span></span>
+                    <span className="uppercase tracking-wider font-bold">Scenario<span className="hidden lg:inline"> / Goal</span></span>
                     {currentItem.isDue && (
                       <span className="text-amber-400 bg-amber-950/60 border border-amber-800 px-2 py-0.5 rounded text-xs font-semibold">
-                        Revisão Pendente
+                        Review due
                       </span>
                     )}
                     {isCurrentFavorite && (
                       <span className="hidden lg:flex text-yellow-400 bg-yellow-950/60 border border-yellow-800 px-2 py-0.5 rounded text-xs items-center gap-1 font-semibold">
-                        Favorito
+                        Favorite
                       </span>
                     )}
                     {isCurrentNeedsReview && (
                       <span className="hidden lg:flex text-red-400 bg-red-950/60 border border-red-800 px-2 py-0.5 rounded text-xs items-center gap-1 font-semibold">
-                        Revisar
+                        Flagged
                       </span>
                     )}
                   </div>
@@ -594,9 +594,9 @@ export function StudySession({
                     <button
                       type="button"
                       onClick={toggleFavorite}
-                      aria-label="Favoritar exercício"
+                      aria-label="Favorite drill"
                       aria-pressed={isCurrentFavorite}
-                      title="Favoritar questão (F ou Ctrl+F)"
+                      title="Favorite (F or Ctrl+F)"
                       className={`min-w-[44px] min-h-[44px] lg:min-w-0 lg:min-h-0 justify-center lg:p-1.5 rounded transition lg:border text-xs flex items-center gap-1 font-mono cursor-pointer ${
                         isCurrentFavorite
                           ? 'text-yellow-300 lg:bg-yellow-950/80 lg:border-yellow-700'
@@ -604,16 +604,16 @@ export function StudySession({
                       }`}
                     >
                       <Star className={`w-5 h-5 lg:w-3.5 lg:h-3.5 ${isCurrentFavorite ? 'fill-yellow-400 text-yellow-400' : ''}`} aria-hidden="true" />
-                      <span className="hidden lg:inline">Favoritar</span>
+                      <span className="hidden lg:inline">Favorite</span>
                       <kbd className="hidden lg:inline text-[9px] bg-black/40 px-1 py-0.5 rounded text-gray-400">F</kbd>
                     </button>
 
                     <button
                       type="button"
                       onClick={toggleNeedsReview}
-                      aria-label="Marcar para revisão"
+                      aria-label="Flag for review"
                       aria-pressed={isCurrentNeedsReview}
-                      title="Marcar que precisa de revisão (R ou Ctrl+R)"
+                      title="Flag for review (R or Ctrl+R)"
                       className={`min-w-[44px] min-h-[44px] lg:min-w-0 lg:min-h-0 justify-center lg:p-1.5 rounded transition lg:border text-xs flex items-center gap-1 font-mono cursor-pointer ${
                         isCurrentNeedsReview
                           ? 'text-red-300 lg:bg-red-950/80 lg:border-red-700'
@@ -621,7 +621,7 @@ export function StudySession({
                       }`}
                     >
                       <Flag className={`w-5 h-5 lg:w-3.5 lg:h-3.5 ${isCurrentNeedsReview ? 'fill-red-400 text-red-400' : ''}`} aria-hidden="true" />
-                      <span className="hidden lg:inline">Revisar</span>
+                      <span className="hidden lg:inline">Review</span>
                       <kbd className="hidden lg:inline text-[9px] bg-black/40 px-1 py-0.5 rounded text-gray-400">R</kbd>
                     </button>
                   </div>
@@ -667,14 +667,14 @@ export function StudySession({
                   <span className="flex items-center gap-2">
                     <span className="text-cyan-400 font-bold">[STDOUT]</span>
                     <span className="font-semibold text-white">
-                      Exemplo de saída<span className="hidden lg:inline"> do ambiente (Terminal Output)</span>
+                      Sample output<span className="hidden lg:inline"> (terminal)</span>
                     </span>
                     <kbd className="hidden lg:inline bg-gray-800 text-[10px] px-1.5 py-0.5 rounded text-gray-400 border border-gray-700">
                       Ctrl+O
                     </kbd>
                   </span>
                   <span className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-200">
-                    <span className="hidden lg:inline">{showStdout ? 'Ocultar' : 'Mostrar'}</span>
+                    <span className="hidden lg:inline">{showStdout ? 'Hide' : 'Show'}</span>
                     <ChevronDown className={`w-4 h-4 transition-transform ${showStdout ? 'rotate-180' : ''}`} aria-hidden="true" />
                   </span>
                 </button>
@@ -690,12 +690,12 @@ export function StudySession({
             <div className="relative">
               {isPaused && (
                 <div className="absolute inset-0 bg-black/80 backdrop-blur-[2px] z-20 flex flex-col items-center justify-center rounded-lg border border-amber-800/60 text-center p-6 space-y-3 font-mono">
-                  <div className="text-amber-400 font-bold text-lg">Treino pausado</div>
+                  <div className="text-amber-400 font-bold text-lg">Session paused</div>
                   <p className="text-xs text-gray-400 max-w-sm">
-                    O tempo foi congelado e sua questão atual está preservada.
+                    The timer is frozen and your current drill is kept.
                   </p>
                   <Button onClick={togglePause} className="space-x-1.5 min-h-[44px]">
-                    <span>Retomar Treino</span>
+                    <span>Resume session</span>
                     <kbd className="hidden lg:inline text-xs bg-black/40 px-1.5 py-0.5 rounded ml-1">P</kbd>
                   </Button>
                 </div>
@@ -719,7 +719,7 @@ export function StudySession({
         )}
       </div>
 
-      {activeTab === 'treino' && (
+      {activeTab === 'drill' && (
         <MobileKeyboardBar
           onInsertChar={(char) => setCurrentInput((prev) => prev + char)}
           onDoneTrigger={handleTriggerDone}

@@ -59,7 +59,7 @@ export function AnnotatedOutput({ command, segments, selectedKey, onSelect }: An
           }`}
         >
           <WrapText className="w-4 h-4" aria-hidden="true" />
-          <span>Quebrar linhas</span>
+          <span>Wrap lines</span>
         </button>
       </div>
 

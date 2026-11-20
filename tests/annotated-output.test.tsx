@@ -12,7 +12,7 @@ const render = (selectedKey: string | null = null) =>
 
 describe('AnnotatedOutput', () => {
   it('offers an optional line-wrap toggle that starts off', () => {
-    expect(render()).toMatch(/<button[^>]*aria-pressed="false"[^>]*>[\s\S]*?Quebrar linhas/);
+    expect(render()).toMatch(/<button[^>]*aria-pressed="false"[^>]*>[\s\S]*?Wrap lines/);
   });
 
   it('preserves terminal columns with horizontal scroll while wrap is off', () => {

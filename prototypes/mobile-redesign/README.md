@@ -48,3 +48,6 @@
 
 ## Theme Note
 The application ships a dark theme only; light theme support remains an open item for the whole app (not introduced by this change).
+
+## Language Note
+Since 2026-11-20 the implemented screens use English copy (e.g. Drill, Use cases, Annotated output, Blind test, Validate); the layout approved here is unchanged.

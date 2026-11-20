@@ -20,8 +20,8 @@ describe('MobileKeyboardBar', () => {
     />
   );
 
-  it('gives every terminal symbol key an accessible pt-BR name', () => {
-    for (const name of ['Hífen', 'Sublinhado', 'Barra', 'Pipe', 'Aspas', 'Cifrão', 'Dois-pontos', 'Redirecionamento', 'Tabulação']) {
+  it('gives every terminal symbol key an accessible English name', () => {
+    for (const name of ['Hyphen', 'Underscore', 'Slash', 'Pipe', 'Quote', 'Dollar', 'Colon', 'Redirect', 'Tab']) {
       expect(training).toContain(`aria-label="${name}"`);
     }
   });
@@ -32,14 +32,14 @@ describe('MobileKeyboardBar', () => {
   });
 
   it('offers blind test and validation as the two primary actions while training', () => {
-    expect(training).toMatch(/>Teste cego</);
-    expect(training).toMatch(/>Validar</);
+    expect(training).toMatch(/>Blind test</);
+    expect(training).toMatch(/>Validate</);
   });
 
   it('switches to reveal-reference and block validation during the blind test', () => {
-    expect(blind).toMatch(/>Ver gabarito</);
-    expect(blind).toMatch(/>Validar bloco</);
-    expect(blind).not.toMatch(/>Teste cego</);
+    expect(blind).toMatch(/>Show answer</);
+    expect(blind).toMatch(/>Validate block</);
+    expect(blind).not.toMatch(/>Blind test</);
   });
 
   it('keeps every touch target at least 44px tall', () => {

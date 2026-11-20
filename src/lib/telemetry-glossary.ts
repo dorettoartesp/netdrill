@@ -24,111 +24,111 @@ export const GLOBAL_TELEMETRY_GLOSSARY: Record<string, MetricDefinition> = {
   '%cpu': {
     token: '%CPU',
     key: '%cpu',
-    label: '%CPU (% de Utilização do Processador)',
+    label: '%CPU (processor utilization)',
     severity: 'warning',
-    description: 'Percentual de tempo de processador consumido pelo processo.',
-    normalBaseline: '< 70% sob carga típica',
-    anomalyAlert: '> 90% contínuo ou 100% fixo (loop infinito de thread/processo)'
+    description: 'Share of processor time consumed by the process.',
+    normalBaseline: '< 70% under typical load',
+    anomalyAlert: 'Sustained > 90% or pinned at 100% (busy loop in a thread or process)'
   },
   '%mem': {
     token: '%MEM',
     key: '%mem',
-    label: '%MEM (% de Memória RAM Física)',
+    label: '%MEM (physical memory share)',
     severity: 'warning',
-    description: 'Percentual da memória física real (RAM) ocupado pelo processo.',
-    normalBaseline: '< 60% por processo',
-    anomalyAlert: 'Crescimento contínuo sem desalocação (vazamento de memória / memory leak)'
+    description: 'Share of physical RAM used by the process.',
+    normalBaseline: '< 60% per process',
+    anomalyAlert: 'Continuous growth without release (memory leak)'
   },
   rss: {
     token: 'RSS',
     key: 'rss',
     label: 'RSS (Resident Set Size)',
     severity: 'info',
-    description: 'Quantidade exata de memória RAM física alocada atualmente em kilobytes.',
-    normalBaseline: 'Estável após aquecimento da aplicação',
-    anomalyAlert: 'Aumento linear contínuo precedendo OOM Killer'
+    description: 'Physical memory currently resident for the process, in kilobytes.',
+    normalBaseline: 'Stable after the application warms up',
+    anomalyAlert: 'Steady linear growth preceding the OOM killer'
   },
   'time+': {
     token: 'TIME+',
     key: 'time+',
-    label: 'TIME+ (Tempo Acumulado de CPU)',
+    label: 'TIME+ (accumulated CPU time)',
     severity: 'info',
-    description: 'Tempo total acumulado de processamento que o processo usou desde o boot.',
-    normalBaseline: 'Crescimento proporcional ao uptime',
-    anomalyAlert: 'Crescimento vertiginoso em curto intervalo (processamento em loop)'
+    description: 'Total CPU time the process has used since it started.',
+    normalBaseline: 'Grows in proportion to uptime',
+    anomalyAlert: 'Steep growth over a short interval (processing loop)'
   },
   stat_d: {
     token: 'D',
     key: 'stat_d',
     label: 'STAT D (Uninterruptible Sleep / D-State)',
     severity: 'critical',
-    description: 'Processo travado aguardando I/O de disco ou chamada síncrona NFS. Não responde a SIGKILL.',
-    normalBaseline: 'Inexistente ou transições em milissegundos',
-    anomalyAlert: 'D persistente: storage indisponível, disco físico corrompido ou NFS travado'
+    description: 'Process blocked waiting for disk I/O or a synchronous NFS call. It does not respond to SIGKILL.',
+    normalBaseline: 'Absent, or transitions lasting milliseconds',
+    anomalyAlert: 'Persistent D: storage unavailable, failing disk or hung NFS mount'
   },
   stat_z: {
     token: 'Z',
     key: 'stat_z',
     label: 'STAT Z (Zombie Process)',
     severity: 'critical',
-    description: 'Processo finalizado cuja entrada na tabela de processos ainda não foi recolhida pelo processo pai.',
-    normalBaseline: '0 processos zumbis',
-    anomalyAlert: 'Acúmulo de zumbis esgotando a tabela máxima de PIDs do kernel (PID exhaustion)'
+    description: 'Process that exited but whose process table entry was not yet reaped by its parent.',
+    normalBaseline: '0 zombies',
+    anomalyAlert: 'Zombies accumulating until the kernel PID table is exhausted'
   },
   stat_r: {
     token: 'R',
     key: 'stat_r',
     label: 'STAT R (Running / Runnable)',
     severity: 'info',
-    description: 'Processo em execução ativa na CPU ou aguardando na fila de escalonamento.',
-    normalBaseline: 'Menor ou igual ao número de vCPUs disponíveis',
-    anomalyAlert: 'Muito superior ao número de núcleos: CPU saturation e alto Load Average'
+    description: 'Process running on a CPU or waiting in the run queue.',
+    normalBaseline: 'At most the number of available vCPUs',
+    anomalyAlert: 'Far above the core count: CPU saturation and high load average'
   },
   stat_s: {
     token: 'S',
     key: 'stat_s',
     label: 'STAT S (Interruptible Sleep)',
     severity: 'info',
-    description: 'Processo dormindo aguardando um evento externo, I/O ou sinal.',
-    normalBaseline: 'Estado padrão da vasta maioria dos daemons e workers ociosos',
-    anomalyAlert: 'Nenhum'
+    description: 'Process sleeping until an event occurs (timer, network packet, input).',
+    normalBaseline: 'Default state of most idle daemons and workers',
+    anomalyAlert: 'None'
   },
   'wa%': {
     token: 'wa%',
     key: 'wa%',
     alternativeTokens: ['wa'],
-    label: 'wa% (I/O Wait da CPU)',
+    label: 'wa% (CPU I/O wait)',
     severity: 'critical',
-    description: 'Percentual de tempo em que a CPU esteve ociosa aguardando resposta de discos ou rede.',
+    description: 'Share of time the CPU sat idle waiting for disk or network I/O.',
     normalBaseline: '< 5%',
-    anomalyAlert: '> 20% gargalo severo em I/O de disco, SAN saturada ou fila de gravação travada'
+    anomalyAlert: '> 20%: severe disk I/O bottleneck, saturated SAN or stalled write queue'
   },
   'recv-q': {
     token: 'Recv-Q',
     key: 'recv-q',
-    label: 'Recv-Q (Fila de Recepção de Socket TCP)',
+    label: 'Recv-Q (socket receive queue)',
     severity: 'warning',
-    description: 'Quantidade de bytes já recebidos pelo kernel mas ainda não consumidos pela aplicação.',
+    description: 'Bytes received by the kernel but not yet read by the application (for LISTEN sockets: connections waiting for accept()).',
     normalBaseline: '0',
-    anomalyAlert: '> 0 constante indica aplicação bloqueada, thread pool esgotada ou starvation'
+    anomalyAlert: 'Constantly > 0: application blocked, exhausted thread pool or starvation'
   },
   'send-q': {
     token: 'Send-Q',
     key: 'send-q',
-    label: 'Send-Q (Fila de Envio de Socket TCP)',
+    label: 'Send-Q (socket send queue)',
     severity: 'warning',
-    description: 'Bytes enviados pela aplicação mas ainda não confirmados com ACK pelo destino.',
+    description: 'Bytes sent by the application but not yet acknowledged by the peer (for LISTEN sockets: the backlog size).',
     normalBaseline: '0',
-    anomalyAlert: '> 0 constante indica saturação no enlace de rede ou receptor congestionado'
+    anomalyAlert: 'Constantly > 0: saturated link or congested receiver'
   },
   listen: {
     token: 'LISTEN',
     key: 'listen',
-    label: 'LISTEN (Porta TCP Aberta)',
+    label: 'LISTEN (open TCP port)',
     severity: 'info',
-    description: 'Socket aberto aguardando ativamente conexões TCP de clientes.',
-    normalBaseline: 'Apenas serviços conhecidos e homologados',
-    anomalyAlert: 'Porta desconhecida em 0.0.0.0 / ::: (possível backdoor ou serviço indevido)'
+    description: 'Socket actively waiting for client TCP connections.',
+    normalBaseline: 'Only known, approved services',
+    anomalyAlert: 'Unknown port on 0.0.0.0 / :::* (possible backdoor or unwanted service)'
   }
 };
 

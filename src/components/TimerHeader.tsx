@@ -17,13 +17,13 @@ interface TimerHeaderProps {
 
 /**
  * Top application header containing the brand identifier, topic breadcrumb,
- * queue progress indicator (Fila: X / Y), session countdown timer with pause/resume support,
+ * queue progress indicator (Queue: X / Y), session countdown timer with pause/resume support,
  * and topic navigation.
  */
 export function TimerHeader({
   initialMinutes = 15,
   onTimeExpired,
-  topicTitle = 'Treino Ativo',
+  topicTitle = 'Active session',
   onLogout,
   isPaused = false,
   onTogglePause,
@@ -53,7 +53,7 @@ export function TimerHeader({
   const minutes = Math.floor(secondsRemaining / 60);
   const seconds = secondsRemaining % 60;
   const formattedTime = isUnlimited
-    ? 'Livre'
+    ? 'Free'
     : `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
   const currentDisplay = (currentIndex ?? 0) + 1;
@@ -68,7 +68,7 @@ export function TimerHeader({
         <div className="h-14 flex items-center justify-between px-1">
           <Link
             href="/"
-            aria-label="Mudar tópicos"
+            aria-label="Change topics"
             className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-slate-400 hover:text-white"
           >
             <ChevronLeft className="w-6 h-6" aria-hidden="true" />
@@ -77,7 +77,7 @@ export function TimerHeader({
           <div className="min-w-0 flex-1 flex flex-col items-center px-2">
             <span className="max-w-full truncate text-xs text-slate-400">{topicTitle}</span>
             {totalItems !== undefined && totalItems > 0 && (
-              <span className="font-mono text-sm font-semibold text-slate-100">{currentDisplay} de {totalItems}</span>
+              <span className="font-mono text-sm font-semibold text-slate-100">{currentDisplay} of {totalItems}</span>
             )}
           </div>
 
@@ -86,7 +86,7 @@ export function TimerHeader({
               <button
                 type="button"
                 onClick={onTogglePause}
-                aria-label={isPaused ? 'Retomar cronômetro' : 'Pausar cronômetro'}
+                aria-label={isPaused ? 'Resume timer' : 'Pause timer'}
                 className={`min-h-[44px] px-2.5 flex items-center gap-1.5 font-mono text-[15px] font-semibold ${
                   isPaused ? 'text-amber-400' : 'text-green-400'
                 }`}
@@ -101,7 +101,7 @@ export function TimerHeader({
               <button
                 type="button"
                 onClick={onLogout}
-                aria-label="Sair"
+                aria-label="Log out"
                 className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-slate-400 hover:text-white"
               >
                 <LogOut className="w-5 h-5" aria-hidden="true" />
@@ -129,7 +129,7 @@ export function TimerHeader({
         {/* Queue Progress Indicator */}
         {totalItems !== undefined && totalItems > 0 && (
           <div className="text-xs bg-[#12151e] border border-gray-800 px-2.5 py-1.5 rounded text-gray-400 font-mono hidden sm:flex items-center gap-2">
-            <span>Fila:</span>
+            <span>Queue:</span>
             <span className="text-white font-bold">{currentDisplay} / {totalItems}</span>
             <div className="w-12 h-1.5 bg-gray-800 rounded-full overflow-hidden">
               <div
@@ -142,16 +142,16 @@ export function TimerHeader({
 
         <Link
           href="/"
-          title="Alterar seleção de tópicos"
+          title="Change topic selection"
           className="text-xs text-gray-400 hover:text-white border border-gray-700 hover:border-gray-500 px-2.5 py-1.5 rounded transition flex items-center gap-1 font-mono"
         >
           <LayoutGrid className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Mudar Tópicos</span>
+          <span className="hidden sm:inline">Change topics</span>
         </Link>
 
         <Link
           href="/man"
-          title="Consultar manual do Linux (man)"
+          title="Open the manual (man)"
           className="text-xs text-cyan-400 hover:text-cyan-300 border border-cyan-800/80 hover:border-cyan-600 bg-cyan-950/30 px-2.5 py-1.5 rounded transition flex items-center gap-1 font-mono"
         >
           <BookOpen className="w-3.5 h-3.5" aria-hidden="true" />
@@ -168,7 +168,7 @@ export function TimerHeader({
         >
           <Clock className="w-4 h-4" />
           <span>{formattedTime}</span>
-          {isPaused && <span className="text-[10px] ml-1 uppercase">[PAUSADO]</span>}
+          {isPaused && <span className="text-[10px] ml-1 uppercase">[PAUSED]</span>}
         </div>
 
         {/* Pause/Resume Button */}
@@ -176,7 +176,7 @@ export function TimerHeader({
           <button
             type="button"
             onClick={onTogglePause}
-            title={isPaused ? 'Retomar timer (P)' : 'Pausar timer (P)'}
+            title={isPaused ? 'Resume timer (P)' : 'Pause timer (P)'}
             className={`p-1.5 rounded transition border text-xs flex items-center gap-1 font-mono cursor-pointer ${
               isPaused
                 ? 'bg-green-950/80 border-green-700 text-green-300 hover:bg-green-900'
@@ -184,7 +184,7 @@ export function TimerHeader({
             }`}
           >
             {isPaused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
-            <span className="hidden md:inline">{isPaused ? 'Retomar' : 'Pausar'}</span>
+            <span className="hidden md:inline">{isPaused ? 'Resume' : 'Pause'}</span>
             <kbd className="text-[9px] bg-black/40 px-1 py-0.5 rounded text-gray-400">P</kbd>
           </button>
         )}
@@ -193,7 +193,7 @@ export function TimerHeader({
           <button
             type="button"
             onClick={onLogout}
-            title="Encerrar sessão"
+            title="Log out"
             className="text-gray-400 hover:text-white p-2 rounded hover:bg-gray-800 transition cursor-pointer"
           >
             <LogOut className="w-4 h-4" />

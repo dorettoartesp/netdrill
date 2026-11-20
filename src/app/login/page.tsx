@@ -27,7 +27,7 @@ export default function LoginPage() {
 
       if (!res.ok) {
         const data = await res.json();
-        setError(data.error || 'Senha incorreta. Tente novamente.');
+        setError(data.error || 'Incorrect password. Please try again.');
         setIsLoading(false);
         return;
       }
@@ -35,7 +35,7 @@ export default function LoginPage() {
       router.push('/');
       router.refresh();
     } catch {
-      setError('Falha de conexão com o servidor de autenticação.');
+      setError('The authentication server could not be reached. Please try again.');
       setIsLoading(false);
     }
   };
@@ -51,7 +51,7 @@ export default function LoginPage() {
             NetDrill
           </CardTitle>
           <CardDescription>
-            Acesso ao Terminal de Fixação e Repetição Espaçada
+            Command drills with spaced repetition
           </CardDescription>
         </CardHeader>
 
@@ -68,20 +68,20 @@ export default function LoginPage() {
                 htmlFor="password"
                 className="text-xs font-semibold uppercase tracking-wider text-gray-400 font-mono"
               >
-                Senha de Acesso
+                Password
               </label>
               <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Informe sua senha pessoal..."
+                placeholder="Enter your password"
                 autoFocus
                 disabled={isLoading}
                 className="text-center font-mono text-base tracking-widest"
               />
               <p className="text-[11px] text-gray-500 font-mono">
-                Pressione <kbd className="bg-gray-800 px-1 py-0.5 rounded text-gray-300">Enter</kbd> para autenticar.
+                Press <kbd className="bg-gray-800 px-1 py-0.5 rounded text-gray-300">Enter</kbd> to sign in.
               </p>
             </div>
           </CardContent>
@@ -92,7 +92,7 @@ export default function LoginPage() {
               disabled={isLoading || !password}
               className="w-full space-x-2"
             >
-              <span>{isLoading ? 'Autenticando...' : 'Acessar Terminal'}</span>
+              <span>{isLoading ? 'Signing in…' : 'Sign in'}</span>
               <ArrowRight className="w-4 h-4" />
             </Button>
           </CardFooter>

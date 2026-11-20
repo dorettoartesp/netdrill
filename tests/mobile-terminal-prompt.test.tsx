@@ -70,6 +70,6 @@ describe('TerminalPrompt (multi-line, mobile)', () => {
   });
 
   it('hides the desktop action bar on small screens (the mobile dock provides the actions)', () => {
-    expect(html).toMatch(/class="hidden lg:flex[^"]*"[^>]*><div[^>]*>[\s\S]*Validar Bloco/);
+    expect(html).toMatch(/class="hidden lg:flex[^"]*"[^>]*><div[^>]*>[\s\S]*Validate block/);
   });
 });

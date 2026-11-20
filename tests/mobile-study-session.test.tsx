@@ -27,7 +27,7 @@ const html = renderToStaticMarkup(<StudySession initialQueue={[item]} initialMin
 describe('StudySession (mobile layout)', () => {
   it('renders the three study modes as short labels without emoji', () => {
     expect(html).not.toMatch(EMOJI);
-    for (const label of ['Treino', 'Casos de uso', 'Saída anotada']) {
+    for (const label of ['Drill', 'Use cases', 'Annotated output']) {
       expect(html).toContain(`>${label}<`);
     }
   });
@@ -44,11 +44,11 @@ describe('StudySession (mobile layout)', () => {
   });
 
   it('keeps the tab-row man launcher off mobile (the dock already offers it)', () => {
-    expect(html).toMatch(/<button[^>]*class="hidden lg:flex[^"]*"[^>]*title="Pressione M/);
+    expect(html).toMatch(/<button[^>]*class="hidden lg:flex[^"]*"[^>]*title="Press M/);
   });
 
   it('sizes favorite and review toggles as 44px icon buttons with accessible names', () => {
-    expect(html).toMatch(/<button[^>]*aria-label="Favoritar exercício"[^>]*class="[^"]*min-w-\[44px\][^"]*min-h-\[44px\]/);
-    expect(html).toMatch(/<button[^>]*aria-label="Marcar para revisão"[^>]*class="[^"]*min-w-\[44px\][^"]*min-h-\[44px\]/);
+    expect(html).toMatch(/<button[^>]*aria-label="Favorite drill"[^>]*class="[^"]*min-w-\[44px\][^"]*min-h-\[44px\]/);
+    expect(html).toMatch(/<button[^>]*aria-label="Flag for review"[^>]*class="[^"]*min-w-\[44px\][^"]*min-h-\[44px\]/);
   });
 });

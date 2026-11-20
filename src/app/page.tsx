@@ -65,13 +65,13 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           <div className="space-y-2">
             <h1 className="text-2xl font-bold font-mono text-green-400">NetDrill</h1>
             <p className="text-sm text-gray-400 font-mono">
-              Nenhum exercício cadastrado no banco de dados ainda.
+              No content yet. Upload a content pack to start practicing.
             </p>
           </div>
           <Link href="/import">
             <Button className="w-full space-x-2">
               <PlusCircle className="w-4 h-4" />
-              <span>Importar Módulos em Lote (Bulk JSON)</span>
+              <span>Import content</span>
             </Button>
           </Link>
         </div>

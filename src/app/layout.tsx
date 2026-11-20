@@ -3,7 +3,7 @@ import type { Metadata, Viewport } from 'next';
 
 export const metadata: Metadata = {
   title: 'NetDrill',
-  description: 'Repetição espaçada e fixação muscular de comandos',
+  description: 'Spaced repetition and muscle memory for infrastructure commands',
 };
 
 /**
@@ -24,7 +24,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="pt-BR">
+    <html lang="en">
       <body className="min-h-screen bg-terminal-bg text-terminal-text antialiased">
         {children}
       </body>

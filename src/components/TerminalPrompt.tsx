@@ -134,20 +134,20 @@ export function TerminalPrompt({
             <div>
               <div className="flex justify-between items-center text-xs text-gray-400 mb-2 border-b border-gray-800/60 pb-2">
                 <span>
-                  {isBlindTest ? '// GABARITO OCULTO' : `// GABARITO DE REFERÊNCIA (${lineCount} linhas)`}
+                  {isBlindTest ? '// ANSWER HIDDEN' : `// REFERENCE ANSWER (${lineCount} lines)`}
                 </span>
                 <span className={isBlindTest ? 'text-amber-400 font-bold' : 'text-green-400'}>
-                  {isBlindTest ? 'Modo Teste Cego' : 'Sintaxe Exata'}
+                  {isBlindTest ? 'Blind test' : 'Exact syntax'}
                 </span>
               </div>
 
               {isBlindTest ? (
                 <div className="py-12 px-4 text-center space-y-3">
                   <div className="text-amber-400 font-bold text-sm tracking-wider">
-                    MODO TESTE CEGO ATIVO
+                    BLIND TEST ACTIVE
                   </div>
                   <p className="text-xs text-gray-400">
-                    O gabarito foi ocultado. Digite a configuração completa de memória.
+                    The answer is hidden. Type the full block from memory.
                   </p>
                   {onExitBlindTest && (
                     <button
@@ -155,7 +155,7 @@ export function TerminalPrompt({
                       onClick={onExitBlindTest}
                       className="text-xs bg-[#12151e] hover:bg-[#1a202c] border border-gray-700 text-gray-300 hover:text-white px-3 py-1.5 rounded transition cursor-pointer"
                     >
-                      [ Esc ] Desistir e Ver Gabarito
+                      [ Esc ] Give up and show answer
                     </button>
                   )}
                 </div>
@@ -167,8 +167,8 @@ export function TerminalPrompt({
             </div>
 
             <div className="text-[11px] text-gray-500 pt-2 border-t border-gray-800/60 flex justify-between">
-              <span>{isBlindTest ? 'Digite tudo sem consultar' : 'Treine a memória muscular'}</span>
-              <span>Indente com 4 espaços (Tab)</span>
+              <span>{isBlindTest ? 'Type everything without looking' : 'Build muscle memory'}</span>
+              <span>Indent with 4 spaces (Tab)</span>
             </div>
           </div>
 
@@ -181,11 +181,11 @@ export function TerminalPrompt({
               <div className="flex justify-between items-center text-xs text-gray-400 mb-2 border-b border-gray-800/60 pb-2">
                 <span className="text-amber-400 font-semibold">
                   {isBlindTest
-                    ? 'Teste de Memória (Sem gabarito)'
-                    : `[Tentativa #${repetitionCount}] Digite o código`}
+                    ? 'Recall test (no answer shown)'
+                    : `[Attempt #${repetitionCount}] Type the code`}
                 </span>
                 <span className="text-gray-400 hidden sm:inline">
-                  Validar: <kbd className="bg-gray-800 text-gray-200 px-1 py-0.5 rounded border border-gray-700">Ctrl+↵</kbd>
+                  Validate: <kbd className="bg-gray-800 text-gray-200 px-1 py-0.5 rounded border border-gray-700">Ctrl+↵</kbd>
                 </span>
               </div>
 
@@ -198,8 +198,8 @@ export function TerminalPrompt({
                 onBlur={() => onFocusChange?.(false)}
                 placeholder={
                   isBlindTest
-                    ? 'Digite o bloco completo de memória...'
-                    : 'Digite o código ao lado linha a linha...'
+                    ? 'Type the full block from memory…'
+                    : 'Type the reference line by line…'
                 }
                 rows={Math.max(6, lineCount)}
                 className="w-full bg-transparent text-green-300 font-mono text-[16px] md:text-sm leading-relaxed border-none outline-none resize-none focus:ring-0 p-0 placeholder-gray-600"
@@ -211,8 +211,8 @@ export function TerminalPrompt({
             </div>
 
             <div className="text-[11px] text-gray-500 pt-2 border-t border-gray-800/60 flex justify-between items-center">
-              <span>Tab: 4 espaços</span>
-              <span>Ctrl+↵ para validar</span>
+              <span>Tab: 4 spaces</span>
+              <span>Ctrl+↵ to validate</span>
             </div>
           </div>
         </div>
@@ -221,14 +221,14 @@ export function TerminalPrompt({
         <div className="hidden lg:flex flex-wrap justify-between items-center text-xs text-gray-400 gap-2 pt-1">
           <div className="hidden sm:flex items-center gap-4">
             <span>
-              <kbd className="bg-gray-800 px-1.5 py-0.5 rounded text-gray-200 border border-gray-700">Ctrl+↵</kbd> Validar Bloco
+              <kbd className="bg-gray-800 px-1.5 py-0.5 rounded text-gray-200 border border-gray-700">Ctrl+↵</kbd> Validate block
             </span>
             <span>
               <kbd className="bg-gray-800 px-1.5 py-0.5 rounded text-gray-200 border border-gray-700">Tab</kbd> Indentar
             </span>
             {!isBlindTest && (
               <span>
-                <kbd className="bg-gray-800 px-1.5 py-0.5 rounded text-gray-200 border border-gray-700">Ctrl+Shift+↵</kbd> Teste Cego
+                <kbd className="bg-gray-800 px-1.5 py-0.5 rounded text-gray-200 border border-gray-700">Ctrl+Shift+↵</kbd> Blind test
               </span>
             )}
           </div>
@@ -240,7 +240,7 @@ export function TerminalPrompt({
                 onClick={onExitTrigger}
                 className="text-amber-400 hover:text-amber-300 text-xs font-mono font-bold border border-amber-500/40 bg-amber-500/10 px-3 py-2 rounded transition flex items-center gap-1.5"
               >
-                <span>Avançar (:done)</span>
+                <span>Blind test (:done)</span>
               </button>
             ) : (
               onExitBlindTest && (
@@ -249,7 +249,7 @@ export function TerminalPrompt({
                   onClick={onExitBlindTest}
                   className="text-xs bg-[#12151e] hover:bg-[#1a202c] border border-gray-700 text-gray-300 hover:text-white px-3 py-2 rounded transition font-mono"
                 >
-                  [ Esc ] Desistir e Ver Gabarito
+                  [ Esc ] Give up and show answer
                 </button>
               )
             )}
@@ -258,7 +258,7 @@ export function TerminalPrompt({
               onClick={onSubmit}
               className="bg-green-600 hover:bg-green-500 active:bg-green-700 text-black font-bold px-5 py-2 rounded text-xs transition flex items-center justify-center gap-1.5 shadow active:scale-95"
             >
-              <span>Validar Bloco</span>
+              <span>Validate block</span>
               <span className="text-[10px] bg-black/20 px-1.5 py-0.5 rounded font-normal">Ctrl+↵</span>
             </button>
           </div>
@@ -272,7 +272,7 @@ export function TerminalPrompt({
     <div className="w-full space-y-3 lg:space-y-4 font-mono">
       {!isBlindTest && (
         <div className="bg-[#12141c] border border-gray-800 rounded-lg px-4 py-3 lg:p-4 text-sm text-green-300">
-          <div className="text-xs text-gray-400 mb-1">Gabarito de Referência:</div>
+          <div className="text-xs text-gray-400 mb-1">Reference answer:</div>
           <code className="block whitespace-pre-wrap break-all text-[15px] lg:text-sm leading-relaxed">{target}</code>
         </div>
       )}
@@ -280,9 +280,9 @@ export function TerminalPrompt({
       <div className="bg-black border border-green-500/40 rounded-lg px-4 py-3 lg:p-4 shadow-lg focus-within:border-green-400 transition">
         <div className="flex justify-between text-xs text-gray-400 mb-2">
           <label htmlFor="terminal-command" className="text-amber-400 font-semibold">
-            {isBlindTest ? 'Teste de Memória (Sem gabarito)' : `[Tentativa #${repetitionCount}] Digite o comando`}
+            {isBlindTest ? 'Recall test (no answer shown)' : `[Attempt #${repetitionCount}] Type the command`}
           </label>
-          <span className="text-gray-400 hidden lg:inline">Pressione Enter ou clique em Validar</span>
+          <span className="text-gray-400 hidden lg:inline">Press Enter or select Validate</span>
         </div>
 
         <div className="flex items-start text-green-300 text-base gap-2">
@@ -296,7 +296,7 @@ export function TerminalPrompt({
             onKeyDown={handleKeyDown}
                 onFocus={() => onFocusChange?.(true)}
                 onBlur={() => onFocusChange?.(false)}
-            placeholder={isBlindTest ? 'Digite o comando de memória...' : 'Digite o comando'}
+            placeholder={isBlindTest ? 'Type the command from memory…' : 'Type the command'}
             className="flex-1 min-w-0 max-h-[168px] bg-transparent border-none outline-none resize-none text-green-300 focus:ring-0 font-mono p-0 leading-relaxed whitespace-pre-wrap break-all"
             autoCorrect="off"
             autoCapitalize="none"
@@ -309,7 +309,7 @@ export function TerminalPrompt({
             onClick={onSubmit}
             className="hidden lg:flex bg-green-600 hover:bg-green-500 active:bg-green-700 text-black font-bold px-3.5 py-1.5 rounded text-xs items-center gap-1 shrink-0 transition select-none shadow active:scale-95"
           >
-            <span>Validar</span>
+            <span>Validate</span>
             <span className="text-[10px] font-normal bg-black/20 px-1 py-0.5 rounded">↵</span>
           </button>
         </div>
@@ -317,7 +317,7 @@ export function TerminalPrompt({
 
       <div className="hidden lg:flex flex-wrap justify-between items-center text-xs text-gray-400 gap-2 pt-1">
         <span>
-          Pressione <kbd className="bg-gray-800 px-1 py-0.5 rounded text-gray-300">Enter</kbd> ou digite <kbd className="bg-gray-800 px-1 py-0.5 rounded text-gray-300">:done</kbd> para o teste cego.
+          Press <kbd className="bg-gray-800 px-1 py-0.5 rounded text-gray-300">Enter</kbd> to validate, or type <kbd className="bg-gray-800 px-1 py-0.5 rounded text-gray-300">:done</kbd> for the blind test.
         </span>
         {!isBlindTest ? (
           <button
@@ -325,7 +325,7 @@ export function TerminalPrompt({
             onClick={onExitTrigger}
             className="text-amber-400 hover:text-amber-300 text-xs font-mono font-medium underline-offset-2 hover:underline transition"
           >
-            Avançar para Teste Cego (:done) →
+            Go to blind test (:done) →
           </button>
         ) : (
           onExitBlindTest && (
@@ -334,7 +334,7 @@ export function TerminalPrompt({
               onClick={onExitBlindTest}
               className="text-xs bg-[#12151e] hover:bg-[#1a202c] border border-gray-700 text-gray-300 hover:text-white px-3 py-1 rounded transition font-mono"
             >
-              [ Esc ] Desistir e Ver Gabarito
+              [ Esc ] Give up and show answer
             </button>
           )
         )}

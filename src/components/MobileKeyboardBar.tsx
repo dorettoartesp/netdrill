@@ -22,15 +22,15 @@ interface MobileKeyboardBarProps {
 
 /** Terminal symbols that are hard to reach on mobile virtual keyboards, with their accessible names. */
 const SYMBOL_KEYS: ReadonlyArray<{ label: string; insert: string; aria: string }> = [
-  { label: '-', insert: '-', aria: 'Hífen' },
-  { label: '_', insert: '_', aria: 'Sublinhado' },
-  { label: '/', insert: '/', aria: 'Barra' },
+  { label: '-', insert: '-', aria: 'Hyphen' },
+  { label: '_', insert: '_', aria: 'Underscore' },
+  { label: '/', insert: '/', aria: 'Slash' },
   { label: '|', insert: '|', aria: 'Pipe' },
-  { label: '"', insert: '"', aria: 'Aspas' },
-  { label: '$', insert: '$', aria: 'Cifrão' },
-  { label: ':', insert: ':', aria: 'Dois-pontos' },
-  { label: '>', insert: '>', aria: 'Redirecionamento' },
-  { label: '⇥', insert: '    ', aria: 'Tabulação' },
+  { label: '"', insert: '"', aria: 'Quote' },
+  { label: '$', insert: '$', aria: 'Dollar' },
+  { label: ':', insert: ':', aria: 'Colon' },
+  { label: '>', insert: '>', aria: 'Redirect' },
+  { label: '⇥', insert: '    ', aria: 'Tab' },
 ];
 
 /**
@@ -53,7 +53,7 @@ export function MobileKeyboardBar({
 
   return (
     <div className={`lg:hidden ${docked ? 'shrink-0 pb-2' : 'sticky bottom-0 pb-safe'} z-30 -mx-4 md:-mx-6 border-t border-[#262b3d] bg-[#11141c] px-2.5 pt-2 space-y-2 font-sans`}>
-      <div className="flex gap-1.5 overflow-x-auto scrollbar-none" aria-label="Símbolos do terminal">
+      <div className="flex gap-1.5 overflow-x-auto scrollbar-none" aria-label="Terminal symbols">
         {SYMBOL_KEYS.map((k) => (
           <button
             key={k.aria}
@@ -88,7 +88,7 @@ export function MobileKeyboardBar({
               className="col-span-2 min-h-[48px] rounded-xl border border-amber-800 text-amber-400 active:bg-amber-950/40 text-sm font-semibold flex items-center justify-center gap-1.5"
             >
               <Lock className="w-4 h-4" aria-hidden="true" />
-              <span>Teste cego</span>
+              <span>Blind test</span>
             </button>
           ) : (
             <button
@@ -97,7 +97,7 @@ export function MobileKeyboardBar({
             onClick={onExitBlindTest}
               className="col-span-2 min-h-[48px] rounded-xl border border-slate-700 text-slate-300 active:bg-slate-800 text-sm font-semibold"
             >
-              <span>Ver gabarito</span>
+              <span>Show answer</span>
             </button>
           ))}
         <button
@@ -106,7 +106,7 @@ export function MobileKeyboardBar({
             onClick={onSubmit}
           className={`${showSecondary ? 'col-span-3' : 'col-span-5'} min-h-[48px] rounded-xl bg-green-500 active:bg-green-600 text-green-950 text-[15px] font-bold flex items-center justify-center gap-2`}
         >
-          <span>{isBlindTest ? 'Validar bloco' : 'Validar'}</span>
+          <span>{isBlindTest ? 'Validate block' : 'Validate'}</span>
           <CornerDownLeft className="w-4 h-4" aria-hidden="true" />
         </button>
       </div>

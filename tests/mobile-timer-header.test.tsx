@@ -20,17 +20,17 @@ describe('TimerHeader (mobile)', () => {
     expect(html).not.toMatch(EMOJI);
   });
 
-  it('shows queue progress on mobile as "N de total"', () => {
-    expect(html).toMatch(/<span class="(?![^"]*\bhidden\b)[^"]*">7 de 30<\/span>/);
+  it('shows queue progress on mobile as "N of total"', () => {
+    expect(html).toMatch(/<span class="(?![^"]*\bhidden\b)[^"]*">7 of 30<\/span>/);
   });
 
   it('offers 44px icon buttons with accessible names for navigation and logout', () => {
-    expect(html).toMatch(/<a[^>]*href="\/"[^>]*aria-label="Mudar tópicos"|<a[^>]*aria-label="Mudar tópicos"[^>]*href="\/"/);
-    expect(html).toMatch(/aria-label="Sair"[^>]*class="[^"]*min-w-\[44px\][^"]*min-h-\[44px\]/);
+    expect(html).toMatch(/<a[^>]*href="\/"[^>]*aria-label="Change topics"|<a[^>]*aria-label="Change topics"[^>]*href="\/"/);
+    expect(html).toMatch(/aria-label="Log out"[^>]*class="[^"]*min-w-\[44px\][^"]*min-h-\[44px\]/);
   });
 
   it('makes the timer itself the pause control on mobile', () => {
-    expect(html).toMatch(/<button[^>]*aria-label="Pausar cronômetro"[^>]*>[\s\S]*?15:00/);
+    expect(html).toMatch(/<button[^>]*aria-label="Pause timer"[^>]*>[\s\S]*?15:00/);
   });
 
   it('keeps the man shortcut off the mobile header', () => {
