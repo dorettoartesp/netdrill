@@ -11,11 +11,14 @@ interface TimerHeaderProps {
   onLogout?: () => void;
   isPaused?: boolean;
   onTogglePause?: () => void;
+  currentIndex?: number;
+  totalItems?: number;
 }
 
 /**
  * Top application header containing the brand identifier, topic breadcrumb,
- * session countdown timer with pause/resume support, and topic navigation.
+ * queue progress indicator (Fila: X / Y), session countdown timer with pause/resume support,
+ * and topic navigation.
  */
 export function TimerHeader({
   initialMinutes = 15,
@@ -24,6 +27,8 @@ export function TimerHeader({
   onLogout,
   isPaused = false,
   onTogglePause,
+  currentIndex,
+  totalItems,
 }: TimerHeaderProps) {
   const isUnlimited = initialMinutes <= 0;
   const [secondsRemaining, setSecondsRemaining] = useState(
@@ -51,6 +56,11 @@ export function TimerHeader({
     ? 'Livre'
     : `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
+  const currentDisplay = (currentIndex ?? 0) + 1;
+  const progressPercent = totalItems && totalItems > 0
+    ? Math.min(100, Math.round((currentDisplay / totalItems) * 100))
+    : 0;
+
   return (
     <header className="flex justify-between items-center border-b border-gray-800 pb-4 mb-6">
       <div className="flex items-center space-x-3">
@@ -63,6 +73,20 @@ export function TimerHeader({
       </div>
 
       <div className="flex items-center space-x-3">
+        {/* Queue Progress Indicator */}
+        {totalItems !== undefined && totalItems > 0 && (
+          <div className="text-xs bg-[#12151e] border border-gray-800 px-2.5 py-1.5 rounded text-gray-400 font-mono hidden sm:flex items-center gap-2">
+            <span>Fila:</span>
+            <span className="text-white font-bold">{currentDisplay} / {totalItems}</span>
+            <div className="w-12 h-1.5 bg-gray-800 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-emerald-500 transition-all duration-300"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+          </div>
+        )}
+
         <Link
           href="/"
           title="Alterar seleção de tópicos"
@@ -91,7 +115,7 @@ export function TimerHeader({
             type="button"
             onClick={onTogglePause}
             title={isPaused ? 'Retomar timer (P)' : 'Pausar timer (P)'}
-            className={`p-1.5 rounded transition border text-xs flex items-center gap-1 font-mono ${
+            className={`p-1.5 rounded transition border text-xs flex items-center gap-1 font-mono cursor-pointer ${
               isPaused
                 ? 'bg-green-950/80 border-green-700 text-green-300 hover:bg-green-900'
                 : 'bg-gray-800 border-gray-700 text-gray-300 hover:text-white hover:bg-gray-700'
@@ -108,7 +132,7 @@ export function TimerHeader({
             type="button"
             onClick={onLogout}
             title="Encerrar sessão"
-            className="text-gray-400 hover:text-white p-2 rounded hover:bg-gray-800 transition"
+            className="text-gray-400 hover:text-white p-2 rounded hover:bg-gray-800 transition cursor-pointer"
           >
             <LogOut className="w-4 h-4" />
           </button>

@@ -43,7 +43,8 @@ export function StudySession({
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [completedItemsCount, setCompletedItemsCount] = useState(0);
   const [isSessionFinished, setIsSessionFinished] = useState(false);
-  const [showStdout, setShowStdout] = useState(true);
+  // Default to collapsed STDOUT to eliminate vertical viewport bloat
+  const [showStdout, setShowStdout] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
 
   // Favoriting and Needs-Review state tracking
@@ -137,7 +138,15 @@ export function StudySession({
     setIsPaused((prev) => !prev);
   }, []);
 
-  // Global hotkeys: Ctrl+O (stdout), Ctrl+P or P (pause when not in textarea), Ctrl+F / Ctrl+R
+  const handleExitBlindTest = useCallback(() => {
+    setIsBlindTest(false);
+    setFeedback({
+      type: 'success',
+      message: 'Gabarito restaurado. Continue treinando o comando.',
+    });
+  }, []);
+
+  // Global hotkeys: Ctrl+O (stdout), Ctrl+P or P (pause when not in textarea), Escape (exit blind test)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const isInputActive =
@@ -155,6 +164,9 @@ export function StudySession({
       } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'r') {
         e.preventDefault();
         toggleNeedsReview();
+      } else if (e.key === 'Escape' && isBlindTest) {
+        e.preventDefault();
+        handleExitBlindTest();
       } else if (!isInputActive) {
         if (e.key.toLowerCase() === 'p') {
           e.preventDefault();
@@ -171,7 +183,40 @@ export function StudySession({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [togglePause, toggleFavorite, toggleNeedsReview]);
+  }, [togglePause, toggleFavorite, toggleNeedsReview, isBlindTest, handleExitBlindTest]);
+
+  const handleGraduateItem = useCallback(async () => {
+    if (!currentItem) return;
+
+    try {
+      await fetch('/api/progress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itemId: currentItem.id, grade: 5 }),
+      });
+    } catch (e) {
+      console.error('Failed to save progress', e);
+    }
+
+    setCompletedItemsCount((prev) => prev + 1);
+
+    if (currentIndex + 1 < queue.length) {
+      setCurrentIndex((prev) => prev + 1);
+      setCurrentInput('');
+      setRepetitionCount(1);
+      setIsBlindTest(false);
+      setShowStdout(false);
+      setFeedback({
+        type: 'success',
+        message: 'Item graduado com sucesso! Próximo desafio carregado.',
+      });
+    } else {
+      try {
+        localStorage.removeItem(storageKey);
+      } catch {}
+      setIsSessionFinished(true);
+    }
+  }, [currentItem, currentIndex, queue.length, storageKey]);
 
   const handleValidate = () => {
     if (!currentItem || isPaused) return;
@@ -180,6 +225,9 @@ export function StudySession({
     const result = compareBlock(inputLines, currentItem.target);
 
     if (result.isMatch) {
+      // Simulate real terminal execution by expanding STDOUT automatically
+      setShowStdout(true);
+
       if (isBlindTest) {
         // Blind test passed! Graduate item and schedule SM-2
         handleGraduateItem();
@@ -210,38 +258,6 @@ export function StudySession({
       type: 'success',
       message: 'Gabarito ocultado! Digite a configuração completa de memória para validar.',
     });
-  };
-
-  const handleGraduateItem = async () => {
-    if (!currentItem) return;
-
-    try {
-      await fetch('/api/progress', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ itemId: currentItem.id, grade: 5 }),
-      });
-    } catch (e) {
-      console.error('Failed to save progress', e);
-    }
-
-    setCompletedItemsCount((prev) => prev + 1);
-
-    if (currentIndex + 1 < queue.length) {
-      setCurrentIndex((prev) => prev + 1);
-      setCurrentInput('');
-      setRepetitionCount(1);
-      setIsBlindTest(false);
-      setFeedback({
-        type: 'success',
-        message: 'Item graduado com sucesso! Próximo desafio carregado.',
-      });
-    } else {
-      try {
-        localStorage.removeItem(storageKey);
-      } catch {}
-      setIsSessionFinished(true);
-    }
   };
 
   const handleLogout = async () => {
@@ -275,7 +291,7 @@ export function StudySession({
   const isMulti = currentItem.type === 'block' || currentItem.target.includes('\n');
 
   return (
-    <div className="min-h-screen flex flex-col justify-between max-w-6xl mx-auto p-4 md:p-6">
+    <div className="min-h-screen flex flex-col justify-between max-w-6xl mx-auto p-4 md:p-6 pb-28 lg:pb-6">
       <div>
         <TimerHeader
           initialMinutes={initialMinutes}
@@ -284,27 +300,29 @@ export function StudySession({
           onLogout={handleLogout}
           isPaused={isPaused}
           onTogglePause={togglePause}
+          currentIndex={currentIndex}
+          totalItems={queue.length}
         />
 
         <div className="space-y-4 my-4">
           {/* Objective Box with Favorite and Needs-Review Action Controls */}
           <Card>
             <CardContent className="p-4 space-y-2">
-              <div className="flex justify-between items-center text-xs text-gray-500 font-mono">
+              <div className="flex justify-between items-center text-xs text-slate-400 font-mono">
                 <div className="flex items-center gap-2">
-                  <span className="uppercase tracking-wider">Cenário / Objetivo</span>
+                  <span className="uppercase tracking-wider font-bold">Cenário / Objetivo</span>
                   {currentItem.isDue && (
-                    <span className="text-amber-400 bg-amber-950/60 border border-amber-800 px-2 py-0.5 rounded text-[11px]">
+                    <span className="text-amber-400 bg-amber-950/60 border border-amber-800 px-2 py-0.5 rounded text-xs font-semibold">
                       Revisão Pendente
                     </span>
                   )}
                   {isCurrentFavorite && (
-                    <span className="text-yellow-400 bg-yellow-950/60 border border-yellow-800 px-2 py-0.5 rounded text-[11px] flex items-center gap-1 font-semibold">
+                    <span className="text-yellow-400 bg-yellow-950/60 border border-yellow-800 px-2 py-0.5 rounded text-xs flex items-center gap-1 font-semibold">
                       ★ Favorito
                     </span>
                   )}
                   {isCurrentNeedsReview && (
-                    <span className="text-red-400 bg-red-950/60 border border-red-800 px-2 py-0.5 rounded text-[11px] flex items-center gap-1 font-semibold">
+                    <span className="text-red-400 bg-red-950/60 border border-red-800 px-2 py-0.5 rounded text-xs flex items-center gap-1 font-semibold">
                       ⚑ Revisar
                     </span>
                   )}
@@ -316,7 +334,7 @@ export function StudySession({
                     type="button"
                     onClick={toggleFavorite}
                     title="Favoritar questão (F ou Ctrl+F)"
-                    className={`p-1.5 rounded transition border text-xs flex items-center gap-1 font-mono ${
+                    className={`p-1.5 rounded transition border text-xs flex items-center gap-1 font-mono cursor-pointer ${
                       isCurrentFavorite
                         ? 'bg-yellow-950/80 border-yellow-700 text-yellow-300'
                         : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white'
@@ -337,7 +355,7 @@ export function StudySession({
                     type="button"
                     onClick={toggleNeedsReview}
                     title="Marcar que precisa de revisão (R ou Ctrl+R)"
-                    className={`p-1.5 rounded transition border text-xs flex items-center gap-1 font-mono ${
+                    className={`p-1.5 rounded transition border text-xs flex items-center gap-1 font-mono cursor-pointer ${
                       isCurrentNeedsReview
                         ? 'bg-red-950/80 border-red-700 text-red-300'
                         : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white'
@@ -358,7 +376,7 @@ export function StudySession({
 
               <h2 className="text-base font-semibold text-white font-mono">{currentItem.prompt}</h2>
               {currentItem.explanation && (
-                <p className="text-xs text-gray-400 pt-1 leading-relaxed">
+                <p className="text-xs text-slate-400 pt-1 leading-relaxed">
                   {currentItem.explanation}
                 </p>
               )}
@@ -383,16 +401,16 @@ export function StudySession({
             </div>
           )}
 
-          {/* Sample Terminal Output Preview */}
+          {/* Sample Terminal Output Preview (Collapsed by Default, Flattened Design) */}
           {currentItem.output_sample && !isBlindTest && (
             <div className="bg-[#0f111a] border border-gray-800 rounded-lg p-3">
               <button
                 type="button"
                 onClick={() => setShowStdout((prev) => !prev)}
-                className="flex items-center justify-between w-full text-xs text-gray-400 hover:text-white transition font-mono focus:outline-none"
+                className="flex items-center justify-between w-full text-xs text-gray-400 hover:text-white transition font-mono focus:outline-none cursor-pointer"
               >
                 <span className="flex items-center gap-2">
-                  <span className="text-green-400 font-bold">▶ [STDOUT]</span>
+                  <span className="text-cyan-400 font-bold">▶ [STDOUT]</span>
                   <span className="font-semibold text-white">
                     Exemplo de Resposta do Ambiente (Terminal Output)
                   </span>
@@ -400,12 +418,12 @@ export function StudySession({
                     Ctrl+O
                   </kbd>
                 </span>
-                <span className="text-[11px] text-gray-500 hover:text-gray-300">
-                  {showStdout ? 'Ocultar ▲' : 'Expandir ▼'}
+                <span className="text-xs text-gray-400 hover:text-gray-200">
+                  {showStdout ? 'Ocultar ▲' : 'Mostrar ▼'}
                 </span>
               </button>
               {showStdout && (
-                <div className="mt-2.5 pt-2 border-t border-gray-800/80 font-mono text-xs text-green-300/90 bg-black/60 p-3 rounded overflow-x-auto leading-relaxed border border-gray-900 whitespace-pre">
+                <div className="mt-2.5 pt-2 border-t border-gray-800 font-mono text-xs text-slate-300 bg-[#0c0e14] p-3.5 border-l-4 border-l-cyan-500 overflow-x-auto leading-relaxed whitespace-pre rounded">
                   {currentItem.output_sample}
                 </div>
               )}
@@ -434,6 +452,7 @@ export function StudySession({
               onChange={setCurrentInput}
               onSubmit={handleValidate}
               onExitTrigger={handleTriggerDone}
+              onExitBlindTest={handleExitBlindTest}
               isBlindTest={isBlindTest}
               repetitionCount={repetitionCount}
             />
@@ -447,6 +466,7 @@ export function StudySession({
         onSubmit={handleValidate}
         onClear={() => setCurrentInput('')}
         isBlindTest={isBlindTest}
+        onExitBlindTest={handleExitBlindTest}
       />
     </div>
   );
