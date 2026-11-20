@@ -123,6 +123,11 @@ export const packSchema = z
       });
     });
     pack.procedures.forEach((proc, i) => checkId(proc.id, ['procedures', i, 'id']));
+    pack.remove.forEach((id, i) => {
+      if (seen.has(id)) {
+        ctx.addIssue({ code: 'custom', path: ['remove', i], message: `"${id}" cannot be imported and removed in the same pack.` });
+      }
+    });
   });
 
 export type Pack = z.infer<typeof packSchema>;

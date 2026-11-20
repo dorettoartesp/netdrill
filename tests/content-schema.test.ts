@@ -82,6 +82,12 @@ describe('validatePack', () => {
     expect(issuePaths(p)).toContain('commands[0].examples[1].id');
   });
 
+  it('rejects an id that is both upserted and removed', () => {
+    const p = validPack();
+    p.remove = ['linux.ss'];
+    expect(issuePaths(p)).toContain('remove[0]');
+  });
+
   it('requires at least one of commands, procedures or remove', () => {
     const p = validPack();
     delete p.commands;
