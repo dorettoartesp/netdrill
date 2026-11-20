@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NetDrill - Protótipo do Terminal de Treino</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background-color: #0c0e14; color: #e2e8f0; font-family: monospace; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between p-4 md:p-8 max-w-4xl mx-auto">
+  <!-- Header com Timer -->
+  <header class="flex justify-between items-center border-b border-gray-800 pb-4">
+    <div class="flex items-center space-x-2">
+      <span class="text-green-400 font-bold text-xl">NetDrill</span>
+      <span class="text-xs bg-gray-800 text-gray-400 px-2 py-0.5 rounded">FortiGate & Linux</span>
+    </div>
+    <div class="text-amber-400 font-mono text-lg font-semibold flex items-center gap-1">
+      <span>⏱</span> 14:32 / 15:00
+    </div>
+  </header>
+
+  <!-- Área do Desafio -->
+  <main class="my-6 space-y-4">
+    <div class="bg-[#161922] border border-gray-800 rounded-lg p-5">
+      <div class="text-xs text-gray-500 uppercase tracking-wider mb-1">Objetivo</div>
+      <h2 class="text-lg font-semibold text-white">Criar política de firewall liberando LAN para WAN com NAT ativo</h2>
+      <p class="text-sm text-gray-400 mt-2">Habilita o tráfego de saída mascarando o IP privado da porta port2 para a porta port1.</p>
+    </div>
+
+    <!-- Gabarito de Referência (Oculto no teste cego) -->
+    <div class="bg-[#12141c] border border-dashed border-gray-800 rounded p-4 text-sm font-mono text-green-300">
+      <div class="text-xs text-gray-600 mb-2">// Gabarito de Referência:</div>
+      <pre>config firewall policy
+    edit 10
+        set name "LAN-Internet"
+        set srcintf "port2"
+        set dstintf "port1"
+        set action accept
+        set schedule "always"
+        set service "ALL"
+        set nat enable
+    next
+end</pre>
+    </div>
+
+    <!-- Terminal Interativo de Digitação -->
+    <div class="bg-black border border-green-500/30 rounded-lg p-4 font-mono shadow-lg">
+      <div class="text-xs text-gray-500 mb-2 flex justify-between">
+        <span>[Tentativa #4] Digite linha por linha. Digite ':done' quando memorizar.</span>
+        <span class="text-green-400">Linha 1/9</span>
+      </div>
+      <div class="flex items-center text-green-400 text-base">
+        <span class="mr-2">&gt;</span>
+        <input type="text" class="bg-transparent border-none outline-none w-full text-green-300 focus:ring-0" placeholder="config firewall policy" autofocus autocorrect="off" autocapitalize="none" spellcheck="false" autocomplete="off" />
+      </div>
+    </div>
+  </main>
+
+  <!-- Barra Rápida de Mobile -->
+  <footer class="border-t border-gray-800 pt-3">
+    <div class="flex justify-center gap-2 overflow-x-auto pb-2">
+      <button class="bg-gray-800 hover:bg-gray-700 text-white px-3 py-2 rounded text-sm">-</button>
+      <button class="bg-gray-800 hover:bg-gray-700 text-white px-3 py-2 rounded text-sm">_</button>
+      <button class="bg-gray-800 hover:bg-gray-700 text-white px-3 py-2 rounded text-sm">/</button>
+      <button class="bg-gray-800 hover:bg-gray-700 text-white px-3 py-2 rounded text-sm">|</button>
+      <button class="bg-gray-800 hover:bg-gray-700 text-white px-3 py-2 rounded text-sm">Tab</button>
+      <button class="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded text-sm font-semibold">:done</button>
+    </div>
+  </footer>
+</body>
+</html>

@@ -1,17 +1,13 @@
 # Decisions Log (.agents/memory/decisions.md)
 
-Chronological record of technical, architectural, and governance decisions agreed with the operator for `agentic-tmpl`.
+Chronological record of technical, architectural, and governance decisions agreed with the operator for `NetDrill`.
 
 ## 2026-11-20
-- **Open-Canvas Monorepo Architecture:** The repository adopts an open root canvas with no hardcoded language dependencies or rigid `backend/` and `frontend/` folders, ready to receive any programming language or framework directly.
-- **Adaptive Makefile Facade:** Root `Makefile` automatically detects active project manifests (`*.csproj`/`*.sln` for C#, `pom.xml`/`build.gradle` for Java, `Cargo.toml` for Rust, `package.json` for Node, `pyproject.toml` for Python, `go.mod` for Go) and dispatches lifecycle targets (`test`, `lint`, `dev`), with explicit override support via `stack.mk`.
-- **Graceful Zero-Stack Baseline:** On an uninitialized canvas, `make check` passes cleanly with exit code 0, executing security, portability, formatting, and SAST scans while reporting testing/linting pending stack setup.
-- **Mandatory TDD Across All Stacks:** Strict Test-Driven Development (*Red-Green-Refactor*) is mandatory for any feature or bug fix regardless of language choice.
-- **Anti-Overengineering & Ponytail Mindset:** Contributors and AI agents must follow the Ponytail ladder: YAGNI first, reuse existing codebase utilities, prefer standard library and native platform primitives, minimizing code size while strictly preserving invariants in security, accessibility, and testing.
-- **Mandatory Prior Visual Screen Approval & OpenDesign Protocol:** Every UI screen or major interaction must be approved beforehand via a viewable artifact before production code is written. Prototypes must be committed and versioned in Git under `prototypes/<screen-slug>/`.
-- **Automated Portability Gate:** Mandatory verification via `scripts/check-portability.sh` (enforced in `make check` and pre-commit) blocking hardcoded absolute machine paths (`/home/`, `/Users/`, `file:///...`), guaranteeing repository portability and protecting developer host paths.
-- **Defense-in-Depth Security:** Gitleaks active for credential scanning in history and staged commits; Semgrep active for static security analysis (SAST) with offline rules in `.semgrep/rules.yml`.
-- **Universal Bootstrap Wizard:** Rebranding, slug replacement, and clean Git history reset automated via `scripts/init-project.sh` (`make new-project`) and verified in sandbox via `scripts/test-init-project.sh` (`make test-bootstrap`).
-- **AI Agent Tooling:** Pinned and versioned 24 skills in `.agents/skills/` (Superpowers, Ponytail, RTK, OpenDesign, CodeGraph), tracked via `skills-lock.json`.
-- **Living Documentation:** Automated documentation portal configured via `mkdocs.yml` (Material) and conventional commits changelog via `git-cliff` (`cliff.toml`).
-- **Language Governance:** Codebase, docstrings, tests, and repository documentation strictly in English. User-facing application interface strings localized in Brazilian Portuguese (`pt-BR`).
+- **Project Identity and Purpose:** NetDrill bootstrapped from `agentic-tmpl` as a responsive technical command and configuration muscle-memory drill platform with spaced repetition (SM-2), starting with Linux, Networks, and FortiGate, expandable to any CLI/config domain (Kubernetes, PostgreSQL).
+- **Core Technology Stack:** Next.js 14+ (App Router, TypeScript, Tailwind CSS), Turso DB (libSQL Serverless with `@libsql/client`), local SQLite fallback for dev/testing, deployed to Vercel Hobby Free Tier.
+- **UI Architecture & Components:** Adopting shadcn/ui component primitives (`@radix-ui/react-slot`, `class-variance-authority`, `clsx`, `tailwind-merge`) with a dark terminal color theme (`#0c0e14` background, `#22c55e` terminal green, `#f59e0b` amber timer).
+- **Minimalist Authentication (Ponytail & YAGNI):** Implemented via a single personal master PIN/password stored in environment variables (`APP_PIN`), issuing a 30-day secure HttpOnly session cookie. Zero external auth services, zero cost, instant setup across mobile and desktop.
+- **Zero-Touch CLI Automation:** Full automation via Turso CLI (`turso db create/tokens`), Vercel CLI (`vercel --prod`), and GitHub CLI (`gh repo create`), eliminating manual configuration in web dashboards.
+- **Phased MVP Delivery:** Phase 1 focuses strictly on core muscle typing drill (`:done` loop + blind recall test), daily session timer, bulk JSON import, mobile keyboard accessory bar, and automated deployment. Export to Anki/Obsidian and secondary game modes deferred to Phase 2.
+- **Mandatory Visual Screen Approval Protocol:** All UI pages (Study Terminal, Login, and Bulk Import) must be previewed and visually approved by the user via interactive artifacts before production view code is written.
+- **Language Governance:** Codebase, tests, docstrings, and commits strictly in English. UI microcopy and user feedback strictly in formal, technical Brazilian Portuguese (pt-BR).
