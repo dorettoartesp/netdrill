@@ -120,17 +120,29 @@ export function TerminalPrompt({
           </div>
         </div>
 
-        <div className="flex justify-between items-center text-xs text-gray-400 pt-1">
+        <div className="flex flex-wrap justify-between items-center gap-2 pt-1 font-mono text-xs text-gray-400">
           <span>
             Pressione <kbd className="bg-gray-800 px-1 py-0.5 rounded text-gray-300">Ctrl+Enter</kbd> ou digite <kbd className="bg-gray-800 px-1 py-0.5 rounded text-gray-300">:done</kbd> para avançar ao teste cego.
           </span>
-          <button
-            type="button"
-            onClick={onSubmit}
-            className="bg-green-600 hover:bg-green-500 text-white font-semibold px-4 py-2 rounded text-xs transition"
-          >
-            Validar Bloco
-          </button>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            {!isBlindTest && (
+              <button
+                type="button"
+                onClick={onExitTrigger}
+                className="flex-1 sm:flex-none text-amber-400 hover:text-amber-300 text-xs font-mono font-medium underline-offset-2 hover:underline px-2 py-1 transition text-center"
+              >
+                Avançar (:done) →
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onSubmit}
+              className="flex-1 sm:flex-none bg-green-600 hover:bg-green-500 text-black font-bold px-5 py-2.5 rounded text-xs transition flex items-center justify-center gap-1.5 shadow active:scale-95"
+            >
+              <span>Validar Bloco</span>
+              <span className="text-[10px] bg-black/20 px-1 py-0.5 rounded font-normal">↵ Enter</span>
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -138,24 +150,24 @@ export function TerminalPrompt({
 
   // Single line command layout
   return (
-    <div className="w-full space-y-4">
+    <div className="w-full space-y-4 font-mono">
       {!isBlindTest && (
-        <div className="bg-[#12141c] border border-gray-800 rounded-lg p-4 font-mono text-sm text-green-300">
+        <div className="bg-[#12141c] border border-gray-800 rounded-lg p-4 text-sm text-green-300">
           <div className="text-xs text-gray-500 mb-1">Gabarito de Referência:</div>
           <div>{target}</div>
         </div>
       )}
 
-      <div className="bg-black border border-green-500/40 rounded-lg p-4 font-mono shadow-lg">
+      <div className="bg-black border border-green-500/40 rounded-lg p-4 shadow-lg">
         <div className="flex justify-between text-xs text-gray-400 mb-2">
           <span className="text-amber-400 font-semibold">
             {isBlindTest ? 'Teste de Memória (Sem gabarito)' : `[Tentativa #${repetitionCount}] Digite o comando`}
           </span>
-          <span className="text-gray-500">Pressione Enter</span>
+          <span className="text-gray-500">Pressione Enter ou clique em Validar</span>
         </div>
 
-        <div className="flex items-center text-green-300 text-base">
-          <span className="mr-2 text-green-500 font-bold">&gt;</span>
+        <div className="flex items-center text-green-300 text-base gap-2">
+          <span className="text-green-500 font-bold">&gt;</span>
           <input
             ref={inputRef}
             type="text"
@@ -163,13 +175,36 @@ export function TerminalPrompt({
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={isBlindTest ? 'Digite o comando de memória...' : target}
-            className="w-full bg-transparent border-none outline-none text-green-300 focus:ring-0 text-sm font-mono p-0"
+            className="flex-1 bg-transparent border-none outline-none text-green-300 focus:ring-0 text-sm font-mono p-0"
             autoCorrect="off"
             autoCapitalize="none"
             spellCheck={false}
             autoComplete="off"
           />
+          <button
+            type="button"
+            onClick={onSubmit}
+            className="bg-green-600 hover:bg-green-500 active:bg-green-700 text-black font-bold px-3 py-1.5 rounded text-xs flex items-center gap-1 shrink-0 transition select-none shadow active:scale-95"
+          >
+            <span>Validar</span>
+            <span className="text-[10px] font-normal bg-black/20 px-1 py-0.5 rounded">↵</span>
+          </button>
         </div>
+      </div>
+
+      <div className="flex flex-wrap justify-between items-center text-xs text-gray-400 gap-2 pt-1">
+        <span>
+          Pressione <kbd className="bg-gray-800 px-1 py-0.5 rounded text-gray-300">Enter</kbd> ou digite <kbd className="bg-gray-800 px-1 py-0.5 rounded text-gray-300">:done</kbd> para o teste cego.
+        </span>
+        {!isBlindTest && (
+          <button
+            type="button"
+            onClick={onExitTrigger}
+            className="text-amber-400 hover:text-amber-300 text-xs font-mono font-medium underline-offset-2 hover:underline transition"
+          >
+            Avançar para Teste Cego (:done) →
+          </button>
+        )}
       </div>
     </div>
   );

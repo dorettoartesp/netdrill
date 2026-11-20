@@ -444,6 +444,9 @@ export function StudySession({
       <MobileKeyboardBar
         onInsertChar={(char) => setCurrentInput((prev) => prev + char)}
         onDoneTrigger={handleTriggerDone}
+        onSubmit={handleValidate}
+        onClear={() => setCurrentInput('')}
+        isBlindTest={isBlindTest}
       />
     </div>
   );

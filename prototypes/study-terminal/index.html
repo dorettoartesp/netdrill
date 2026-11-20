@@ -117,14 +117,29 @@ end</textarea>
   </main>
 
   <!-- Barra Rápida Mobile -->
-  <footer class="lg:hidden border-t border-gray-800 pt-3 max-w-6xl mx-auto w-full">
-    <div class="flex justify-center gap-2 overflow-x-auto pb-1">
-      <button class="bg-gray-800 text-white min-w-[44px] min-h-[44px] rounded text-base font-bold">-</button>
-      <button class="bg-gray-800 text-white min-w-[44px] min-h-[44px] rounded text-base font-bold">_</button>
-      <button class="bg-gray-800 text-white min-w-[44px] min-h-[44px] rounded text-base font-bold">/</button>
-      <button class="bg-gray-800 text-white min-w-[44px] min-h-[44px] rounded text-base font-bold">|</button>
-      <button class="bg-gray-800 text-white min-w-[44px] min-h-[44px] rounded text-sm font-bold">Tab</button>
-      <button class="bg-amber-600 text-white px-4 min-h-[44px] rounded text-sm font-bold">:done</button>
+  <footer class="lg:hidden sticky bottom-0 z-30 w-full border-t border-gray-800 bg-[#161922]/95 backdrop-blur-md pt-2 pb-3 px-3 shadow-2xl space-y-2 font-mono">
+    <!-- Linha 1: Símbolos do Terminal -->
+    <div class="flex items-center gap-1.5 overflow-x-auto pb-1">
+      <button class="bg-gray-800 text-white min-w-[44px] min-h-[44px] rounded-lg text-sm font-bold">-</button>
+      <button class="bg-gray-800 text-white min-w-[44px] min-h-[44px] rounded-lg text-sm font-bold">_</button>
+      <button class="bg-gray-800 text-white min-w-[44px] min-h-[44px] rounded-lg text-sm font-bold">/</button>
+      <button class="bg-gray-800 text-white min-w-[44px] min-h-[44px] rounded-lg text-sm font-bold">|</button>
+      <button class="bg-gray-800 text-white min-w-[44px] min-h-[44px] rounded-lg text-sm font-bold">"</button>
+      <button class="bg-gray-800 text-white min-w-[44px] min-h-[44px] rounded-lg text-sm font-bold">$</button>
+      <button class="bg-gray-800 text-white min-w-[44px] min-h-[44px] rounded-lg text-sm font-bold">:</button>
+      <button class="bg-gray-800 text-white min-w-[44px] min-h-[44px] rounded-lg text-sm font-bold">Tab</button>
+      <button class="bg-gray-900 text-gray-400 min-w-[44px] min-h-[44px] rounded-lg text-xs font-bold">Limpar</button>
+    </div>
+
+    <!-- Linha 2: Botões de Ação Táteis (Validar Enter + :done) -->
+    <div class="grid grid-cols-2 gap-2">
+      <button class="min-h-[48px] px-3 bg-amber-600 hover:bg-amber-500 text-white font-mono font-bold rounded-lg text-xs flex items-center justify-center gap-1 shadow">
+        :done (Teste Cego)
+      </button>
+      <button class="min-h-[48px] px-4 bg-green-600 hover:bg-green-500 text-black font-mono font-bold rounded-lg text-sm flex items-center justify-center gap-2 shadow-lg">
+        <span>Validar</span>
+        <span class="text-xs font-normal bg-black/20 px-1.5 py-0.5 rounded">↵ Enter</span>
+      </button>
     </div>
   </footer>
 
