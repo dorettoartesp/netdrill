@@ -20,6 +20,10 @@ export interface QueueItem {
   output_sample?: string;
   /** Detailed technical explanation of flags and arguments. */
   explanation?: string;
+  /** Optional realistic production use case scenarios (serialized JSON array or markdown). */
+  use_cases?: string | null;
+  /** Optional structured metric annotations for output dissection (serialized JSON array). */
+  output_notes?: string | null;
   /** Optional screenshot or diagram URL. */
   image_url?: string;
   /** Comma-separated search tags. */
@@ -104,7 +108,7 @@ export async function buildSessionQueue(
 
   let query = `
     SELECT 
-      i.id, i.module_id, i.type, i.title, i.prompt, i.target, i.output_sample, i.explanation, i.image_url, i.tags,
+      i.id, i.module_id, i.type, i.title, i.prompt, i.target, i.output_sample, i.explanation, i.use_cases, i.output_notes, i.image_url, i.tags,
       p.due_date, p.is_favorite, p.needs_review,
       CASE 
         WHEN p.due_date IS NOT NULL AND p.due_date <= ? THEN 1
@@ -144,6 +148,8 @@ export async function buildSessionQueue(
     target: row.target,
     output_sample: row.output_sample ? String(row.output_sample) : undefined,
     explanation: row.explanation,
+    use_cases: row.use_cases ? String(row.use_cases) : undefined,
+    output_notes: row.output_notes ? String(row.output_notes) : undefined,
     image_url: row.image_url,
     tags: row.tags,
     is_favorite: Boolean(row.is_favorite),

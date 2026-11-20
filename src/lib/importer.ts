@@ -16,6 +16,10 @@ export interface BulkItemPayload {
   output_sample?: string;
   /** Detailed technical explanation of flags and arguments. */
   explanation?: string;
+  /** Optional realistic production use case scenarios. */
+  use_cases?: unknown;
+  /** Optional structured metric annotations for output dissection. */
+  output_notes?: unknown;
   /** Optional screenshot or diagram URL. */
   image_url?: string;
   /** Optional cloze deletion configuration. */
@@ -118,9 +122,16 @@ export async function importBulkData(
 
       const itemId = `item_${Date.now()}_${Math.random().toString(36).substring(2, 9)}_${count}`;
 
+      const useCasesStr = item.use_cases
+        ? (typeof item.use_cases === 'string' ? item.use_cases : JSON.stringify(item.use_cases))
+        : null;
+      const outputNotesStr = item.output_notes
+        ? (typeof item.output_notes === 'string' ? item.output_notes : JSON.stringify(item.output_notes))
+        : null;
+
       statements.push({
-        sql: `INSERT INTO items (id, module_id, type, title, prompt, target, output_sample, explanation, image_url, cloze_data, quiz_options, tags)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+        sql: `INSERT INTO items (id, module_id, type, title, prompt, target, output_sample, explanation, use_cases, output_notes, image_url, cloze_data, quiz_options, tags)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
         args: [
           itemId,
           moduleId,
@@ -130,6 +141,8 @@ export async function importBulkData(
           item.target,
           item.output_sample || null,
           item.explanation || null,
+          useCasesStr,
+          outputNotesStr,
           item.image_url || null,
           item.cloze_data ? JSON.stringify(item.cloze_data) : null,
           item.quiz_options ? JSON.stringify(item.quiz_options) : null,

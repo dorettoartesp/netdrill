@@ -33,6 +33,8 @@ CREATE TABLE IF NOT EXISTS items (
     target TEXT NOT NULL,
     output_sample TEXT,
     explanation TEXT,
+    use_cases TEXT,
+    output_notes TEXT,
     image_url TEXT,
     cloze_data TEXT,
     quiz_options TEXT,
@@ -81,6 +83,18 @@ export async function runMigrations(db: Client): Promise<void> {
     await db.execute('ALTER TABLE items ADD COLUMN output_sample TEXT;');
   } catch {
     // Column already exists or table was just created with column, safe to ignore
+  }
+
+  try {
+    await db.execute('ALTER TABLE items ADD COLUMN use_cases TEXT;');
+  } catch {
+    // Column already exists, safe to ignore
+  }
+
+  try {
+    await db.execute('ALTER TABLE items ADD COLUMN output_notes TEXT;');
+  } catch {
+    // Column already exists, safe to ignore
   }
 
   try {

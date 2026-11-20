@@ -35,6 +35,7 @@ describe('Bulk Importer', () => {
     };
 
     const result = await importBulkData(db, payload);
+    if (!result.success) console.error('IMPORT ERROR:', result.error);
     expect(result.success).toBe(true);
     expect(result.importedCount).toBe(2);
 
@@ -50,6 +51,43 @@ describe('Bulk Importer', () => {
 
     const progress = await db.execute('SELECT * FROM user_progress;');
     expect(progress.rows.length).toBe(2);
+  });
+
+  it('should ingest and serialize use_cases and output_notes in bulk deck import', async () => {
+    const db = getDbClient(':memory:');
+    await runMigrations(db);
+
+    const payload: BulkImportPayload = {
+      topic: 'test-topic',
+      topic_title: 'Test Topic',
+      module: 'test-module',
+      module_title: 'Test Module',
+      items: [
+        {
+          type: 'command',
+          title: 'Ver processos com detalhes',
+          prompt: 'Investigue consumo anormal de CPU',
+          target: 'ps aux',
+          output_sample: 'USER PID %CPU STAT COMMAND\nroot 1 0.0 S /sbin/init',
+          explanation: 'Exibe processos',
+          use_cases: [
+            { title: 'Lentidão em Servidor', description: 'Worker em loop', severity: 'warning' }
+          ],
+          output_notes: [
+            { token: 'STAT', label: 'Estado', severity: 'info', description: 'Estado do processo', normalBaseline: 'S', anomalyAlert: 'D constante' }
+          ]
+        } as any
+      ]
+    };
+
+    const result = await importBulkData(db, payload);
+    if (!result.success) console.error('IMPORT ERROR:', result.error);
+    expect(result.success).toBe(true);
+    expect(result.importedCount).toBe(1);
+
+    const row = await db.execute({ sql: 'SELECT use_cases, output_notes FROM items LIMIT 1;', args: [] });
+    expect(row.rows[0].use_cases).toContain('Lentidão em Servidor');
+    expect(row.rows[0].output_notes).toContain('Estado do processo');
   });
 
   it('should reject invalid payload without items', async () => {

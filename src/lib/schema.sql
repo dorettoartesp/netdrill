@@ -26,6 +26,8 @@ CREATE TABLE IF NOT EXISTS items (
     target TEXT NOT NULL,
     output_sample TEXT,
     explanation TEXT,
+    use_cases TEXT,
+    output_notes TEXT,
     image_url TEXT,
     cloze_data TEXT,
     quiz_options TEXT,
