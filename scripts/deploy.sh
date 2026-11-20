@@ -21,7 +21,7 @@ if ! command -v turso >/dev/null 2>&1; then
 fi
 
 # Check Turso authentication
-if ! "${TURSO_BIN}" auth whoami >/dev/null 2>&1; then
+if "${TURSO_BIN}" auth whoami 2>&1 | grep -qi "not logged in"; then
   echo ""
   echo "⚠️  Turso CLI is not authenticated."
   echo "Please run: ${TURSO_BIN} auth login (or '${TURSO_BIN} auth login --headless' if running remotely)"
