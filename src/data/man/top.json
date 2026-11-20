@@ -1,0 +1,20 @@
+{
+  "command": "top",
+  "title": "top - visualizador dinâmico de processos em tempo real",
+  "sectionName": "1 (Comandos de Usuário)",
+  "synopsis": "top [-b] [-d delay] [-n iterações] [-p pid] [-u usuário]",
+  "description": "O comando top oferece uma visão dinâmica e interativa em tempo real dos processos ativos no kernel Linux, exibindo consumo global de CPU, memória, load average e estatísticas por thread.",
+  "options": [
+    "-b : Modo batch (em lote), ideal para redirecionar a saída para arquivos ou pipelines sem formatação ANSI.",
+    "-d delay : Especifica o intervalo de atualização em segundos (padrão é 3.0s).",
+    "-n num : Número máximo de iterações antes de sair automaticamente.",
+    "-p pid : Monitora exclusivamente os PIDs fornecidos (separados por vírgula).",
+    "-u user : Filtra a exibição para processos pertencentes ao usuário indicado."
+  ],
+  "examples": [
+    "top -b -n 1 | head -n 25",
+    "top -d 1 -p 1234",
+    "top -u nginx",
+    "top -b -n 3 -d 2 > top_report.txt"
+  ]
+}

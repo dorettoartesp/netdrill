@@ -1,0 +1,21 @@
+{
+  "command": "ss",
+  "title": "ss - utilitário moderno para inspeção de sockets de rede",
+  "sectionName": "8 (Comandos de Administração)",
+  "synopsis": "ss [opções] [filtro]",
+  "description": "O utilitário ss é o substituto moderno e de alta performance do legado netstat. Ele consulta diretamente as estruturas de rede do kernel via Netlink, sendo ordens de magnitude mais rápido em sistemas com milhares de conexões abertas.",
+  "options": [
+    "-t : Filtra exclusivamente sockets TCP.",
+    "-u : Filtra sockets UDP.",
+    "-l : Exibe apenas sockets em estado LISTEN (portas abertas aguardando conexões).",
+    "-p : Mostra o processo (PID e nome) associado a cada socket (requer privilégios de root).",
+    "-n : Não resolve nomes de hosts ou serviços (exibe números de IP e portas), acelerando a saída.",
+    "-s : Exibe sumário agregado de sockets alocados e em uso pelo kernel."
+  ],
+  "examples": [
+    "ss -tulpn",
+    "ss -ta state established",
+    "ss -tlpn sport = :80 or sport = :443",
+    "ss -s"
+  ]
+}

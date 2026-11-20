@@ -1,0 +1,20 @@
+{
+  "command": "systemctl",
+  "title": "systemctl - controle do sistema e do gerenciador de serviços systemd",
+  "sectionName": "1 (Comandos de Usuário)",
+  "synopsis": "systemctl [opções] COMANDO [unidade...]",
+  "description": "O systemctl é a interface principal para inspecionar e controlar o estado do systemd, incluindo inicialização de serviços, sockets, timers, montagens e alvos de boot.",
+  "options": [
+    "status : Exibe estado detalhado, PID principal, uso de memória e últimos logs da unidade.",
+    "start / stop / restart : Inicia, para ou reinicia uma unidade.",
+    "reload : Solicita que o serviço recarregue suas configurações sem derrubar conexões ativas.",
+    "enable / disable : Configura a inicialização automática do serviço no boot do sistema.",
+    "is-active / is-failed : Retorna o status operacional da unidade (útil em scripts)."
+  ],
+  "examples": [
+    "systemctl status sshd",
+    "systemctl restart nginx",
+    "systemctl list-units --type=service --state=failed",
+    "systemctl daemon-reload"
+  ]
+}

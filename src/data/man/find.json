@@ -1,0 +1,20 @@
+{
+  "command": "find",
+  "title": "find - busca recursiva de arquivos na hierarquia de diretórios",
+  "sectionName": "1 (Comandos de Usuário)",
+  "synopsis": "find [caminho...] [expressão]",
+  "description": "O find pesquisa recursivamente árvores de diretórios com base em atributos como nome, tamanho, data de modificação, proprietário e permissões, permitindo execução de comandos sobre os arquivos encontrados.",
+  "options": [
+    "-name padrão : Busca por nome de arquivo (sensível a maiúsculas/minúsculas). Use -iname para case-insensitive.",
+    "-type tipo : Filtra por tipo (f para arquivo regular, d para diretório, l para symlink).",
+    "-mtime n : Modificado há n*24 horas (+n para mais de n dias, -n para menos).",
+    "-size n : Filtra por tamanho (k, M, G). Ex: +100M para maiores que 100 megabytes.",
+    "-exec cmd {} + : Executa o comando nos arquivos encontrados de forma eficiente em lote."
+  ],
+  "examples": [
+    "find /var/log -type f -name \"*.log\" -mtime +30",
+    "find / -type f -size +1G 2>/dev/null",
+    "find /etc -type f -perm 644",
+    "find /tmp -type f -name \"*.tmp\" -exec rm -f {} +"
+  ]
+}

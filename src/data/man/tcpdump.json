@@ -1,0 +1,21 @@
+{
+  "command": "tcpdump",
+  "title": "tcpdump - analisador e capturador de tráfego de pacotes de rede",
+  "sectionName": "8 (Comandos de Administração)",
+  "synopsis": "tcpdump [-adeflnNOpqStvxX] [-c contagem] [-i interface] [-w arquivo] [expressão]",
+  "description": "O tcpdump captura pacotes que trafegam através de uma interface de rede compatível com a biblioteca libpcap, permitindo filtragem precisa baseada em sintaxe BPF (Berkeley Packet Filter).",
+  "options": [
+    "-i interface : Seleciona a interface de captura (ex: eth0, lo ou \"any\").",
+    "-n : Não converte endereços IP para nomes de host.",
+    "-nn : Não converte endereços IP nem portas de protocolo para nomes.",
+    "-c n : Encerra a captura após registrar n pacotes.",
+    "-w arquivo : Grava os pacotes brutos capturados em formato pcap para posterior análise no Wireshark.",
+    "-X : Exibe o cabeçalho e o payload do pacote tanto em hexadecimal quanto em caracteres ASCII."
+  ],
+  "examples": [
+    "tcpdump -i eth0 -nn -c 100",
+    "tcpdump -i any -nn port 80 or port 443",
+    "tcpdump -i eth0 -nn host 10.0.0.5 and icmp",
+    "tcpdump -i eth0 -w /tmp/capture.pcap -c 500 \"tcp[tcpflags] & tcp-syn != 0\""
+  ]
+}

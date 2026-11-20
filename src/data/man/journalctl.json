@@ -1,0 +1,21 @@
+{
+  "command": "journalctl",
+  "title": "journalctl - consulta e inspeção do diário de logs do systemd",
+  "sectionName": "1 (Comandos de Usuário)",
+  "synopsis": "journalctl [opções...] [correspondências...]",
+  "description": "O journalctl consulta os logs binários indexados pelo systemd-journald. Permite filtragem precisa por serviço, prioridade syslog, PID e janela de tempo sem necessidade de múltiplos grep.",
+  "options": [
+    "-u unit : Filtra logs de uma unidade de serviço específica (ex: nginx.service).",
+    "-f : Acompanha novos logs em tempo real (follow mode, equivalente a tail -f).",
+    "-e : Pula imediatamente para o final do buffer no leitor less.",
+    "-p prioridade : Filtra por nível de severidade (emerg, alert, crit, err, warning, notice, info, debug).",
+    "--since \"tempo\" : Restringe logs a partir de uma data/hora relativa (ex: \"1 hour ago\", \"today\").",
+    "-b : Exibe logs apenas do boot atual ou de boots anteriores (-b -1)."
+  ],
+  "examples": [
+    "journalctl -u nginx.service -f",
+    "journalctl -p err..emerg --since \"1 hour ago\"",
+    "journalctl -u docker -n 100 --no-pager",
+    "journalctl -k -b 0"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "command": "ps",
+  "title": "ps - relatório de status dos processos atuais",
+  "sectionName": "1 (Comandos de Usuário)",
+  "synopsis": "ps [opções]",
+  "description": "O ps exibe informações sobre uma seleção de processos ativos no sistema operacional. Ao contrário do top, ele fornece um snapshot instantâneo do momento da execução.",
+  "options": [
+    "aux : Sintaxe BSD clássica mostrando todos os processos com usuário, consumo de CPU, memória e estado (STAT).",
+    "-ef : Sintaxe padrão UNIX/POSIX exibindo lista completa com UID, PID, PPID e linha de comando.",
+    "-o : Permite especificar colunas customizadas de saída (ex: ps -eo pid,user,pcpu,pmem,comm).",
+    "--sort : Ordena os processos por uma coluna específica (ex: --sort=-%cpu ou --sort=-%mem)."
+  ],
+  "examples": [
+    "ps aux | grep nginx",
+    "ps -ef --forest",
+    "ps -eo pid,ppid,cmd,%mem,%cpu --sort=-%cpu | head -n 10",
+    "ps -u www-data -o pid,stat,time,command"
+  ]
+}
