@@ -3,23 +3,23 @@ import { getDbClient } from '@/lib/db';
 import { calculateSM2 } from '@/lib/sm2';
 
 /**
- * Handles progress updates and SM-2 interval calculations for completed drill items.
+ * Records a completed drill and schedules its next review with SM-2.
  *
- * @param req - Incoming NextRequest with `{ itemId, grade }`.
+ * @param req - Request with `{ drillId, grade }`.
  * @returns NextResponse with updated repetition count and due date.
  */
 export async function POST(req: NextRequest) {
   try {
-    const { itemId, grade = 5 } = await req.json();
+    const { drillId, grade = 5 } = await req.json();
 
-    if (!itemId) {
-      return NextResponse.json({ error: 'itemId é obrigatório.' }, { status: 400 });
+    if (!drillId || typeof drillId !== 'string') {
+      return NextResponse.json({ error: 'drillId is required.' }, { status: 400 });
     }
 
     const db = getDbClient();
     const existing = await db.execute({
-      sql: 'SELECT * FROM user_progress WHERE item_id = ?;',
-      args: [itemId],
+      sql: 'SELECT * FROM progress WHERE drill_id = ?;',
+      args: [drillId],
     });
 
     let currentReps = 0;
@@ -46,9 +46,9 @@ export async function POST(req: NextRequest) {
     const now = new Date().toISOString();
 
     await db.execute({
-      sql: `INSERT INTO user_progress (id, item_id, repetitions, interval_days, ease_factor, due_date, total_drilled_count, last_reviewed_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(item_id) DO UPDATE SET
+      sql: `INSERT INTO progress (drill_id, repetitions, interval_days, ease_factor, due_date, total_drilled_count, last_reviewed_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(drill_id) DO UPDATE SET
               repetitions = excluded.repetitions,
               interval_days = excluded.interval_days,
               ease_factor = excluded.ease_factor,
@@ -56,8 +56,7 @@ export async function POST(req: NextRequest) {
               total_drilled_count = excluded.total_drilled_count,
               last_reviewed_at = excluded.last_reviewed_at;`,
       args: [
-        `prog_${itemId}`,
-        itemId,
+        drillId,
         sm2.repetitions,
         sm2.intervalDays,
         sm2.easeFactor,
@@ -73,10 +72,8 @@ export async function POST(req: NextRequest) {
       intervalDays: sm2.intervalDays,
       due_date: nextDueDate,
     });
-  } catch (err: any) {
-    return NextResponse.json(
-      { error: err.message || 'Falha ao gravar progresso.' },
-      { status: 500 }
-    );
+  } catch (err) {
+    console.error('[api/progress] failure', err);
+    return NextResponse.json({ error: 'Progress could not be saved. Please try again.' }, { status: 500 });
   }
 }

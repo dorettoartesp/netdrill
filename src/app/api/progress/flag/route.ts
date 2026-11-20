@@ -3,18 +3,18 @@ import { getDbClient } from '@/lib/db';
 import { runMigrations } from '@/lib/migrate';
 
 /**
- * Updates favorite status or review flag for a given study item in user_progress.
+ * Updates the favorite or needs-review flag of a drill in `progress`.
  *
- * @param req - Incoming request containing itemId and boolean flags for isFavorite or needsReview.
+ * @param req - Request with `{ drillId, isFavorite?, needsReview? }`.
  * @returns JSON response confirming update status.
  */
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { itemId, isFavorite, needsReview } = body;
+    const { drillId, isFavorite, needsReview } = body;
 
-    if (!itemId) {
-      return NextResponse.json({ error: 'itemId é obrigatório' }, { status: 400 });
+    if (!drillId || typeof drillId !== 'string') {
+      return NextResponse.json({ error: 'drillId is required.' }, { status: 400 });
     }
 
     const db = getDbClient();
@@ -34,23 +34,21 @@ export async function POST(req: NextRequest) {
     }
 
     if (updates.length > 0) {
-      args.push(itemId);
+      args.push(drillId);
       await db.execute({
-        sql: `UPDATE user_progress SET ${updates.join(', ')} WHERE item_id = ?;`,
+        sql: `UPDATE progress SET ${updates.join(', ')} WHERE drill_id = ?;`,
         args,
       });
     }
 
     return NextResponse.json({
       success: true,
-      itemId,
+      drillId,
       isFavorite,
       needsReview,
     });
-  } catch (err: any) {
-    return NextResponse.json(
-      { error: err.message || 'Falha ao atualizar marcações do item' },
-      { status: 500 }
-    );
+  } catch (err) {
+    console.error('[api/progress/flag] failure', err);
+    return NextResponse.json({ error: 'The flag could not be saved. Please try again.' }, { status: 500 });
   }
 }

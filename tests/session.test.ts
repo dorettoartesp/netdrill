@@ -1,68 +1,95 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { getDbClient } from '../src/lib/db';
 import { runMigrations } from '../src/lib/migrate';
-import { buildSessionQueue } from '../src/lib/session';
+import { importPack } from '../src/lib/content/importer';
+import { buildSessionQueue, getAvailableTopics, toMetricNotes } from '../src/lib/session';
+import { linuxPack } from './fixtures/content';
 
-// Skipped: legacy schema; replaced in Tasks 5–7 of the command-centric content plan.
-describe.skip('Session Queue Builder', () => {
-  it('should prioritize overdue items over unreviewed items', async () => {
-    const db = getDbClient(':memory:');
-    await runMigrations(db);
+async function seededDb() {
+  const db = getDbClient(':memory:');
+  await runMigrations(db);
+  await importPack(db, linuxPack());
+  await importPack(db, {
+    format: 'netdrill.pack/v1',
+    topic: { slug: 'redes', title: 'Networking' },
+    commands: [{ id: 'redes.ping', name: 'ping', summary: 's', synopsis: 'ping host', description: 'd',
+      examples: [{ id: 'basic', title: 'Ping', scenario: 'Ping a host.', command: 'ping -c 3 localhost' }] }],
+  });
+  return db;
+}
 
-    // Insert topic and module
-    await db.execute("INSERT INTO topics (id, slug, title) VALUES ('t1', 'linux', 'Linux');");
-    await db.execute("INSERT INTO modules (id, topic_id, slug, title) VALUES ('m1', 't1', 'basics', 'Basics');");
+describe('buildSessionQueue', () => {
+  it('puts due drills first, then never-reviewed ones', async () => {
+    const db = await seededDb();
+    const future = new Date(Date.now() + 5 * 86400000).toISOString();
+    const past = new Date(Date.now() - 86400000).toISOString();
+    await db.execute({ sql: "UPDATE progress SET due_date = ?, total_drilled_count = 1 WHERE drill_id != 'linux.oom';", args: [future] });
+    await db.execute({ sql: "UPDATE progress SET due_date = ?, total_drilled_count = 1 WHERE drill_id = 'linux.oom';", args: [past] });
+    const queue = await buildSessionQueue(db, ['linux']);
+    expect(queue[0].id).toBe('linux.oom');
+    expect(queue[0].isDue).toBe(true);
+    expect(queue.slice(1).every((q) => !q.isDue)).toBe(true);
+  });
 
-    // Insert 2 items
-    await db.execute("INSERT INTO items (id, module_id, type, title, prompt, target) VALUES ('i1', 'm1', 'command', 'Cmd1', 'Prompt1', 'target1');");
-    await db.execute("INSERT INTO items (id, module_id, type, title, prompt, target) VALUES ('i2', 'm1', 'command', 'Cmd2', 'Prompt2', 'target2');");
+  it('filters by topic slugs', async () => {
+    const db = await seededDb();
+    expect((await buildSessionQueue(db, ['redes'])).map((q) => q.id)).toEqual(['redes.ping#basic']);
+    expect(await buildSessionQueue(db)).toHaveLength(4);
+  });
 
-    // i1 is overdue (due yesterday), i2 has no progress yet (new)
-    const yesterday = new Date(Date.now() - 86400000).toISOString();
-    await db.execute({
-      sql: "INSERT INTO user_progress (id, item_id, repetitions, interval_days, ease_factor, due_date) VALUES ('p1', 'i1', 1, 1, 2.5, ?);",
-      args: [yesterday]
+  it('maps example drills from their command document', async () => {
+    const db = await seededDb();
+    const item = (await buildSessionQueue(db, ['linux'])).find((q) => q.id === 'linux.ss#listening')!;
+    expect(item).toMatchObject({
+      documentId: 'linux.ss',
+      kind: 'example',
+      title: 'Listening sockets',
+      prompt: 'List listening sockets with process.',
+      target: 'ss -tulpn',
+      isMultiLine: false,
+      is_favorite: false,
+      needs_review: false,
     });
-
-    const queue = await buildSessionQueue(db);
-    expect(queue.length).toBe(2);
-    expect(queue[0].id).toBe('i1'); // Due item comes first!
-    expect(queue[1].id).toBe('i2'); // New item comes next
+    expect(item.use_cases.map((u) => u.title)).toEqual(['Port down after deploy']);
+    expect(item.output_notes).toEqual([]);
   });
 
-  it('should filter queue by multiple selected topic slugs', async () => {
-    const db = getDbClient(':memory:');
-    await runMigrations(db);
-
-    await db.execute("INSERT INTO topics (id, slug, title) VALUES ('t1', 'linux', 'Linux'), ('t2', 'redes', 'Redes'), ('t3', 'fortigate', 'FortiGate');");
-    await db.execute("INSERT INTO modules (id, topic_id, slug, title) VALUES ('m1', 't1', 'm1', 'M1'), ('m2', 't2', 'm2', 'M2'), ('m3', 't3', 'm3', 'M3');");
-    await db.execute("INSERT INTO items (id, module_id, type, title, prompt, target) VALUES ('i1', 'm1', 'command', 'Linux Cmd', 'p', 't'), ('i2', 'm2', 'command', 'Redes Cmd', 'p', 't'), ('i3', 'm3', 'command', 'FortiGate Cmd', 'p', 't');");
-
-    const filtered = await buildSessionQueue(db, ['linux', 'fortigate']);
-    expect(filtered.length).toBe(2);
-    const titles = filtered.map((i) => i.title);
-    expect(titles).toContain('Linux Cmd');
-    expect(titles).toContain('FortiGate Cmd');
-    expect(titles).not.toContain('Redes Cmd');
+  it('maps procedures as multi-line drills', async () => {
+    const db = await seededDb();
+    const item = (await buildSessionQueue(db, ['linux'])).find((q) => q.id === 'linux.oom')!;
+    expect(item).toMatchObject({ kind: 'procedure', isMultiLine: true, target: 'cat memory.current\ngrep oom memory.events' });
   });
 
-  it('should return available topics with item and due counts', async () => {
-    const db = getDbClient(':memory:');
-    await runMigrations(db);
+  it('exposes favorite and review flags', async () => {
+    const db = await seededDb();
+    await db.execute("UPDATE progress SET is_favorite = 1, needs_review = 1 WHERE drill_id = 'redes.ping#basic';");
+    const [item] = await buildSessionQueue(db, ['redes']);
+    expect(item.is_favorite).toBe(true);
+    expect(item.needs_review).toBe(true);
+  });
+});
 
-    await db.execute("INSERT INTO topics (id, slug, title) VALUES ('t1', 'linux', 'Linux'), ('t2', 'redes', 'Redes');");
-    await db.execute("INSERT INTO modules (id, topic_id, slug, title) VALUES ('m1', 't1', 'm1', 'M1'), ('m2', 't2', 'm2', 'M2');");
-    await db.execute("INSERT INTO items (id, module_id, type, title, prompt, target) VALUES ('i1', 'm1', 'command', 'Linux 1', 'p', 't'), ('i2', 'm1', 'command', 'Linux 2', 'p', 't'), ('i3', 'm2', 'command', 'Redes 1', 'p', 't');");
-
-    // @ts-ignore
-    const { getAvailableTopics } = await import('../src/lib/session');
+describe('getAvailableTopics', () => {
+  it('counts drills and due drills per topic', async () => {
+    const db = await seededDb();
+    const future = new Date(Date.now() + 86400000).toISOString();
+    await db.execute({ sql: "UPDATE progress SET due_date = ? WHERE drill_id = 'linux.oom';", args: [future] });
     const topics = await getAvailableTopics(db);
-    expect(topics.length).toBe(2);
+    expect(topics).toEqual([
+      { id: 'linux', slug: 'linux', title: 'Linux Administration', description: 'Processes and sockets', itemCount: 3, dueCount: 2 },
+      { id: 'redes', slug: 'redes', title: 'Networking', description: undefined, itemCount: 1, dueCount: 1 },
+    ]);
+  });
+});
 
-    const linux = topics.find((t: any) => t.slug === 'linux');
-    expect(linux?.itemCount).toBe(2);
+describe('toMetricNotes', () => {
+  it('maps output notes onto telemetry glossary definitions', () => {
+    expect(toMetricNotes([{ token: 'Recv-Q', meaning: 'Queue', normal: '0', anomaly: 'High', severity: 'warning' }])).toEqual([
+      { token: 'Recv-Q', label: 'Recv-Q', description: 'Queue', normalBaseline: '0', anomalyAlert: 'High', severity: 'warning' },
+    ]);
+  });
 
-    const redes = topics.find((t: any) => t.slug === 'redes');
-    expect(redes?.itemCount).toBe(1);
+  it('fills missing baselines with a dash', () => {
+    expect(toMetricNotes([{ token: 'X', meaning: 'm', severity: 'info' }])[0]).toMatchObject({ normalBaseline: '—', anomalyAlert: '—' });
   });
 });

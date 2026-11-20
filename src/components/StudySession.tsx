@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { QueueItem } from '@/lib/session';
+import { QueueItem, toMetricNotes } from '@/lib/session';
 import { compareBlock } from '@/lib/validator';
 import { parseAnnotatedOutput } from '@/lib/telemetry-glossary';
 import { TimerHeader } from './TimerHeader';
 import { TerminalPrompt } from './TerminalPrompt';
 import { MobileKeyboardBar } from './MobileKeyboardBar';
 import { AnnotatedOutput } from './AnnotatedOutput';
+import { UseCaseList } from './UseCaseList';
 import { ManModal } from './ManModal';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,40 +32,6 @@ interface StudySessionProps {
   initialQueue: QueueItem[];
   initialMinutes?: number;
   selectedTopicSlugs?: string[];
-}
-
-interface UseCaseItem {
-  title: string;
-  description: string;
-  severity?: 'info' | 'warning' | 'critical';
-}
-
-function getEffectiveUseCases(item: QueueItem): UseCaseItem[] {
-  if (item.use_cases) {
-    try {
-      const parsed =
-        typeof item.use_cases === 'string' ? JSON.parse(item.use_cases) : item.use_cases;
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed as UseCaseItem[];
-      }
-    } catch {
-      // fallback below
-    }
-  }
-
-  const baseCmd = item.target.trim().split(/\s+/)[0] || 'comando';
-  return [
-    {
-      title: `Incidente de Produção: Investigação com ${baseCmd}`,
-      description: `Alerta no Grafana ou PagerDuty acusando degradação no serviço. O comando "${item.target}" é executado imediatamente no terminal pelo engenheiro de SRE para isolar se a falha é saturação de recursos, processo zumbi ou contenção de I/O.`,
-      severity: 'critical',
-    },
-    {
-      title: `Auditoria de Conformidade e Troubleshooting`,
-      description: `Durante inspeção operacional de rotina ou logo após um deploy, utilize "${item.target}" para certificar que os parâmetros de rede, estados de sockets ou privilégios de arquivos obedecem estritamente à política de segurança e alta disponibilidade.`,
-      severity: 'info',
-    },
-  ];
 }
 
 /**
@@ -151,7 +118,7 @@ export function StudySession({
 
   // Parse annotated STDOUT telemetry
   const parsedStdout = useMemo(() => {
-    return parseAnnotatedOutput(currentItem?.output_sample || '', currentItem?.output_notes);
+    return parseAnnotatedOutput(currentItem?.output_sample || '', toMetricNotes(currentItem?.output_notes ?? []));
   }, [currentItem?.output_sample, currentItem?.output_notes]);
 
   // Set default selected metric when tab or item changes
@@ -178,7 +145,7 @@ export function StudySession({
       await fetch('/api/progress/flag', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ itemId: currentItem.id, isFavorite: nextVal }),
+        body: JSON.stringify({ drillId: currentItem.id, isFavorite: nextVal }),
       });
     } catch (e) {
       console.error('Failed to update favorite status', e);
@@ -199,7 +166,7 @@ export function StudySession({
       await fetch('/api/progress/flag', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ itemId: currentItem.id, needsReview: nextVal }),
+        body: JSON.stringify({ drillId: currentItem.id, needsReview: nextVal }),
       });
     } catch (e) {
       console.error('Failed to update needsReview status', e);
@@ -295,7 +262,7 @@ export function StudySession({
       await fetch('/api/progress', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ itemId: currentItem.id, grade: 5 }),
+        body: JSON.stringify({ drillId: currentItem.id, grade: 5 }),
       });
     } catch (e) {
       console.error('Failed to save progress', e);
@@ -390,9 +357,8 @@ export function StudySession({
     );
   }
 
-  const isMulti = currentItem.type === 'block' || currentItem.target.includes('\n');
+  const isMulti = currentItem.isMultiLine;
   const isEducationalMode = activeTab !== 'treino' || isManOpen;
-  const effectiveUseCases = getEffectiveUseCases(currentItem);
 
   const tabs: ReadonlyArray<{
     id: 'treino' | 'casos' | 'stdout';
@@ -500,33 +466,7 @@ export function StudySession({
           <div className="space-y-3 my-3 lg:space-y-4 lg:my-4">
             {pausedNotice('amber', 'O cronômetro do treino está pausado enquanto você estuda os cenários reais de aplicação.')}
 
-            <div className="space-y-3">
-              {effectiveUseCases.map((uc, idx) => {
-                const isCritical = uc.severity === 'critical';
-                const cardBorder = isCritical ? 'border-red-800/60' : 'border-amber-800/60';
-                const badgeColor = isCritical
-                  ? 'bg-red-950/80 border-red-800 text-red-300'
-                  : 'bg-amber-950/80 border-amber-800 text-amber-300';
-
-                return (
-                  <div key={idx} className={`bg-[#0f121a] border ${cardBorder} rounded-lg p-3 lg:p-4 space-y-2`}>
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span className="text-white font-bold text-sm">{uc.title}</span>
-                      <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded border ${badgeColor}`}>
-                        {isCritical ? 'Alerta de Produção' : 'Rotina & Troubleshooting'}
-                      </span>
-                    </div>
-
-                    <p className="text-[13px] lg:text-xs font-sans lg:font-mono text-gray-300 leading-relaxed">{uc.description}</p>
-
-                    <div className="bg-[#07090e] border border-gray-800 rounded p-2 text-xs font-mono text-emerald-300 flex items-start justify-between gap-2">
-                      <code className="whitespace-pre-wrap break-all">$ {currentItem.target}</code>
-                      <span className="hidden lg:inline shrink-0 text-[10px] text-gray-500">Comando em estudo</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <UseCaseList useCases={currentItem.use_cases} target={currentItem.target} />
           </div>
         )}
 

@@ -6,16 +6,21 @@ import type { QueueItem } from '../src/lib/session';
 
 const EMOJI = new RegExp('\\p{Extended_Pictographic}', 'u');
 
-const item = {
-  id: 'i1',
-  module_id: 'm1',
-  type: 'command',
+const item: QueueItem = {
+  id: 'linux.ss#listening',
+  documentId: 'linux.ss',
+  kind: 'example',
   title: 'Listar portas e processos em escuta',
   prompt: 'Como listar todos os sockets TCP e UDP abertos em modo de escuta com PID e nome do processo?',
   target: 'ss -tulpn',
+  isMultiLine: false,
   output_sample: 'Netid State  Recv-Q Send-Q\ntcp   LISTEN 0      128',
+  output_notes: [],
+  use_cases: [],
+  is_favorite: false,
+  needs_review: false,
   isDue: true,
-} as unknown as QueueItem;
+};
 
 const html = renderToStaticMarkup(<StudySession initialQueue={[item]} initialMinutes={15} />);
 

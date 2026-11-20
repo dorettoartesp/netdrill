@@ -1,28 +1,51 @@
-import { describe, it, expect } from 'vitest';
-import { getDbClient } from '../src/lib/db';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { NextRequest } from 'next/server';
+import * as dbModule from '../src/lib/db';
 import { runMigrations } from '../src/lib/migrate';
-import { buildSessionQueue } from '../src/lib/session';
+import { importPack } from '../src/lib/content/importer';
+import { POST as postFlag } from '../src/app/api/progress/flag/route';
+import { POST as postProgress } from '../src/app/api/progress/route';
+import { linuxPack } from './fixtures/content';
 
-// Skipped: legacy schema; replaced in Tasks 5–7 of the command-centric content plan.
-describe.skip('Item Favoriting and Review Flagging', () => {
-  it('should store and retrieve is_favorite and needs_review flags', async () => {
-    const db = getDbClient(':memory:');
+const json = (url: string, body: unknown) =>
+  new NextRequest(url, { method: 'POST', body: JSON.stringify(body), headers: { 'content-type': 'application/json' } });
+
+describe('progress APIs', () => {
+  let db: ReturnType<typeof dbModule.getDbClient>;
+
+  beforeEach(async () => {
+    vi.restoreAllMocks();
+    db = dbModule.getDbClient(':memory:');
+    vi.spyOn(dbModule, 'getDbClient').mockReturnValue(db);
     await runMigrations(db);
+    await importPack(db, linuxPack());
+  });
 
-    await db.execute("INSERT INTO topics (id, slug, title) VALUES ('t1', 'linux', 'Linux');");
-    await db.execute("INSERT INTO modules (id, topic_id, slug, title) VALUES ('m1', 't1', 'm1', 'M1');");
-    await db.execute("INSERT INTO items (id, module_id, type, title, prompt, target) VALUES ('i1', 'm1', 'command', 'Cmd1', 'p1', 't1');");
+  it('stores favorite and needs-review flags by drillId', async () => {
+    const res = await postFlag(json('http://localhost/api/progress/flag', { drillId: 'linux.oom', isFavorite: true, needsReview: true }));
+    expect(res.status).toBe(200);
+    const row = (await db.execute("SELECT is_favorite, needs_review FROM progress WHERE drill_id = 'linux.oom';")).rows[0];
+    expect(Number(row.is_favorite)).toBe(1);
+    expect(Number(row.needs_review)).toBe(1);
+  });
 
-    const now = new Date().toISOString();
-    await db.execute({
-      sql: `INSERT INTO user_progress (id, item_id, repetitions, interval_days, ease_factor, due_date, is_favorite, needs_review)
-            VALUES ('p1', 'i1', 0, 0, 2.5, ?, 1, 1);`,
-      args: [now],
-    });
+  it('requires drillId for flags', async () => {
+    const res = await postFlag(json('http://localhost/api/progress/flag', { isFavorite: true }));
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: 'drillId is required.' });
+  });
 
-    const queue = await buildSessionQueue(db);
-    expect(queue.length).toBe(1);
-    expect(queue[0].is_favorite).toBe(true);
-    expect(queue[0].needs_review).toBe(true);
+  it('upserts SM-2 values for drillId', async () => {
+    const res = await postProgress(json('http://localhost/api/progress', { drillId: 'linux.oom', grade: 5 }));
+    expect(res.status).toBe(200);
+    const row = (await db.execute("SELECT repetitions, total_drilled_count, due_date FROM progress WHERE drill_id = 'linux.oom';")).rows[0];
+    expect(Number(row.repetitions)).toBe(1);
+    expect(Number(row.total_drilled_count)).toBe(1);
+    expect(Date.parse(String(row.due_date))).toBeGreaterThan(Date.now());
+  });
+
+  it('requires drillId for progress', async () => {
+    const res = await postProgress(json('http://localhost/api/progress', { grade: 5 }));
+    expect(res.status).toBe(400);
   });
 });
