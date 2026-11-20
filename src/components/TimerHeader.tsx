@@ -2,28 +2,37 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Clock, LogOut, LayoutGrid } from 'lucide-react';
+import { Clock, LogOut, LayoutGrid, Pause, Play } from 'lucide-react';
 
 interface TimerHeaderProps {
   initialMinutes?: number;
   onTimeExpired?: () => void;
   topicTitle?: string;
   onLogout?: () => void;
+  isPaused?: boolean;
+  onTogglePause?: () => void;
 }
 
 /**
  * Top application header containing the brand identifier, topic breadcrumb,
- * and session countdown timer.
+ * session countdown timer with pause/resume support, and topic navigation.
  */
 export function TimerHeader({
   initialMinutes = 15,
   onTimeExpired,
   topicTitle = 'Treino Ativo',
   onLogout,
+  isPaused = false,
+  onTogglePause,
 }: TimerHeaderProps) {
-  const [secondsRemaining, setSecondsRemaining] = useState(initialMinutes * 60);
+  const isUnlimited = initialMinutes <= 0;
+  const [secondsRemaining, setSecondsRemaining] = useState(
+    isUnlimited ? 0 : initialMinutes * 60
+  );
 
   useEffect(() => {
+    if (isUnlimited || isPaused) return;
+
     if (secondsRemaining <= 0) {
       if (onTimeExpired) onTimeExpired();
       return;
@@ -34,11 +43,13 @@ export function TimerHeader({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [secondsRemaining, onTimeExpired]);
+  }, [secondsRemaining, onTimeExpired, isPaused, isUnlimited]);
 
   const minutes = Math.floor(secondsRemaining / 60);
   const seconds = secondsRemaining % 60;
-  const formattedTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  const formattedTime = isUnlimited
+    ? 'Livre'
+    : `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
   return (
     <header className="flex justify-between items-center border-b border-gray-800 pb-4 mb-6">
@@ -61,10 +72,36 @@ export function TimerHeader({
           <span className="hidden sm:inline">Mudar Tópicos</span>
         </Link>
 
-        <div className="flex items-center space-x-1.5 font-mono text-amber-400 bg-amber-400/10 px-3 py-1 rounded-md text-sm font-semibold">
+        {/* Timer Container */}
+        <div
+          className={`flex items-center space-x-1.5 font-mono px-3 py-1 rounded-md text-sm font-semibold border ${
+            isPaused
+              ? 'text-amber-400 bg-amber-950/60 border-amber-700 animate-pulse'
+              : 'text-amber-400 bg-amber-400/10 border-amber-900/40'
+          }`}
+        >
           <Clock className="w-4 h-4" />
           <span>{formattedTime}</span>
+          {isPaused && <span className="text-[10px] ml-1 uppercase">[PAUSADO]</span>}
         </div>
+
+        {/* Pause/Resume Button */}
+        {!isUnlimited && onTogglePause && (
+          <button
+            type="button"
+            onClick={onTogglePause}
+            title={isPaused ? 'Retomar timer (P)' : 'Pausar timer (P)'}
+            className={`p-1.5 rounded transition border text-xs flex items-center gap-1 font-mono ${
+              isPaused
+                ? 'bg-green-950/80 border-green-700 text-green-300 hover:bg-green-900'
+                : 'bg-gray-800 border-gray-700 text-gray-300 hover:text-white hover:bg-gray-700'
+            }`}
+          >
+            {isPaused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
+            <span className="hidden md:inline">{isPaused ? 'Retomar' : 'Pausar'}</span>
+            <kbd className="text-[9px] bg-black/40 px-1 py-0.5 rounded text-gray-400">P</kbd>
+          </button>
+        )}
 
         {onLogout && (
           <button

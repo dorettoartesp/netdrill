@@ -11,21 +11,28 @@ import { importBulkData, BulkImportPayload } from '@/lib/importer';
  */
 export async function POST(req: NextRequest) {
   try {
-    const payload: BulkImportPayload = await req.json();
+    const rawPayload = await req.json();
     const db = getDbClient();
 
     // Ensure database tables exist
     await runMigrations(db);
 
-    const result = await importBulkData(db, payload);
+    const payloads: BulkImportPayload[] = Array.isArray(rawPayload)
+      ? rawPayload
+      : [rawPayload];
 
-    if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 400 });
+    let totalImported = 0;
+    for (const payload of payloads) {
+      const result = await importBulkData(db, payload);
+      if (!result.success) {
+        return NextResponse.json({ error: result.error }, { status: 400 });
+      }
+      totalImported += result.importedCount || 0;
     }
 
     return NextResponse.json({
-      message: `Importação realizada com sucesso: ${result.importedCount} itens cadastrados.`,
-      importedCount: result.importedCount,
+      message: `Importação realizada com sucesso: ${totalImported} itens cadastrados.`,
+      importedCount: totalImported,
     });
   } catch (err: any) {
     return NextResponse.json(

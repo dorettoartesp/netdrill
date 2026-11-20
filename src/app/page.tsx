@@ -13,6 +13,7 @@ export const dynamic = 'force-dynamic';
 interface HomePageProps {
   searchParams?: {
     topics?: string;
+    duration?: string;
   };
 }
 
@@ -35,9 +36,17 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     const queue = await buildSessionQueue(db, selectedSlugs);
 
     if (queue.length > 0) {
+      const parsedDuration =
+        searchParams.duration !== undefined ? parseInt(searchParams.duration, 10) : 15;
+      const initialMinutes = isNaN(parsedDuration) ? 15 : parsedDuration;
+
       return (
         <main className="min-h-screen bg-[#0c0e14] text-[#e2e8f0]">
-          <StudySession initialQueue={queue} />
+          <StudySession
+            initialQueue={queue}
+            initialMinutes={initialMinutes}
+            selectedTopicSlugs={selectedSlugs}
+          />
         </main>
       );
     }

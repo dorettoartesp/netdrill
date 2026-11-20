@@ -19,6 +19,7 @@ export function TopicSelector({ topics }: TopicSelectorProps) {
   const [selectedSlugs, setSelectedSlugs] = useState<Set<string>>(
     () => new Set(topics.map((t) => t.slug))
   );
+  const [durationMinutes, setDurationMinutes] = useState<number>(15);
 
   const toggleTopic = useCallback((slug: string) => {
     setSelectedSlugs((prev) => {
@@ -43,8 +44,8 @@ export function TopicSelector({ topics }: TopicSelectorProps) {
   const handleStart = useCallback(() => {
     if (selectedSlugs.size === 0) return;
     const slugs = Array.from(selectedSlugs).join(',');
-    window.location.href = `/?topics=${encodeURIComponent(slugs)}`;
-  }, [selectedSlugs]);
+    window.location.href = `/?topics=${encodeURIComponent(slugs)}&duration=${durationMinutes}`;
+  }, [selectedSlugs, durationMinutes]);
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -150,8 +151,51 @@ export function TopicSelector({ topics }: TopicSelectorProps) {
             </button>
           </div>
 
-          <div className="text-xs text-gray-400">
-            <span>{topics.length} tópicos cadastrados</span>
+          {/* Session Duration Selector */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-gray-400">Tempo:</span>
+            {[15, 30, 45].map((mins) => (
+              <button
+                key={mins}
+                type="button"
+                onClick={() => setDurationMinutes(mins)}
+                className={`px-2.5 py-1 rounded text-xs transition ${
+                  durationMinutes === mins
+                    ? 'bg-green-950/80 border border-green-600 text-green-300 font-bold'
+                    : 'bg-gray-900 hover:bg-gray-800 text-gray-400'
+                }`}
+              >
+                {mins}m
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => setDurationMinutes(0)}
+              className={`px-2.5 py-1 rounded text-xs transition ${
+                durationMinutes === 0
+                  ? 'bg-green-950/80 border border-green-600 text-green-300 font-bold'
+                  : 'bg-gray-900 hover:bg-gray-800 text-gray-400'
+              }`}
+            >
+              Livre
+            </button>
+
+            {/* Custom Minutes Input */}
+            <div className="flex items-center gap-1 bg-gray-900 border border-gray-800 px-2 py-0.5 rounded focus-within:border-green-600">
+              <input
+                type="number"
+                min={1}
+                max={180}
+                value={durationMinutes > 0 ? durationMinutes : ''}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value, 10);
+                  setDurationMinutes(isNaN(val) ? 0 : Math.max(1, Math.min(180, val)));
+                }}
+                placeholder="Personalizado"
+                className="w-12 bg-transparent text-white text-xs outline-none text-right font-mono"
+              />
+              <span className="text-gray-500 text-xs">min</span>
+            </div>
           </div>
         </div>
 

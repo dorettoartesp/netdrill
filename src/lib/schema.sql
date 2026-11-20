@@ -42,6 +42,8 @@ CREATE TABLE IF NOT EXISTS user_progress (
     due_date DATETIME NOT NULL,
     total_drilled_count INTEGER DEFAULT 0,
     last_reviewed_at DATETIME,
+    is_favorite INTEGER DEFAULT 0,
+    needs_review INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 

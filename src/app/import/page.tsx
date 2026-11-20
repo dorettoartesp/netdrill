@@ -12,6 +12,24 @@ export default function ImportPage() {
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      if (content) {
+        setJsonText(content);
+        setFeedback({
+          type: 'success',
+          message: `Arquivo "${file.name}" carregado com sucesso. Pressione Ctrl+Enter para gravar no banco.`,
+        });
+      }
+    };
+    reader.readAsText(file);
+  };
+
   const handleImport = async () => {
     setFeedback(null);
     setIsLoading(true);
@@ -72,11 +90,25 @@ export default function ImportPage() {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base font-mono">Estrutura JSON</CardTitle>
-          <CardDescription>
-            Pressione <kbd className="bg-gray-800 px-1.5 py-0.5 rounded text-gray-300">Ctrl+Enter</kbd> para enviar diretamente.
-          </CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="text-base font-mono">Estrutura JSON</CardTitle>
+            <CardDescription>
+              Cole o JSON abaixo ou carregue um arquivo .json. Pressione <kbd className="bg-gray-800 px-1.5 py-0.5 rounded text-gray-300">Ctrl+Enter</kbd> para enviar.
+            </CardDescription>
+          </div>
+          <div>
+            <label className="cursor-pointer inline-flex items-center gap-1.5 text-xs bg-gray-800 hover:bg-gray-700 text-gray-200 px-3 py-1.5 rounded transition font-mono border border-gray-700">
+              <Upload className="w-3.5 h-3.5" />
+              <span>Carregar Arquivo</span>
+              <input
+                type="file"
+                accept=".json"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+            </label>
+          </div>
         </CardHeader>
 
         <CardContent className="space-y-4">

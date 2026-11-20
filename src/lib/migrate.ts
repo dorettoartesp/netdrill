@@ -49,6 +49,8 @@ CREATE TABLE IF NOT EXISTS user_progress (
     due_date DATETIME NOT NULL,
     total_drilled_count INTEGER DEFAULT 0,
     last_reviewed_at DATETIME,
+    is_favorite INTEGER DEFAULT 0,
+    needs_review INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -79,5 +81,17 @@ export async function runMigrations(db: Client): Promise<void> {
     await db.execute('ALTER TABLE items ADD COLUMN output_sample TEXT;');
   } catch {
     // Column already exists or table was just created with column, safe to ignore
+  }
+
+  try {
+    await db.execute('ALTER TABLE user_progress ADD COLUMN is_favorite INTEGER DEFAULT 0;');
+  } catch {
+    // Column already exists, safe to ignore
+  }
+
+  try {
+    await db.execute('ALTER TABLE user_progress ADD COLUMN needs_review INTEGER DEFAULT 0;');
+  } catch {
+    // Column already exists, safe to ignore
   }
 }

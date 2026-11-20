@@ -24,6 +24,10 @@ export interface QueueItem {
   image_url?: string;
   /** Comma-separated search tags. */
   tags?: string;
+  /** Whether the user has marked this item as a favorite. */
+  is_favorite?: boolean;
+  /** Whether the user has flagged this item as needing review. */
+  needs_review?: boolean;
   /** Indicates whether this item is currently due for spaced repetition review. */
   isDue: boolean;
 }
@@ -101,7 +105,7 @@ export async function buildSessionQueue(
   let query = `
     SELECT 
       i.id, i.module_id, i.type, i.title, i.prompt, i.target, i.output_sample, i.explanation, i.image_url, i.tags,
-      p.due_date,
+      p.due_date, p.is_favorite, p.needs_review,
       CASE 
         WHEN p.due_date IS NOT NULL AND p.due_date <= ? THEN 1
         WHEN p.due_date IS NULL THEN 2
@@ -142,6 +146,8 @@ export async function buildSessionQueue(
     explanation: row.explanation,
     image_url: row.image_url,
     tags: row.tags,
+    is_favorite: Boolean(row.is_favorite),
+    needs_review: Boolean(row.needs_review),
     isDue: row.priority_rank === 1,
   }));
 }
