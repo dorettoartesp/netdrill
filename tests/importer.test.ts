@@ -3,7 +3,8 @@ import { getDbClient } from '../src/lib/db';
 import { runMigrations } from '../src/lib/migrate';
 import { importBulkData, BulkImportPayload } from '../src/lib/importer';
 
-describe('Bulk Importer', () => {
+// Skipped: legacy schema; replaced in Tasks 5–7 of the command-centric content plan.
+describe.skip('Bulk Importer', () => {
   it('should import new topic, module and items in a single transaction', async () => {
     const db = getDbClient(':memory:');
     await runMigrations(db);

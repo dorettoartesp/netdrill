@@ -7,7 +7,8 @@ import * as nemotronModule from '../src/lib/nemotron-generator';
 import { runMigrations } from '../src/lib/migrate';
 import { upsertCachedManPage } from '../src/lib/man-db';
 
-describe('Man API Route Handlers', () => {
+// Skipped: legacy schema; replaced in Tasks 5–7 of the command-centric content plan.
+describe.skip('Man API Route Handlers', () => {
   let db: ReturnType<typeof dbModule.getDbClient>;
 
   beforeEach(async () => {

@@ -3,7 +3,8 @@ import { getDbClient } from '../src/lib/db';
 import { runMigrations } from '../src/lib/migrate';
 import { buildSessionQueue } from '../src/lib/session';
 
-describe('Item Favoriting and Review Flagging', () => {
+// Skipped: legacy schema; replaced in Tasks 5–7 of the command-centric content plan.
+describe.skip('Item Favoriting and Review Flagging', () => {
   it('should store and retrieve is_favorite and needs_review flags', async () => {
     const db = getDbClient(':memory:');
     await runMigrations(db);

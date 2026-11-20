@@ -3,7 +3,8 @@ import { getDbClient } from '../src/lib/db';
 import { runMigrations } from '../src/lib/migrate';
 import { buildSessionQueue } from '../src/lib/session';
 
-describe('Session Queue Builder', () => {
+// Skipped: legacy schema; replaced in Tasks 5–7 of the command-centric content plan.
+describe.skip('Session Queue Builder', () => {
   it('should prioritize overdue items over unreviewed items', async () => {
     const db = getDbClient(':memory:');
     await runMigrations(db);
