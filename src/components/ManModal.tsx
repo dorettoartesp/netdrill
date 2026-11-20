@@ -1,414 +1,178 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { getManPage, ManPage } from '@/lib/man-engine';
-import { Search, X, BookOpen, AlertCircle, RefreshCw, ExternalLink, Sparkles } from 'lucide-react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { ExternalLink, Search, X } from 'lucide-react';
+import type { DocumentEntry, DocumentSummary } from '@/lib/content/catalog';
+import { ManualEntryView } from './manual/ManualEntryView';
 
 interface ManModalProps {
+  /** Whether the modal is visible. */
   isOpen: boolean;
+  /** Command name searched when the modal opens (e.g. the drill's base command). */
   initialCommand?: string;
+  /** Closes the modal. */
   onClose: () => void;
 }
 
-interface LoadedManPage extends ManPage {
-  source?: 'bundled' | 'ai_nemotron';
-  man7Url?: string;
-}
+type ModalState =
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'entry'; entry: DocumentEntry }
+  | { status: 'choose'; matches: DocumentSummary[] }
+  | { status: 'empty' }
+  | { status: 'error' };
 
-const COMMON_COMMANDS = ['ps', 'top', 'ss', 'ip', 'find', 'journalctl', 'systemctl', 'chmod', 'iptables', 'tcpdump', 'curl', 'vmstat'];
-
-export function ManModal({ isOpen, initialCommand = 'ps', onClose }: ManModalProps) {
+/**
+ * Floating manual reader over the study session. Searches uploaded commands by name:
+ * one match opens it, several show a chooser, none offers the external man7.org search.
+ */
+export function ManModal({ isOpen, initialCommand = '', onClose }: ManModalProps) {
   const [query, setQuery] = useState(initialCommand);
-  const [activeCmd, setActiveCmd] = useState(initialCommand);
-  const [manPage, setManPage] = useState<LoadedManPage | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
+  const [state, setState] = useState<ModalState>({ status: 'idle' });
+  const abortRef = useRef<AbortController | null>(null);
 
-  const fetchManPage = useCallback(async (cmd: string, forceRefresh = false) => {
-    const clean = cmd.trim().toLowerCase().split(/\s+/)[0];
-    if (!clean) return;
-
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-
-    // Check bundled static first (unless force refreshing non-bundled)
-    const staticPage = getManPage(clean);
-    if (staticPage && !forceRefresh) {
-      setManPage({ ...staticPage, source: 'bundled' });
-      setIsLoading(false);
-      setErrorMessage(null);
-      return;
-    }
-
-    setIsLoading(true);
-    setElapsedSeconds(0);
-    setErrorMessage(null);
-
-    try {
-      const url = `/api/man/${encodeURIComponent(clean)}${forceRefresh ? '?refresh=true' : ''}`;
-      const res = await fetch(url, { signal: controller.signal });
-      const text = await res.text();
-      let data: Record<string, any> = {};
-      try {
-        data = JSON.parse(text);
-      } catch {
-        data = { error: 'Resposta inválida do servidor de manuais.' };
-      }
-
-      if (!res.ok) {
-        setErrorMessage(data.error || 'Manual não encontrado para este comando.');
-        setManPage(null);
-      } else {
-        setManPage(data as LoadedManPage);
-        setErrorMessage(null);
-      }
-    } catch (err: unknown) {
-      if (err instanceof Error && err.name === 'AbortError') return;
-      console.error('[ManModal] Fetch error:', err);
-      setErrorMessage('Falha ao conectar com o serviço de manuais.');
-      setManPage(null);
-    } finally {
-      setIsLoading(false);
-    }
+  const openEntry = useCallback(async (id: string, signal: AbortSignal) => {
+    const res = await fetch(`/api/man/${encodeURIComponent(id)}`, { signal });
+    if (!res.ok) throw new Error(String(res.status));
+    setState({ status: 'entry', entry: await res.json() });
   }, []);
 
-  // Update command and fetch ONLY when modal is open
-  useEffect(() => {
-    if (!isOpen) {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-      return;
-    }
-
-    if (initialCommand) {
-      const clean = initialCommand.trim().split(/\s+/)[0];
-      setQuery(clean);
-      setActiveCmd(clean);
-      fetchManPage(clean);
-    }
-  }, [isOpen, initialCommand, fetchManPage]);
-
-  // Elapsed seconds timer during generation
-  useEffect(() => {
-    if (!isLoading) return;
-    const interval = setInterval(() => {
-      setElapsedSeconds((prev) => prev + 1);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [isLoading]);
-
-  // Handle keyboard shortcuts: Esc and q (when not typing in input)
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        onClose();
+  const search = useCallback(
+    async (raw: string) => {
+      const q = raw.trim();
+      if (!q) {
+        setState({ status: 'idle' });
         return;
       }
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+      setState({ status: 'loading' });
+      try {
+        const res = await fetch(`/api/man?kind=command&q=${encodeURIComponent(q)}`, { signal: controller.signal });
+        if (!res.ok) throw new Error(String(res.status));
+        const list: DocumentSummary[] = await res.json();
+        const exact = list.filter((d) => d.name.toLowerCase() === q.toLowerCase());
+        const candidates = exact.length ? exact : list;
+        if (candidates.length === 1) await openEntry(candidates[0].id, controller.signal);
+        else if (candidates.length > 1) setState({ status: 'choose', matches: candidates });
+        else setState({ status: 'empty' });
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return;
+        setState({ status: 'error' });
+      }
+    },
+    [openEntry]
+  );
 
-      if (e.key === 'q' || e.key === 'Q') {
-        const activeTag = document.activeElement?.tagName.toLowerCase();
-        if (activeTag !== 'input' && activeTag !== 'textarea') {
-          e.preventDefault();
-          onClose();
-        }
+  useEffect(() => {
+    if (!isOpen) return;
+    setQuery(initialCommand);
+    search(initialCommand);
+    return () => abortRef.current?.abort();
+  }, [isOpen, initialCommand, search]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      const typing = e.target instanceof HTMLInputElement;
+      if (e.key === 'Escape' || (e.key === 'q' && !typing)) {
+        e.preventDefault();
+        onClose();
       }
     };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, [isOpen, onClose]);
-
-  // Focus input when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      setTimeout(() => {
-        searchInputRef.current?.focus();
-        searchInputRef.current?.select();
-      }, 50);
-    }
-  }, [isOpen]);
 
   if (!isOpen) return null;
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (query.trim()) {
-      const clean = query.trim().split(/\s+/)[0];
-      setActiveCmd(clean);
-      fetchManPage(clean);
-    }
-  };
-
-  const handleSelectCommand = (cmd: string) => {
-    setQuery(cmd);
-    setActiveCmd(cmd);
-    fetchManPage(cmd);
-  };
-
-  const man7SearchUrl = `https://www.google.com/search?q=${encodeURIComponent(activeCmd + ' site:man7.org/linux/man-pages')}`;
+  const man7Url = `https://www.google.com/search?q=${encodeURIComponent(`${query.trim() || 'linux'} site:man7.org/linux/man-pages`)}`;
 
   return (
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="man-modal-title"
-      className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 font-mono text-gray-200"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 font-sans text-slate-200 sm:items-center sm:p-5"
     >
-      <div className="bg-[#0c0e14] border-2 border-cyan-500/60 rounded max-w-3xl w-full max-h-[85vh] flex flex-col shadow-2xl">
-        {/* Modal Header */}
-        <div className="p-3 border-b border-[#1e2433] bg-[#12151e] flex flex-wrap items-center justify-between gap-2">
-          <form onSubmit={handleSearch} className="flex items-center gap-2 flex-1 min-w-[240px]">
-            <span className="text-cyan-400 font-bold text-sm sm:text-base">$ man</span>
-            <div className="relative flex-1">
-              <input
-                ref={searchInputRef}
-                type="text"
-                placeholder="digite qualquer comando (ex: rsync, strace, jq, ps)..."
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                className="w-full bg-[#0c0e14] border border-[#1e2433] text-white px-2.5 py-1 rounded text-xs sm:text-sm outline-none focus:border-cyan-400 font-mono"
-              />
-            </div>
+      <div className="flex max-h-[90dvh] w-full max-w-3xl flex-col rounded-t-2xl border border-[#262b3d] bg-[#0c0e14] shadow-2xl sm:rounded-2xl">
+        <div className="flex items-center gap-2 border-b border-[#1d2230] p-2 pl-3">
+          <h2 id="man-modal-title" className="sr-only">Manual</h2>
+          <form
+            className="flex min-w-0 flex-1 items-center gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              search(query);
+            }}
+          >
+            <span className="font-mono font-bold text-sky-400" aria-hidden="true">$ man</span>
+            <label htmlFor="man-modal-query" className="sr-only">Command name</label>
+            <input
+              id="man-modal-query"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              autoComplete="off"
+              autoCapitalize="none"
+              spellCheck={false}
+              className="min-w-0 flex-1 rounded-lg border border-[#262b3d] bg-[#05070a] px-2.5 py-2 font-mono text-slate-100 outline-none focus:border-sky-600"
+            />
             <button
               type="submit"
-              disabled={isLoading}
-              className="bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-black font-bold px-3 py-1 rounded text-xs transition cursor-pointer flex items-center gap-1"
+              disabled={state.status === 'loading'}
+              aria-label="Search"
+              className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-sky-400 hover:bg-sky-950/40 disabled:opacity-50"
             >
-              <Search className="w-3.5 h-3.5" />
-              <span>Buscar</span>
+              <Search className="h-5 w-5" aria-hidden="true" />
             </button>
           </form>
-
-          <div className="flex items-center gap-2">
-            <a
-              href={man7SearchUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Consultar manual oficial no man7.org (abre em nova aba)"
-              className="text-[11px] text-cyan-400 hover:text-cyan-200 border border-cyan-800/80 hover:border-cyan-600 bg-cyan-950/40 px-2 py-1 rounded transition flex items-center gap-1"
-            >
-              <span>man7.org</span>
-              <ExternalLink className="w-3 h-3" />
-            </a>
-
-            <button
-              type="button"
-              onClick={onClose}
-              className="text-gray-400 hover:text-white p-1 rounded border border-[#1e2433] bg-[#0c0e14] hover:bg-gray-800 transition cursor-pointer"
-              title="Fechar (Esc)"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close manual"
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white"
+          >
+            <X className="h-5 w-5" aria-hidden="true" />
+          </button>
         </div>
 
-        {/* Quick Command Navigation Pills */}
-        <div className="bg-[#0e121a] px-3 py-1.5 border-b border-[#1e2433] flex items-center gap-1.5 overflow-x-auto text-[11px]">
-          <span className="text-gray-500 whitespace-nowrap">Comandos rápidos:</span>
-          {COMMON_COMMANDS.map((cmd) => (
-            <button
-              key={cmd}
-              type="button"
-              disabled={isLoading}
-              onClick={() => handleSelectCommand(cmd)}
-              className={`px-1.5 py-0.5 rounded border transition cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed ${
-                activeCmd.toLowerCase() === cmd
-                  ? 'bg-cyan-950 border-cyan-500 text-cyan-300 font-bold'
-                  : 'bg-[#12151e] border-gray-800 text-gray-400 hover:text-gray-200 hover:border-gray-700'
-              }`}
-            >
-              {cmd}
-            </button>
-          ))}
-        </div>
-
-        {/* Modal Body / Man Page Reader */}
-        <div className="p-4 sm:p-6 overflow-y-auto text-xs text-gray-300 leading-relaxed space-y-4 flex-1 select-text">
-          {isLoading ? (
-            <div className="py-12 px-4 text-center space-y-4">
-              <div className="text-cyan-400 font-bold text-sm tracking-wider">
-                $ man {activeCmd}
-              </div>
-              <div className="text-amber-400 font-bold text-xs flex items-center justify-center gap-2">
-                <span className="inline-block animate-spin">⠋</span>
-                <span>Consultando Nemotron AI e indexando manual para &quot;{activeCmd}&quot; ({String(elapsedSeconds).padStart(2, '0')}s)...</span>
-              </div>
-              <p className="text-[11px] text-gray-500 max-w-md mx-auto">
-                💡 Esse processo ocorre apenas uma vez. As próximas consultas serão instantâneas pelo banco de dados.
-              </p>
-              <a
-                href={man7SearchUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs text-cyan-400 hover:underline pt-2"
-              >
-                <span>Ou consultar diretamente no man7.org</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
-            </div>
-          ) : manPage ? (
-            <>
-              {/* Terminal Title Bar with Source Badge and Regeneration */}
-              <div className="flex flex-wrap items-center justify-between border-b border-[#1e2433] pb-2 text-white font-bold text-xs gap-2">
-                <div className="flex items-center gap-2">
-                  <span>{manPage.command.toUpperCase()}({manPage.sectionName.split(' ')[0]})</span>
-                  {manPage.source === 'ai_nemotron' ? (
-                    <span className="text-[10px] bg-purple-950/80 border border-purple-700 text-purple-300 px-2 py-0.5 rounded flex items-center gap-1 font-semibold">
-                      <Sparkles className="w-3 h-3" />
-                      <span>Gerado via IA (Nemotron)</span>
-                    </span>
-                  ) : (
-                    <span className="text-[10px] bg-emerald-950/80 border border-emerald-700 text-emerald-300 px-2 py-0.5 rounded font-semibold">
-                      Manual Nativo NetDrill
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {manPage.source === 'ai_nemotron' && (
-                    <button
-                      type="button"
-                      onClick={() => fetchManPage(activeCmd, true)}
-                      title="Forçar o agente Nemotron a regenerar este manual"
-                      className="text-[11px] text-gray-400 hover:text-amber-300 border border-gray-700 hover:border-amber-600 bg-[#12151e] px-2 py-1 rounded transition flex items-center gap-1 cursor-pointer"
-                    >
-                      <RefreshCw className="w-3 h-3" />
-                      <span>Regenerar com IA</span>
-                    </button>
-                  )}
-
-                  <a
-                    href={man7SearchUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[11px] text-cyan-400 hover:underline flex items-center gap-1"
-                  >
-                    <span>Ver no man7.org</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                </div>
-              </div>
-
-              {/* NAME */}
-              <div id="man-modal-title">
-                <h2 className="text-xs font-bold text-cyan-400 tracking-wider mb-1">NOME</h2>
-                <p className="pl-4 text-white font-medium">{manPage.title}</p>
-              </div>
-
-              {/* SYNOPSIS */}
-              <div>
-                <h2 className="text-xs font-bold text-cyan-400 tracking-wider mb-1">SINOPSE</h2>
-                <div className="bg-[#06080d] border border-gray-850 rounded p-2.5 text-emerald-400 font-mono text-xs overflow-x-auto">
-                  $ {manPage.synopsis}
-                </div>
-              </div>
-
-              {/* DESCRIPTION */}
-              <div>
-                <h2 className="text-xs font-bold text-cyan-400 tracking-wider mb-1">DESCRIÇÃO</h2>
-                <p className="pl-4 text-gray-300 whitespace-pre-line leading-relaxed">
-                  {manPage.description}
-                </p>
-              </div>
-
-              {/* OPTIONS */}
-              <div>
-                <h2 className="text-xs font-bold text-cyan-400 tracking-wider mb-2">OPÇÕES FREQUENTES EM PRODUÇÃO</h2>
-                <div className="space-y-1.5 pl-4">
-                  {manPage.options.map((opt, idx) => {
-                    const parts = opt.split(' : ');
-                    const flag = parts[0];
-                    const exp = parts.slice(1).join(' : ');
-                    return (
-                      <div key={idx} className="bg-[#121622] border border-cyan-800/40 p-2 rounded">
-                        <span className="text-amber-300 font-bold font-mono">{flag}</span>
-                        {exp && <p className="text-gray-300 mt-0.5 leading-relaxed">{exp}</p>}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* EXAMPLES */}
-              <div>
-                <h2 className="text-xs font-bold text-cyan-400 tracking-wider mb-2">EXEMPLOS PRÁTICOS</h2>
-                <div className="space-y-1.5 pl-4">
-                  {manPage.examples.map((ex, idx) => (
-                    <div key={idx} className="bg-[#06080d] border border-gray-850 rounded p-2 text-emerald-300 font-mono text-xs">
-                      $ {ex}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className="text-center py-10 space-y-4">
-              <AlertCircle className="w-8 h-8 text-amber-400 mx-auto" />
-              <p className="text-white font-bold">
-                {errorMessage || `Manual para "${activeCmd}" não encontrado.`}
-              </p>
-              <p className="text-xs text-gray-400 max-w-md mx-auto">
-                Você pode consultar a documentação original em inglês do Linux diretamente no repositório canônico man7.org:
-              </p>
-              <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
-                <a
-                  href={man7SearchUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-cyan-500 hover:bg-cyan-400 text-black font-bold px-4 py-2 rounded text-xs transition flex items-center gap-1.5"
-                >
-                  <span>Buscar &quot;{activeCmd}&quot; no man7.org via Google</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </a>
-
+        <div className="flex-1 overflow-y-auto p-4" aria-live="polite">
+          {state.status === 'loading' && <p className="py-10 text-center text-sm text-slate-400">Loading…</p>}
+          {state.status === 'entry' && <ManualEntryView entry={state.entry} />}
+          {state.status === 'choose' && (
+            <div className="space-y-2">
+              <p className="m-0 text-sm text-slate-400">Several commands match. Choose one:</p>
+              {state.matches.map((d) => (
                 <button
+                  key={d.id}
                   type="button"
-                  onClick={() => handleSelectCommand('ps')}
-                  className="bg-[#12151e] border border-gray-700 hover:border-gray-500 text-gray-300 px-3 py-2 rounded text-xs transition cursor-pointer"
+                  onClick={() => {
+                    const controller = new AbortController();
+                    abortRef.current = controller;
+                    setState({ status: 'loading' });
+                    openEntry(d.id, controller.signal).catch(() => setState({ status: 'error' }));
+                  }}
+                  className="flex w-full min-h-[48px] items-center justify-between gap-2 rounded-xl border border-[#262b3d] bg-[#12141c] px-3.5 text-left hover:border-green-800"
                 >
-                  Voltar para manual do ps
+                  <span className="font-mono font-bold text-slate-100">{d.name}</span>
+                  <span className="text-xs text-slate-400">{d.topicSlug}</span>
                 </button>
-              </div>
+              ))}
             </div>
           )}
-        </div>
-
-        {/* Modal Footer */}
-        <div className="p-2.5 border-t border-[#1e2433] bg-[#12151e] flex flex-wrap justify-between items-center text-xs text-gray-400 gap-2">
-          <span className="flex items-center gap-1.5 text-cyan-400 text-[11px]">
-            <BookOpen className="w-3.5 h-3.5" />
-            <span>Leitor Linux com síntese JIT via Nemotron AI</span>
-          </span>
-
-          <div className="flex items-center gap-3">
-            <a
-              href="https://man7.org/linux/man-pages/index.html"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gray-400 hover:text-cyan-300 text-[11px] flex items-center gap-1"
-            >
-              <span>Índice man7.org</span>
-              <ExternalLink className="w-3 h-3" />
-            </a>
-
-            <button
-              type="button"
-              onClick={onClose}
-              className="bg-[#1e2433] hover:bg-[#283144] text-white px-3 py-1 rounded text-xs transition cursor-pointer"
-            >
-              Fechar [Esc / q]
-            </button>
-          </div>
+          {(state.status === 'empty' || state.status === 'idle') && (
+            <div className="space-y-3 py-10 text-center text-sm text-slate-400">
+              <p className="m-0">{state.status === 'empty' ? 'No manual entry found for this command.' : 'Type a command name.'}</p>
+              {state.status === 'empty' && (
+                <a href={man7Url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sky-400 hover:text-sky-300">
+                  Search man7.org <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                </a>
+              )}
+            </div>
+          )}
+          {state.status === 'error' && (
+            <p className="py-10 text-center text-sm text-red-300">The manual could not be loaded. Please try again.</p>
+          )}
         </div>
       </div>
     </div>

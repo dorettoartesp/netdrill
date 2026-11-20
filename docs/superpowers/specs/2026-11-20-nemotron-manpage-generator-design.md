@@ -1,5 +1,7 @@
 # Just-In-Time Linux Manpage Generator via OpenRouter Nemotron & Turso libSQL
 
+> **Status: Superseded** by [`2026-11-20-command-centric-content-design.md`](2026-11-20-command-centric-content-design.md) — AI generation was removed; the manual reads uploaded content documents.
+
 ## 1. Intent & Context
 
 NetDrill offers practical command-line drills and an embedded manual reader (`ManModal` and `/man`) for Linux sysadmin and DevOps engineers. While NetDrill comes pre-packaged with 12 verified, high-frequency production commands (`ps`, `top`, `ss`, `ip`, `find`, `journalctl`, `systemctl`, `chmod`, `iptables`, `tcpdump`, `curl`, `vmstat`), the Linux operating system contains thousands of utilities (`strace`, `rsync`, `jq`, `sed`, `awk`, `btrfs`, `lsof`, `tcpflow`, `nftables`, etc.).
