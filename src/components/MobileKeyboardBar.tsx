@@ -15,6 +15,8 @@ interface MobileKeyboardBarProps {
   isBlindTest?: boolean;
   /** Optional callback to exit blind recall test mode and restore reference. */
   onExitBlindTest?: () => void;
+  /** Optional callback to open the floating man modal. */
+  onOpenMan?: () => void;
 }
 
 /**
@@ -28,6 +30,7 @@ export function MobileKeyboardBar({
   onClear,
   isBlindTest = false,
   onExitBlindTest,
+  onOpenMan,
 }: MobileKeyboardBarProps) {
   const keys = ['-', '_', '/', '|', '"', '$', ':', 'Tab'];
 
@@ -45,6 +48,16 @@ export function MobileKeyboardBar({
             {k}
           </button>
         ))}
+        {onOpenMan && (
+          <button
+            type="button"
+            onClick={onOpenMan}
+            className="min-w-[44px] min-h-[44px] px-2.5 bg-[#12151e] hover:bg-cyan-950/40 active:bg-cyan-900/60 border border-cyan-800/80 text-cyan-300 font-mono text-xs font-bold rounded-lg transition shadow"
+            title="Abrir Manual (man)"
+          >
+            📖 man
+          </button>
+        )}
         {onClear && (
           <button
             type="button"

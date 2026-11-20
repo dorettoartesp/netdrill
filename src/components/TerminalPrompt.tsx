@@ -13,6 +13,7 @@ interface TerminalPromptProps {
   onExitBlindTest?: () => void;
   isBlindTest?: boolean;
   repetitionCount?: number;
+  onOpenMan?: (cmd: string) => void;
 }
 
 /**
@@ -30,6 +31,7 @@ export function TerminalPrompt({
   onExitBlindTest,
   isBlindTest = false,
   repetitionCount = 1,
+  onOpenMan,
 }: TerminalPromptProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -86,6 +88,13 @@ export function TerminalPrompt({
     // Single-line keyboard controls
     if (e.key === 'Enter') {
       e.preventDefault();
+      const trimmed = value.trim();
+      if (trimmed.startsWith(':man') && onOpenMan) {
+        const cmd = trimmed.replace(/^:man\s*/, '') || target.split(' ')[0];
+        onOpenMan(cmd);
+        onChange('');
+        return;
+      }
       if (isExitCommand(value)) {
         onExitTrigger();
       } else {

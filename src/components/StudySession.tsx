@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { QueueItem } from '@/lib/session';
 import { compareBlock } from '@/lib/validator';
+import { parseAnnotatedOutput } from '@/lib/telemetry-glossary';
 import { TimerHeader } from './TimerHeader';
 import { TerminalPrompt } from './TerminalPrompt';
 import { MobileKeyboardBar } from './MobileKeyboardBar';
+import { ManModal } from './ManModal';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,6 +17,12 @@ import {
   Trophy,
   Star,
   Flag,
+  BookOpen,
+  Terminal,
+  Activity,
+  Layers,
+  Info,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface StudySessionProps {
@@ -23,10 +31,44 @@ interface StudySessionProps {
   selectedTopicSlugs?: string[];
 }
 
+interface UseCaseItem {
+  title: string;
+  description: string;
+  severity?: 'info' | 'warning' | 'critical';
+}
+
+function getEffectiveUseCases(item: QueueItem): UseCaseItem[] {
+  if (item.use_cases) {
+    try {
+      const parsed =
+        typeof item.use_cases === 'string' ? JSON.parse(item.use_cases) : item.use_cases;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed as UseCaseItem[];
+      }
+    } catch {
+      // fallback below
+    }
+  }
+
+  const baseCmd = item.target.trim().split(/\s+/)[0] || 'comando';
+  return [
+    {
+      title: `Incidente de Produção: Investigação com ${baseCmd}`,
+      description: `Alerta no Grafana ou PagerDuty acusando degradação no serviço. O comando "${item.target}" é executado imediatamente no terminal pelo engenheiro de SRE para isolar se a falha é saturação de recursos, processo zumbi ou contenção de I/O.`,
+      severity: 'critical',
+    },
+    {
+      title: `Auditoria de Conformidade e Troubleshooting`,
+      description: `Durante inspeção operacional de rotina ou logo após um deploy, utilize "${item.target}" para certificar que os parâmetros de rede, estados de sockets ou privilégios de arquivos obedecem estritamente à política de segurança e alta disponibilidade.`,
+      severity: 'info',
+    },
+  ];
+}
+
 /**
  * Main interactive study session container managing drill repetitions,
- * blind recall testing, SM-2 updates, timer pausing, item favoriting/flagging,
- * and state persistence across page leaves.
+ * blind recall testing, educational tabs (Casos de Uso, STDOUT Anotado),
+ * embedded man modal, SM-2 updates, and state persistence.
  */
 export function StudySession({
   initialQueue,
@@ -43,9 +85,14 @@ export function StudySession({
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [completedItemsCount, setCompletedItemsCount] = useState(0);
   const [isSessionFinished, setIsSessionFinished] = useState(false);
-  // Default to collapsed STDOUT to eliminate vertical viewport bloat
   const [showStdout, setShowStdout] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+
+  // 3-Tab Educational Workspace State
+  const [activeTab, setActiveTab] = useState<'treino' | 'casos' | 'stdout'>('treino');
+  const [isManOpen, setIsManOpen] = useState(false);
+  const [manCmd, setManCmd] = useState('ps');
+  const [selectedMetricKey, setSelectedMetricKey] = useState<string | null>(null);
 
   // Favoriting and Needs-Review state tracking
   const [favorites, setFavorites] = useState<Set<string>>(
@@ -91,6 +138,29 @@ export function StudySession({
   const currentItem = queue[currentIndex];
   const isCurrentFavorite = currentItem ? favorites.has(currentItem.id) : false;
   const isCurrentNeedsReview = currentItem ? needsReviewSet.has(currentItem.id) : false;
+
+  // Derive initial command for man modal
+  useEffect(() => {
+    if (currentItem) {
+      const base = currentItem.target.trim().split(/\s+/)[0] || 'ps';
+      setManCmd(base);
+    }
+  }, [currentItem]);
+
+  // Parse annotated STDOUT telemetry
+  const parsedStdout = useMemo(() => {
+    return parseAnnotatedOutput(currentItem?.output_sample || '', currentItem?.output_notes);
+  }, [currentItem?.output_sample, currentItem?.output_notes]);
+
+  // Set default selected metric when tab or item changes
+  useEffect(() => {
+    const keys = Object.keys(parsedStdout.activeMetrics);
+    if (keys.length > 0) {
+      setSelectedMetricKey(keys[0]);
+    } else {
+      setSelectedMetricKey(null);
+    }
+  }, [parsedStdout]);
 
   const toggleFavorite = useCallback(async () => {
     if (!currentItem) return;
@@ -146,13 +216,34 @@ export function StudySession({
     });
   }, []);
 
-  // Global hotkeys: Ctrl+O (stdout), Ctrl+P or P (pause when not in textarea), Escape (exit blind test)
+  const handleOpenManModal = useCallback((cmd?: string) => {
+    if (cmd && cmd.trim()) {
+      setManCmd(cmd.trim().split(/\s+/)[0]);
+    } else if (currentItem) {
+      setManCmd(currentItem.target.trim().split(/\s+/)[0] || 'ps');
+    }
+    setIsManOpen(true);
+  }, [currentItem]);
+
+  // Global hotkeys: Ctrl+1 (treino), Ctrl+2 (casos), Ctrl+3 (stdout), Ctrl+M/M (man modal), Ctrl+O (stdout expand)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const isInputActive =
         e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement;
 
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'o') {
+      if ((e.ctrlKey || e.metaKey) && e.key === '1') {
+        e.preventDefault();
+        setActiveTab('treino');
+      } else if ((e.ctrlKey || e.metaKey) && e.key === '2') {
+        e.preventDefault();
+        setActiveTab('casos');
+      } else if ((e.ctrlKey || e.metaKey) && e.key === '3') {
+        e.preventDefault();
+        setActiveTab('stdout');
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'm') {
+        e.preventDefault();
+        handleOpenManModal();
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'o') {
         e.preventDefault();
         setShowStdout((prev) => !prev);
       } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') {
@@ -168,7 +259,10 @@ export function StudySession({
         e.preventDefault();
         handleExitBlindTest();
       } else if (!isInputActive) {
-        if (e.key.toLowerCase() === 'p') {
+        if (e.key.toLowerCase() === 'm') {
+          e.preventDefault();
+          handleOpenManModal();
+        } else if (e.key.toLowerCase() === 'p') {
           e.preventDefault();
           togglePause();
         } else if (e.key.toLowerCase() === 'f') {
@@ -183,7 +277,14 @@ export function StudySession({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [togglePause, toggleFavorite, toggleNeedsReview, isBlindTest, handleExitBlindTest]);
+  }, [
+    togglePause,
+    toggleFavorite,
+    toggleNeedsReview,
+    isBlindTest,
+    handleExitBlindTest,
+    handleOpenManModal,
+  ]);
 
   const handleGraduateItem = useCallback(async () => {
     if (!currentItem) return;
@@ -206,6 +307,7 @@ export function StudySession({
       setRepetitionCount(1);
       setIsBlindTest(false);
       setShowStdout(false);
+      setActiveTab('treino');
       setFeedback({
         type: 'success',
         message: 'Item graduado com sucesso! Próximo desafio carregado.',
@@ -219,7 +321,7 @@ export function StudySession({
   }, [currentItem, currentIndex, queue.length, storageKey]);
 
   const handleValidate = () => {
-    if (!currentItem || isPaused) return;
+    if (!currentItem || isPaused || activeTab !== 'treino') return;
 
     const inputLines = currentInput.split('\n').filter((l) => l.trim().length > 0);
     const result = compareBlock(inputLines, currentItem.target);
@@ -229,10 +331,8 @@ export function StudySession({
       setShowStdout(true);
 
       if (isBlindTest) {
-        // Blind test passed! Graduate item and schedule SM-2
         handleGraduateItem();
       } else {
-        // Practice repetition passed!
         setFeedback({
           type: 'success',
           message: `Repetição #${repetitionCount} concluída com sucesso! Digite novamente ou :done para o teste cego.`,
@@ -251,7 +351,7 @@ export function StudySession({
   };
 
   const handleTriggerDone = () => {
-    if (isPaused) return;
+    if (isPaused || activeTab !== 'treino') return;
     setIsBlindTest(true);
     setCurrentInput('');
     setFeedback({
@@ -289,175 +389,404 @@ export function StudySession({
   }
 
   const isMulti = currentItem.type === 'block' || currentItem.target.includes('\n');
+  const isEducationalMode = activeTab !== 'treino' || isManOpen;
+  const effectiveUseCases = getEffectiveUseCases(currentItem);
 
   return (
-    <div className="min-h-screen flex flex-col justify-between max-w-6xl mx-auto p-4 md:p-6 pb-28 lg:pb-6">
+    <div className="min-h-screen flex flex-col justify-between max-w-6xl mx-auto p-4 md:p-6 pb-28 lg:pb-6 font-mono text-gray-200">
       <div>
         <TimerHeader
           initialMinutes={initialMinutes}
           onTimeExpired={() => setIsSessionFinished(true)}
-          topicTitle={currentItem.title}
+          topicTitle={
+            isManOpen
+              ? `[PAUSADO (MAN)] ${currentItem.title}`
+              : activeTab !== 'treino'
+              ? `[EM ESTUDO] ${currentItem.title}`
+              : currentItem.title
+          }
           onLogout={handleLogout}
-          isPaused={isPaused}
+          isPaused={isPaused || isEducationalMode}
           onTogglePause={togglePause}
           currentIndex={currentIndex}
           totalItems={queue.length}
         />
 
-        <div className="space-y-4 my-4">
-          {/* Objective Box with Favorite and Needs-Review Action Controls */}
-          <Card>
-            <CardContent className="p-4 space-y-2">
-              <div className="flex justify-between items-center text-xs text-slate-400 font-mono">
-                <div className="flex items-center gap-2">
-                  <span className="uppercase tracking-wider font-bold">Cenário / Objetivo</span>
-                  {currentItem.isDue && (
-                    <span className="text-amber-400 bg-amber-950/60 border border-amber-800 px-2 py-0.5 rounded text-xs font-semibold">
-                      Revisão Pendente
-                    </span>
-                  )}
-                  {isCurrentFavorite && (
-                    <span className="text-yellow-400 bg-yellow-950/60 border border-yellow-800 px-2 py-0.5 rounded text-xs flex items-center gap-1 font-semibold">
-                      ★ Favorito
-                    </span>
-                  )}
-                  {isCurrentNeedsReview && (
-                    <span className="text-red-400 bg-red-950/60 border border-red-800 px-2 py-0.5 rounded text-xs flex items-center gap-1 font-semibold">
-                      ⚑ Revisar
-                    </span>
-                  )}
+        {/* 3-Tab Navigation & Man Modal Launcher */}
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-800 pb-3 mb-4">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setActiveTab('treino')}
+              className={`px-3 py-1.5 rounded text-xs font-bold transition flex items-center gap-1.5 cursor-pointer border ${
+                activeTab === 'treino'
+                  ? 'bg-emerald-950/80 border-emerald-600 text-emerald-300'
+                  : 'bg-[#10141f] border-gray-800 text-gray-400 hover:text-gray-200 hover:border-gray-700'
+              }`}
+            >
+              <Terminal className="w-3.5 h-3.5" />
+              <span>[ Ctrl+1 ] ⌨️ Treino</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('casos')}
+              className={`px-3 py-1.5 rounded text-xs font-bold transition flex items-center gap-1.5 cursor-pointer border ${
+                activeTab === 'casos'
+                  ? 'bg-amber-950/80 border-amber-600 text-amber-300'
+                  : 'bg-[#10141f] border-gray-800 text-gray-400 hover:text-gray-200 hover:border-gray-700'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>[ Ctrl+2 ] 💡 Casos de Uso</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('stdout')}
+              className={`px-3 py-1.5 rounded text-xs font-bold transition flex items-center gap-1.5 cursor-pointer border ${
+                activeTab === 'stdout'
+                  ? 'bg-cyan-950/80 border-cyan-600 text-cyan-300'
+                  : 'bg-[#10141f] border-gray-800 text-gray-400 hover:text-gray-200 hover:border-gray-700'
+              }`}
+            >
+              <Activity className="w-3.5 h-3.5" />
+              <span>[ Ctrl+3 ] 🔍 STDOUT Anotado</span>
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => handleOpenManModal()}
+            className="bg-[#12151e] hover:bg-[#1a202c] border border-cyan-500/50 text-cyan-400 px-3 py-1.5 rounded font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow"
+            title="Pressione M para abrir o manual de qualquer comando"
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>[ M ] 📖 Man Modal</span>
+          </button>
+        </div>
+
+        {/* Tab 2: Casos de Uso em Produção */}
+        {activeTab === 'casos' && (
+          <div className="space-y-4 my-4">
+            <div className="bg-amber-950/30 border border-amber-800/60 rounded-lg p-3 text-xs text-amber-300 flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                <span>⏱️ O cronômetro do treino está pausado enquanto você estuda os cenários reais de aplicação.</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setActiveTab('treino')}
+                className="bg-amber-500 hover:bg-amber-400 text-black px-2.5 py-1 rounded font-bold text-xs transition cursor-pointer"
+              >
+                Voltar ao Treino (Ctrl+1)
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {effectiveUseCases.map((uc, idx) => {
+                const isCritical = uc.severity === 'critical';
+                const borderColor = isCritical ? 'border-l-red-500' : 'border-l-amber-500';
+                const badgeColor = isCritical
+                  ? 'bg-red-950/80 border-red-800 text-red-300'
+                  : 'bg-amber-950/80 border-amber-800 text-amber-300';
+
+                return (
+                  <div
+                    key={idx}
+                    className={`bg-[#0f121a] border border-gray-800 ${borderColor} border-l-4 rounded-lg p-4 space-y-2`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-white font-bold text-sm">{uc.title}</span>
+                      <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded border ${badgeColor}`}>
+                        {isCritical ? 'Alerta de Produção' : 'Rotina & Troubleshooting'}
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-gray-300 leading-relaxed">{uc.description}</p>
+
+                    <div className="bg-[#07090e] border border-gray-855 rounded p-2 text-xs font-mono text-emerald-300 flex items-center justify-between">
+                      <span>$ {currentItem.target}</span>
+                      <span className="text-[10px] text-gray-500">Comando em estudo</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Tab 3: STDOUT Anotado & Telemetria */}
+        {activeTab === 'stdout' && (
+          <div className="space-y-4 my-4">
+            <div className="bg-cyan-950/30 border border-cyan-800/60 rounded-lg p-3 text-xs text-cyan-300 flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Info className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+                <span>⏱️ O cronômetro do treino está pausado. Clique nos tokens sublinhados para inspecionar métricas.</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setActiveTab('treino')}
+                className="bg-cyan-500 hover:bg-cyan-400 text-black px-2.5 py-1 rounded font-bold text-xs transition cursor-pointer"
+              >
+                Voltar ao Treino (Ctrl+1)
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Left Column: Raw Output with Interactive Hotspots */}
+              <div className="bg-[#0c0e14] border border-gray-800 rounded-lg p-4 space-y-3">
+                <div className="flex items-center justify-between border-b border-gray-800 pb-2 text-xs">
+                  <span className="text-cyan-400 font-bold">$ {currentItem.target}</span>
+                  <span className="text-gray-500">Terminal Output Real</span>
                 </div>
 
-                {/* Flagging Buttons */}
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={toggleFavorite}
-                    title="Favoritar questão (F ou Ctrl+F)"
-                    className={`p-1.5 rounded transition border text-xs flex items-center gap-1 font-mono cursor-pointer ${
-                      isCurrentFavorite
-                        ? 'bg-yellow-950/80 border-yellow-700 text-yellow-300'
-                        : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white'
-                    }`}
-                  >
-                    <Star
-                      className={`w-3.5 h-3.5 ${
-                        isCurrentFavorite ? 'fill-yellow-400 text-yellow-400' : ''
-                      }`}
-                    />
-                    <span className="hidden sm:inline">Favoritar</span>
-                    <kbd className="text-[9px] bg-black/40 px-1 py-0.5 rounded text-gray-400">
-                      F
-                    </kbd>
-                  </button>
+                <div className="bg-[#06080d] border border-gray-850 rounded p-3 text-xs font-mono leading-relaxed overflow-x-auto whitespace-pre">
+                  {parsedStdout.segments.map((seg, idx) => {
+                    if (!seg.metricKey) {
+                      return <span key={idx} className="text-gray-300">{seg.text}</span>;
+                    }
 
-                  <button
-                    type="button"
-                    onClick={toggleNeedsReview}
-                    title="Marcar que precisa de revisão (R ou Ctrl+R)"
-                    className={`p-1.5 rounded transition border text-xs flex items-center gap-1 font-mono cursor-pointer ${
-                      isCurrentNeedsReview
-                        ? 'bg-red-950/80 border-red-700 text-red-300'
-                        : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white'
-                    }`}
-                  >
-                    <Flag
-                      className={`w-3.5 h-3.5 ${
-                        isCurrentNeedsReview ? 'fill-red-400 text-red-400' : ''
-                      }`}
-                    />
-                    <span className="hidden sm:inline">Revisar</span>
-                    <kbd className="text-[9px] bg-black/40 px-1 py-0.5 rounded text-gray-400">
-                      R
-                    </kbd>
-                  </button>
+                    const isSelected = selectedMetricKey === seg.metricKey;
+                    const isAlert = seg.isAlert;
+
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setSelectedMetricKey(seg.metricKey || null)}
+                        className={`inline px-1 py-0.5 rounded cursor-pointer transition underline decoration-dotted font-bold ${
+                          isSelected
+                            ? 'bg-cyan-500 text-black underline-offset-2'
+                            : isAlert
+                            ? 'bg-red-950/80 text-red-300 border border-red-700/80 hover:bg-red-900'
+                            : 'bg-cyan-950/80 text-cyan-300 border border-cyan-700/80 hover:bg-cyan-900'
+                        }`}
+                        title="Clique para ver significado e anomalias"
+                      >
+                        {seg.text}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
-              <h2 className="text-base font-semibold text-white font-mono">{currentItem.prompt}</h2>
-              {currentItem.explanation && (
-                <p className="text-xs text-slate-400 pt-1 leading-relaxed">
-                  {currentItem.explanation}
-                </p>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Feedback Banner */}
-          {feedback && (
-            <div
-              className={`p-3 rounded-lg border text-xs font-mono flex items-center space-x-2 ${
-                feedback.type === 'success'
-                  ? 'bg-green-950/60 border-green-800 text-green-300'
-                  : 'bg-red-950/60 border-red-800 text-red-300'
-              }`}
-            >
-              {feedback.type === 'success' ? (
-                <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-              ) : (
-                <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              )}
-              <span>{feedback.message}</span>
-            </div>
-          )}
-
-          {/* Sample Terminal Output Preview (Collapsed by Default, Flattened Design) */}
-          {currentItem.output_sample && !isBlindTest && (
-            <div className="bg-[#0f111a] border border-gray-800 rounded-lg p-3">
-              <button
-                type="button"
-                onClick={() => setShowStdout((prev) => !prev)}
-                className="flex items-center justify-between w-full text-xs text-gray-400 hover:text-white transition font-mono focus:outline-none cursor-pointer"
-              >
-                <span className="flex items-center gap-2">
-                  <span className="text-cyan-400 font-bold">▶ [STDOUT]</span>
-                  <span className="font-semibold text-white">
-                    Exemplo de Resposta do Ambiente (Terminal Output)
+              {/* Right Column: Telemetry Inspector */}
+              <div className="bg-[#0f121a] border border-gray-800 rounded-lg p-4 space-y-3">
+                <div className="flex items-center justify-between border-b border-gray-800 pb-2 text-xs">
+                  <span className="text-cyan-300 font-bold flex items-center gap-1.5">
+                    <Activity className="w-3.5 h-3.5" />
+                    <span>Inspetor de Telemetria</span>
                   </span>
-                  <kbd className="bg-gray-800 text-[10px] px-1.5 py-0.5 rounded text-gray-400 border border-gray-700">
-                    Ctrl+O
-                  </kbd>
-                </span>
-                <span className="text-xs text-gray-400 hover:text-gray-200">
-                  {showStdout ? 'Ocultar ▲' : 'Mostrar ▼'}
-                </span>
-              </button>
-              {showStdout && (
-                <div className="mt-2.5 pt-2 border-t border-gray-800 font-mono text-xs text-slate-300 bg-[#0c0e14] p-3.5 border-l-4 border-l-cyan-500 overflow-x-auto leading-relaxed whitespace-pre rounded">
-                  {currentItem.output_sample}
+                  <span className="text-gray-500">Linha de Base & Anomalias</span>
                 </div>
-              )}
-            </div>
-          )}
 
-          {/* Interactive Terminal (Disabled when paused) */}
-          <div className="relative">
-            {isPaused && (
-              <div className="absolute inset-0 bg-black/80 backdrop-blur-[2px] z-20 flex flex-col items-center justify-center rounded-lg border border-amber-800/60 text-center p-6 space-y-3 font-mono">
-                <div className="text-amber-400 font-bold text-lg">⏸ Treino Pausado</div>
-                <p className="text-xs text-gray-400 max-w-sm">
-                  O tempo foi congelado e sua questão atual está preservada.
-                </p>
-                <Button onClick={togglePause} className="space-x-1.5">
-                  <span>Retomar Treino</span>
-                  <kbd className="text-xs bg-black/40 px-1.5 py-0.5 rounded ml-1">P</kbd>
-                </Button>
+                {selectedMetricKey && parsedStdout.activeMetrics[selectedMetricKey] ? (
+                  (() => {
+                    const m = parsedStdout.activeMetrics[selectedMetricKey];
+                    const isCritical = m.severity === 'critical';
+                    const isWarning = m.severity === 'warning';
+                    const badgeColor = isCritical
+                      ? 'bg-red-950 text-red-300 border-red-700'
+                      : isWarning
+                      ? 'bg-amber-950 text-amber-300 border-amber-700'
+                      : 'bg-cyan-950 text-cyan-300 border-cyan-700';
+
+                    return (
+                      <div className="space-y-3 text-xs">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-bold text-white font-mono">{m.label}</span>
+                          <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded border ${badgeColor}`}>
+                            {m.severity}
+                          </span>
+                        </div>
+
+                        <p className="text-gray-300 leading-relaxed">{m.description}</p>
+
+                        <div className="bg-[#121622] border-l-2 border-emerald-500 p-2.5 rounded-r">
+                          <span className="text-emerald-400 font-bold block mb-1">
+                            ✓ Linha de Base Normal:
+                          </span>
+                          <span className="text-gray-300">{m.normalBaseline}</span>
+                        </div>
+
+                        <div className="bg-[#121622] border-l-2 border-red-500 p-2.5 rounded-r">
+                          <span className="text-red-400 font-bold block mb-1">
+                            ⚠ Alerta de Anomalia / Perigo:
+                          </span>
+                          <span className="text-gray-300">{m.anomalyAlert}</span>
+                        </div>
+                      </div>
+                    );
+                  })()
+                ) : (
+                  <div className="py-8 text-center text-xs text-gray-500">
+                    Clique em qualquer métrica destacada no terminal ao lado para inspecionar sua linha de base.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 1: Treino (Core Muscle Memory Drill) */}
+        {activeTab === 'treino' && (
+          <div className="space-y-4 my-4">
+            {/* Objective Box with Favorite and Needs-Review Action Controls */}
+            <Card>
+              <CardContent className="p-4 space-y-2">
+                <div className="flex justify-between items-center text-xs text-slate-400 font-mono">
+                  <div className="flex items-center gap-2">
+                    <span className="uppercase tracking-wider font-bold">Cenário / Objetivo</span>
+                    {currentItem.isDue && (
+                      <span className="text-amber-400 bg-amber-950/60 border border-amber-800 px-2 py-0.5 rounded text-xs font-semibold">
+                        Revisão Pendente
+                      </span>
+                    )}
+                    {isCurrentFavorite && (
+                      <span className="text-yellow-400 bg-yellow-950/60 border border-yellow-800 px-2 py-0.5 rounded text-xs flex items-center gap-1 font-semibold">
+                        ★ Favorito
+                      </span>
+                    )}
+                    {isCurrentNeedsReview && (
+                      <span className="text-red-400 bg-red-950/60 border border-red-800 px-2 py-0.5 rounded text-xs flex items-center gap-1 font-semibold">
+                        ⚑ Revisar
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Flagging Buttons */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={toggleFavorite}
+                      title="Favoritar questão (F ou Ctrl+F)"
+                      className={`p-1.5 rounded transition border text-xs flex items-center gap-1 font-mono cursor-pointer ${
+                        isCurrentFavorite
+                          ? 'bg-yellow-950/80 border-yellow-700 text-yellow-300'
+                          : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white'
+                      }`}
+                    >
+                      <Star
+                        className={`w-3.5 h-3.5 ${
+                          isCurrentFavorite ? 'fill-yellow-400 text-yellow-400' : ''
+                        }`}
+                      />
+                      <span className="hidden sm:inline">Favoritar</span>
+                      <kbd className="text-[9px] bg-black/40 px-1 py-0.5 rounded text-gray-400">
+                        F
+                      </kbd>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={toggleNeedsReview}
+                      title="Marcar que precisa de revisão (R ou Ctrl+R)"
+                      className={`p-1.5 rounded transition border text-xs flex items-center gap-1 font-mono cursor-pointer ${
+                        isCurrentNeedsReview
+                          ? 'bg-red-950/80 border-red-700 text-red-300'
+                          : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white'
+                      }`}
+                    >
+                      <Flag
+                        className={`w-3.5 h-3.5 ${
+                          isCurrentNeedsReview ? 'fill-red-400 text-red-400' : ''
+                        }`}
+                      />
+                      <span className="hidden sm:inline">Revisar</span>
+                      <kbd className="text-[9px] bg-black/40 px-1 py-0.5 rounded text-gray-400">
+                        R
+                      </kbd>
+                    </button>
+                  </div>
+                </div>
+
+                <h2 className="text-base font-semibold text-white font-mono">{currentItem.prompt}</h2>
+                {currentItem.explanation && (
+                  <p className="text-xs text-slate-400 pt-1 leading-relaxed">
+                    {currentItem.explanation}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Feedback Banner */}
+            {feedback && (
+              <div
+                className={`p-3 rounded-lg border text-xs font-mono flex items-center space-x-2 ${
+                  feedback.type === 'success'
+                    ? 'bg-green-950/60 border-green-800 text-green-300'
+                    : 'bg-red-950/60 border-red-800 text-red-300'
+                }`}
+              >
+                {feedback.type === 'success' ? (
+                  <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                )}
+                <span>{feedback.message}</span>
               </div>
             )}
 
-            <TerminalPrompt
-              isMultiLine={isMulti}
-              target={currentItem.target}
-              value={currentInput}
-              onChange={setCurrentInput}
-              onSubmit={handleValidate}
-              onExitTrigger={handleTriggerDone}
-              onExitBlindTest={handleExitBlindTest}
-              isBlindTest={isBlindTest}
-              repetitionCount={repetitionCount}
-            />
+            {/* Sample Terminal Output Preview (Collapsed by Default) */}
+            {currentItem.output_sample && !isBlindTest && (
+              <div className="bg-[#0f111a] border border-gray-800 rounded-lg p-3">
+                <button
+                  type="button"
+                  onClick={() => setShowStdout((prev) => !prev)}
+                  className="flex items-center justify-between w-full text-xs text-gray-400 hover:text-white transition font-mono focus:outline-none cursor-pointer"
+                >
+                  <span className="flex items-center gap-2">
+                    <span className="text-cyan-400 font-bold">▶ [STDOUT]</span>
+                    <span className="font-semibold text-white">
+                      Exemplo de Resposta do Ambiente (Terminal Output)
+                    </span>
+                    <kbd className="bg-gray-800 text-[10px] px-1.5 py-0.5 rounded text-gray-400 border border-gray-700">
+                      Ctrl+O
+                    </kbd>
+                  </span>
+                  <span className="text-xs text-gray-400 hover:text-gray-200">
+                    {showStdout ? 'Ocultar ▲' : 'Mostrar ▼'}
+                  </span>
+                </button>
+                {showStdout && (
+                  <div className="mt-2.5 pt-2 border-t border-gray-800 font-mono text-xs text-slate-300 bg-[#0c0e14] p-3.5 border-l-4 border-l-cyan-500 overflow-x-auto leading-relaxed whitespace-pre rounded">
+                    {currentItem.output_sample}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Interactive Terminal (Disabled when paused) */}
+            <div className="relative">
+              {isPaused && (
+                <div className="absolute inset-0 bg-black/80 backdrop-blur-[2px] z-20 flex flex-col items-center justify-center rounded-lg border border-amber-800/60 text-center p-6 space-y-3 font-mono">
+                  <div className="text-amber-400 font-bold text-lg">⏸ Treino Pausado</div>
+                  <p className="text-xs text-gray-400 max-w-sm">
+                    O tempo foi congelado e sua questão atual está preservada.
+                  </p>
+                  <Button onClick={togglePause} className="space-x-1.5">
+                    <span>Retomar Treino</span>
+                    <kbd className="text-xs bg-black/40 px-1.5 py-0.5 rounded ml-1">P</kbd>
+                  </Button>
+                </div>
+              )}
+
+              <TerminalPrompt
+                isMultiLine={isMulti}
+                target={currentItem.target}
+                value={currentInput}
+                onChange={setCurrentInput}
+                onSubmit={handleValidate}
+                onExitTrigger={handleTriggerDone}
+                onExitBlindTest={handleExitBlindTest}
+                isBlindTest={isBlindTest}
+                repetitionCount={repetitionCount}
+                onOpenMan={handleOpenManModal}
+              />
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <MobileKeyboardBar
@@ -467,6 +796,14 @@ export function StudySession({
         onClear={() => setCurrentInput('')}
         isBlindTest={isBlindTest}
         onExitBlindTest={handleExitBlindTest}
+        onOpenMan={() => handleOpenManModal()}
+      />
+
+      {/* Floating Terminal Man Modal */}
+      <ManModal
+        isOpen={isManOpen}
+        initialCommand={manCmd}
+        onClose={() => setIsManOpen(false)}
       />
     </div>
   );
