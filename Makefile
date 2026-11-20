@@ -55,7 +55,10 @@ endif
 # If CMD_LINT was not set by stack.mk, provide default fallback
 CMD_LINT ?= @echo "No lint command configured (skipping lint)."
 
-.PHONY: help dev lint test scan portability semgrep check new-project test-bootstrap docs docs-serve changelog version docker-up docker-down docker-logs
+.PHONY: help dev lint test scan portability semgrep check new-project test-bootstrap docs docs-serve changelog version docker-up docker-down docker-logs prototypes
+
+prototypes: ## Serve local interactive prototypes gallery (AGENTS.md Section 3)
+	@node scripts/serve-prototypes.js
 
 help: ## Display the list of available targets
 	@grep -hE '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'

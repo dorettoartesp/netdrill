@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NetDrill - Autenticação por PIN</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'JetBrains Mono', 'Fira Code', monospace; background-color: #0c0e14; }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 text-[#e2e8f0]">
+  <div class="w-full max-w-md bg-[#161922] border border-gray-800 rounded-xl p-8 shadow-2xl space-y-6">
+    <div class="text-center space-y-2">
+      <h1 class="text-2xl font-bold text-green-400 tracking-wider">NetDrill</h1>
+      <p class="text-xs text-gray-400">Acesso Restrito ao Terminal de Fixação Técnica</p>
+    </div>
+
+    <form class="space-y-4" onsubmit="event.preventDefault(); alert('PIN Verificado com Sucesso!');">
+      <div class="space-y-1.5">
+        <label for="pin" class="text-xs font-semibold uppercase tracking-wider text-gray-400">
+          PIN Pessoal de Acesso
+        </label>
+        <input 
+          id="pin" 
+          type="password" 
+          autofocus 
+          placeholder="Digite seu PIN ou senha..." 
+          class="w-full bg-[#0c0e14] border border-gray-700 rounded-lg px-4 py-3 text-green-400 font-mono text-center tracking-widest text-lg focus:outline-none focus:border-green-400 transition"
+        />
+        <p class="text-[11px] text-gray-500">Pressione <kbd class="bg-gray-800 px-1 py-0.5 rounded text-gray-300">Enter</kbd> para autenticar.</p>
+      </div>
+
+      <button 
+        type="submit" 
+        class="w-full bg-green-600 hover:bg-green-500 text-white font-semibold py-3 px-4 rounded-lg transition min-h-[44px] flex items-center justify-center space-x-2"
+      >
+        <span>Acessar Terminal</span>
+        <span>&rarr;</span>
+      </button>
+    </form>
+
+    <div class="pt-4 border-t border-gray-800/80 text-center text-xs text-gray-500">
+      Sessão criptografada mantida por 30 dias neste navegador.
+    </div>
+  </div>
+</body>
+</html>

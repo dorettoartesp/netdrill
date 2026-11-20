@@ -3,36 +3,45 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NetDrill - Protótipo do Terminal de Treino</title>
+  <title>NetDrill - Terminal de Treino (Multi-line Split)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body { background-color: #0c0e14; color: #e2e8f0; font-family: monospace; }
+    body { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
   </style>
 </head>
-<body class="min-h-screen flex flex-col justify-between p-4 md:p-8 max-w-4xl mx-auto">
-  <!-- Header com Timer -->
-  <header class="flex justify-between items-center border-b border-gray-800 pb-4">
-    <div class="flex items-center space-x-2">
-      <span class="text-green-400 font-bold text-xl">NetDrill</span>
-      <span class="text-xs bg-gray-800 text-gray-400 px-2 py-0.5 rounded">FortiGate & Linux</span>
+<body class="bg-[#0c0e14] text-[#e2e8f0] min-h-screen flex flex-col justify-between p-4 md:p-8">
+  <!-- Cabeçalho -->
+  <header class="flex justify-between items-center border-b border-gray-800 pb-4 max-w-6xl mx-auto w-full">
+    <div class="flex items-center space-x-3">
+      <span class="text-green-400 font-bold text-xl tracking-wider">NetDrill</span>
+      <span class="text-xs bg-gray-800 text-gray-300 px-2 py-1 rounded">FortiGate CLI &bull; Multi-line</span>
     </div>
-    <div class="text-amber-400 font-mono text-lg font-semibold flex items-center gap-1">
-      <span>⏱</span> 14:32 / 15:00
+    <div class="flex items-center space-x-4">
+      <button class="text-xs text-gray-400 hover:text-white border border-gray-700 px-2 py-1 rounded">Atalhos [?]</button>
+      <div class="text-amber-400 text-lg font-bold flex items-center gap-1 font-mono">
+        <span>⏱</span> 14:15 / 15:00
+      </div>
     </div>
   </header>
 
-  <!-- Área do Desafio -->
-  <main class="my-6 space-y-4">
-    <div class="bg-[#161922] border border-gray-800 rounded-lg p-5">
-      <div class="text-xs text-gray-500 uppercase tracking-wider mb-1">Objetivo</div>
-      <h2 class="text-lg font-semibold text-white">Criar política de firewall liberando LAN para WAN com NAT ativo</h2>
-      <p class="text-sm text-gray-400 mt-2">Habilita o tráfego de saída mascarando o IP privado da porta port2 para a porta port1.</p>
+  <!-- Conteúdo Principal -->
+  <main class="my-6 max-w-6xl mx-auto w-full space-y-4">
+    <!-- Bloco de Objetivo -->
+    <div class="bg-[#161922] border border-gray-800 rounded-lg p-4">
+      <div class="text-xs text-gray-500 uppercase tracking-wider mb-1">Objetivo Técnico</div>
+      <h2 class="text-base font-semibold text-white">Configurar política de firewall liberando tráfego LAN para WAN com NAT habilitado</h2>
+      <p class="text-xs text-gray-400 mt-1">Habilita saída de pacotes mascarando o endereço IP de origem da porta port2 para a porta port1.</p>
     </div>
 
-    <!-- Gabarito de Referência (Oculto no teste cego) -->
-    <div class="bg-[#12141c] border border-dashed border-gray-800 rounded p-4 text-sm font-mono text-green-300">
-      <div class="text-xs text-gray-600 mb-2">// Gabarito de Referência:</div>
-      <pre>config firewall policy
+    <!-- Layout Dividido com Alturas Idênticas para Código Multi-linhas -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
+      <!-- Painel Esquerdo: Snippet de Referência -->
+      <div class="bg-[#12141c] border border-gray-800 rounded-lg p-4 flex flex-col h-full min-h-[320px]">
+        <div class="flex justify-between items-center text-xs text-gray-400 mb-2 border-b border-gray-800/60 pb-2">
+          <span>// GABARITO DE REFERÊNCIA (11 linhas)</span>
+          <span class="text-green-400">FortiOS 7.x</span>
+        </div>
+        <pre class="text-sm text-green-300 flex-1 font-mono leading-relaxed overflow-x-auto whitespace-pre">config firewall policy
     edit 10
         set name "LAN-Internet"
         set srcintf "port2"
@@ -43,30 +52,57 @@
         set nat enable
     next
 end</pre>
+      </div>
+
+      <!-- Painel Direito: Textarea de Digitação do Usuário (Mesmo Tamanho Exato) -->
+      <div class="bg-black border border-green-500/40 rounded-lg p-4 flex flex-col h-full min-h-[320px] shadow-lg">
+        <div class="flex justify-between items-center text-xs text-gray-400 mb-2 border-b border-gray-800/60 pb-2">
+          <span class="text-amber-400">[Tentativa #4] Digite o snippet completo</span>
+          <span class="text-gray-400">Ctrl+Enter ou :done para teste cego</span>
+        </div>
+        <textarea
+          class="w-full flex-1 bg-transparent text-green-300 font-mono text-sm leading-relaxed border-none outline-none resize-none focus:ring-0 p-0"
+          placeholder="Digite o código acima linha a linha..."
+          autofocus
+          autocorrect="off"
+          autocapitalize="none"
+          spellcheck="false"
+          autocomplete="off"
+        >config firewall policy
+    edit 10
+        set name "LAN-Internet"
+        set srcintf "port2"
+        set dstintf "port1"
+        set action accept
+        set schedule "always"
+        set service "ALL"
+        set nat enable
+    next
+end</textarea>
+      </div>
     </div>
 
-    <!-- Terminal Interativo de Digitação -->
-    <div class="bg-black border border-green-500/30 rounded-lg p-4 font-mono shadow-lg">
-      <div class="text-xs text-gray-500 mb-2 flex justify-between">
-        <span>[Tentativa #4] Digite linha por linha. Digite ':done' quando memorizar.</span>
-        <span class="text-green-400">Linha 1/9</span>
+    <!-- Barra de Ações com Teclado -->
+    <div class="flex flex-wrap justify-between items-center gap-2 pt-2 text-xs text-gray-400">
+      <div class="flex items-center gap-3">
+        <span><kbd class="bg-gray-800 px-1.5 py-0.5 rounded text-white">Ctrl</kbd> + <kbd class="bg-gray-800 px-1.5 py-0.5 rounded text-white">Enter</kbd> Teste Cego</span>
+        <span><kbd class="bg-gray-800 px-1.5 py-0.5 rounded text-white">Esc</kbd> Limpar</span>
       </div>
-      <div class="flex items-center text-green-400 text-base">
-        <span class="mr-2">&gt;</span>
-        <input type="text" class="bg-transparent border-none outline-none w-full text-green-300 focus:ring-0" placeholder="config firewall policy" autofocus autocorrect="off" autocapitalize="none" spellcheck="false" autocomplete="off" />
-      </div>
+      <button class="bg-amber-600 hover:bg-amber-500 text-white font-semibold px-4 py-2 rounded text-sm transition">
+        Avançar para Teste Cego (:done)
+      </button>
     </div>
   </main>
 
-  <!-- Barra Rápida de Mobile -->
-  <footer class="border-t border-gray-800 pt-3">
-    <div class="flex justify-center gap-2 overflow-x-auto pb-2">
-      <button class="bg-gray-800 hover:bg-gray-700 text-white px-3 py-2 rounded text-sm">-</button>
-      <button class="bg-gray-800 hover:bg-gray-700 text-white px-3 py-2 rounded text-sm">_</button>
-      <button class="bg-gray-800 hover:bg-gray-700 text-white px-3 py-2 rounded text-sm">/</button>
-      <button class="bg-gray-800 hover:bg-gray-700 text-white px-3 py-2 rounded text-sm">|</button>
-      <button class="bg-gray-800 hover:bg-gray-700 text-white px-3 py-2 rounded text-sm">Tab</button>
-      <button class="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded text-sm font-semibold">:done</button>
+  <!-- Barra Rápida Mobile -->
+  <footer class="lg:hidden border-t border-gray-800 pt-3 max-w-6xl mx-auto w-full">
+    <div class="flex justify-center gap-2 overflow-x-auto pb-1">
+      <button class="bg-gray-800 text-white min-w-[44px] min-h-[44px] rounded text-base font-bold">-</button>
+      <button class="bg-gray-800 text-white min-w-[44px] min-h-[44px] rounded text-base font-bold">_</button>
+      <button class="bg-gray-800 text-white min-w-[44px] min-h-[44px] rounded text-base font-bold">/</button>
+      <button class="bg-gray-800 text-white min-w-[44px] min-h-[44px] rounded text-base font-bold">|</button>
+      <button class="bg-gray-800 text-white min-w-[44px] min-h-[44px] rounded text-sm font-bold">Tab</button>
+      <button class="bg-amber-600 text-white px-4 min-h-[44px] rounded text-sm font-bold">:done</button>
     </div>
   </footer>
 </body>

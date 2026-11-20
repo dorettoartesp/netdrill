@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NetDrill - Importação em Lote</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'JetBrains Mono', 'Fira Code', monospace; background-color: #0c0e14; }
+  </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 text-[#e2e8f0] max-w-5xl mx-auto flex flex-col justify-between">
+  <div>
+    <header class="flex justify-between items-center border-b border-gray-800 pb-4 mb-6">
+      <div>
+        <h1 class="text-xl font-bold text-green-400">NetDrill &bull; Importação em Lote</h1>
+        <p class="text-xs text-gray-400 mt-1">Cadastre tópicos e dezenas de comandos de uma vez colando o JSON de qualquer LLM</p>
+      </div>
+      <a href="/" class="text-xs text-gray-400 hover:text-white border border-gray-800 px-3 py-1.5 rounded">&larr; Voltar ao Treino</a>
+    </header>
+
+    <div class="space-y-4">
+      <div class="flex justify-between items-center text-xs text-gray-400">
+        <label for="json-input" class="font-semibold uppercase tracking-wider text-gray-300">Estrutura JSON</label>
+        <span>Atalho: <kbd class="bg-gray-800 px-1.5 py-0.5 rounded text-white">Ctrl</kbd> + <kbd class="bg-gray-800 px-1.5 py-0.5 rounded text-white">Enter</kbd> para validar</span>
+      </div>
+
+      <textarea 
+        id="json-input"
+        rows="12" 
+        class="w-full bg-[#161922] border border-gray-800 rounded-lg p-4 font-mono text-sm text-green-300 focus:outline-none focus:border-green-400 leading-relaxed"
+        placeholder='Cole aqui o JSON gerado pela LLM...'
+      >{
+  "topic": "kubernetes",
+  "topic_title": "Kubernetes",
+  "module": "troubleshooting",
+  "module_title": "Diagnóstico de Falhas",
+  "items": [
+    {
+      "type": "command",
+      "title": "Ver logs anteriores do container",
+      "prompt": "Como verificar logs de container que sofreu crash?",
+      "target": "kubectl logs <pod-name> --previous",
+      "explanation": "A flag --previous inspeciona a instância anterior."
+    }
+  ]
+}</textarea>
+
+      <div class="flex justify-end gap-3 pt-2">
+        <button class="bg-gray-800 hover:bg-gray-700 text-gray-300 px-4 py-2.5 rounded-lg text-sm transition min-h-[44px]">Limpar</button>
+        <button class="bg-green-600 hover:bg-green-500 text-white font-semibold px-6 py-2.5 rounded-lg text-sm transition min-h-[44px] flex items-center space-x-2">
+          <span>Gravar Itens no Banco</span>
+          <span>&rarr;</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="text-center text-xs text-gray-600 pt-8">
+    Template de prompt para geração disponível em <code>prompts/gerador-conteudo.md</code>
+  </footer>
+</body>
+</html>

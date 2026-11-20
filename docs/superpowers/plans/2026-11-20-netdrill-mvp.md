@@ -8,7 +8,7 @@
 
 **Tech Stack:** Next.js, React, TypeScript, Tailwind CSS, Lucide React, `@libsql/client`, Vitest, Turso CLI, Vercel CLI, `agentic-tmpl`.
 
-**Spec:** `/home/doretto/projects/agentic-tmpl/docs/superpowers/specs/2026-11-20-netdrill-design.md`
+**Spec:** `docs/superpowers/specs/2026-11-20-netdrill-design.md`
 
 ## Global Constraints
 
@@ -31,22 +31,22 @@
 ### Task 1: Bootstrap do Projeto a partir do `agentic-tmpl` e Scaffold Next.js
 
 **Files:**
-- Create: `/home/doretto/projects/netdrill/package.json`
-- Create: `/home/doretto/projects/netdrill/tsconfig.json`
-- Create: `/home/doretto/projects/netdrill/next.config.js`
-- Create: `/home/doretto/projects/netdrill/tailwind.config.js`
-- Create: `/home/doretto/projects/netdrill/postcss.config.js`
-- Create: `/home/doretto/projects/netdrill/stack.mk`
-- Modify: `/home/doretto/projects/netdrill/Makefile`
-- Test: `/home/doretto/projects/netdrill/tests/health.test.ts`
+- Create: `package.json`
+- Create: `tsconfig.json`
+- Create: `next.config.js`
+- Create: `tailwind.config.js`
+- Create: `postcss.config.js`
+- Create: `stack.mk`
+- Modify: `Makefile`
+- Test: `tests/health.test.ts`
 
 **Interfaces:**
 - Produces: Estrutura do repositório `netdrill` com scripts npm (`dev`, `build`, `test`, `lint`) e Makefile integrado ao `agentic-tmpl`.
 
 - [ ] **Step 1: Executar o bootstrap wizard do template**
 ```bash
-cd /home/doretto/projects/agentic-tmpl
-bash scripts/init-project.sh --name "NetDrill" --slug "netdrill" --author "Doretto" --email "dev@doretto.local" --output "/home/doretto/projects/netdrill" --reset-git --non-interactive
+cd ../agentic-tmpl
+bash scripts/init-project.sh --name "NetDrill" --slug "netdrill" --author "Doretto" --email "dev@doretto.local" --output "." --reset-git --non-interactive
 ```
 
 - [ ] **Step 2: Inicializar dependências do Next.js, Tailwind e Vitest em `netdrill`**
@@ -64,12 +64,12 @@ describe('NetDrill Health Check', () => {
 ```
 
 - [ ] **Step 4: Executar `make check` em `netdrill` para validar o Quality Gate**
-Run: `cd /home/doretto/projects/netdrill && make check`
+Run: `cd . && make check`
 Expected: PASS (clean exit 0)
 
 - [ ] **Step 5: Commit inicial**
 ```bash
-cd /home/doretto/projects/netdrill
+cd .
 git add .
 git commit -m "chore: bootstrap netdrill project from agentic-tmpl with nextjs stack"
 ```
@@ -79,10 +79,10 @@ git commit -m "chore: bootstrap netdrill project from agentic-tmpl with nextjs s
 ### Task 2: Camada de Dados Turso / libSQL e Migrações
 
 **Files:**
-- Create: `/home/doretto/projects/netdrill/src/lib/db.ts`
-- Create: `/home/doretto/projects/netdrill/src/lib/schema.sql`
-- Create: `/home/doretto/projects/netdrill/src/lib/migrate.ts`
-- Test: `/home/doretto/projects/netdrill/tests/db.test.ts`
+- Create: `src/lib/db.ts`
+- Create: `src/lib/schema.sql`
+- Create: `src/lib/migrate.ts`
+- Test: `tests/db.test.ts`
 
 **Interfaces:**
 - Produces: `getDbClient(): Client`, `runMigrations(db: Client): Promise<void>`
@@ -130,10 +130,10 @@ git commit -m "feat(db): implement libsql client connection and schema migration
 ### Task 3: Algoritmo SM-2 e Gerenciador de Sessão com Timer
 
 **Files:**
-- Create: `/home/doretto/projects/netdrill/src/lib/sm2.ts`
-- Create: `/home/doretto/projects/netdrill/src/lib/session.ts`
-- Test: `/home/doretto/projects/netdrill/tests/sm2.test.ts`
-- Test: `/home/doretto/projects/netdrill/tests/session.test.ts`
+- Create: `src/lib/sm2.ts`
+- Create: `src/lib/session.ts`
+- Test: `tests/sm2.test.ts`
+- Test: `tests/session.test.ts`
 
 **Interfaces:**
 - Produces:
@@ -183,8 +183,8 @@ git commit -m "feat(study): implement sm2 spaced repetition and session queue bu
 ### Task 4: Validador de Sintaxe e Motor do Free Drill
 
 **Files:**
-- Create: `/home/doretto/projects/netdrill/src/lib/validator.ts`
-- Test: `/home/doretto/projects/netdrill/tests/validator.test.ts`
+- Create: `src/lib/validator.ts`
+- Test: `tests/validator.test.ts`
 
 **Interfaces:**
 - Produces:
@@ -247,10 +247,10 @@ git commit -m "feat(validator): implement line-by-line syntax validator and exit
 ### Task 5: Motor de Importação em Lote (Bulk JSON) e API
 
 **Files:**
-- Create: `/home/doretto/projects/netdrill/src/lib/importer.ts`
-- Create: `/home/doretto/projects/netdrill/src/app/api/import/route.ts`
-- Create: `/home/doretto/projects/netdrill/prompts/gerador-conteudo.md`
-- Test: `/home/doretto/projects/netdrill/tests/importer.test.ts`
+- Create: `src/lib/importer.ts`
+- Create: `src/app/api/import/route.ts`
+- Create: `prompts/gerador-conteudo.md`
+- Test: `tests/importer.test.ts`
 
 **Interfaces:**
 - Produces: `importBulkData(db: Client, payload: BulkImportPayload): Promise<ImportResult>`
@@ -315,14 +315,14 @@ git commit -m "feat(import): implement bulk json importer and api endpoint"
 ### Task 6: Interface Web de Terminal Responsiva com Otimização Mobile
 
 **Files:**
-- Create: `/home/doretto/projects/netdrill/src/components/TerminalPrompt.tsx`
-- Create: `/home/doretto/projects/netdrill/src/components/MobileKeyboardBar.tsx`
-- Create: `/home/doretto/projects/netdrill/src/components/StudySession.tsx`
-- Create: `/home/doretto/projects/netdrill/src/components/TimerHeader.tsx`
-- Create: `/home/doretto/projects/netdrill/src/components/SummaryModal.tsx`
-- Create: `/home/doretto/projects/netdrill/src/app/page.tsx`
-- Create: `/home/doretto/projects/netdrill/src/app/import/page.tsx`
-- Test: `/home/doretto/projects/netdrill/tests/ui.test.tsx`
+- Create: `src/components/TerminalPrompt.tsx`
+- Create: `src/components/MobileKeyboardBar.tsx`
+- Create: `src/components/StudySession.tsx`
+- Create: `src/components/TimerHeader.tsx`
+- Create: `src/components/SummaryModal.tsx`
+- Create: `src/app/page.tsx`
+- Create: `src/app/import/page.tsx`
+- Test: `tests/ui.test.tsx`
 
 **Interfaces:**
 - Produces: Telas completas da aplicação Next.js (Dashboard de estudo, terminal interativo, tela de importação em lote).
@@ -357,9 +357,9 @@ git commit -m "feat(ui): implement responsive terminal ui, mobile accessory bar 
 ### Task 7: Carga Inicial de Conteúdo (Linux, Redes e FortiGate)
 
 **Files:**
-- Create: `/home/doretto/projects/netdrill/src/data/seed-data.json`
-- Create: `/home/doretto/projects/netdrill/scripts/seed.ts`
-- Test: `/home/doretto/projects/netdrill/tests/seed.test.ts`
+- Create: `src/data/seed-data.json`
+- Create: `scripts/seed.ts`
+- Test: `tests/seed.test.ts`
 
 **Interfaces:**
 - Produces: 30 itens reais de treino (10 Linux, 10 Redes, 10 FortiGate) prontos para uso imediato no banco.
@@ -387,15 +387,15 @@ git commit -m "feat(seed): add fundamental 30-item curriculum for linux, network
 ### Task 8: Qualidade Total (`make check`) e Deploy Automatizado Zero-Touch (CLI)
 
 **Files:**
-- Modify: `/home/doretto/projects/netdrill/Makefile`
-- Modify: `/home/doretto/projects/netdrill/README.md`
-- Create: `/home/doretto/projects/netdrill/scripts/deploy.sh`
+- Modify: `Makefile`
+- Modify: `README.md`
+- Create: `scripts/deploy.sh`
 
 **Interfaces:**
 - Produces: Aplicação em produção na Vercel com Turso DB configurado e banco sincronizado.
 
 - [ ] **Step 1: Rodar o Quality Gate completo do `agentic-tmpl`**
-Run: `cd /home/doretto/projects/netdrill && make check`
+Run: `cd . && make check`
 Expected: PASS em todos os gates (lint, semgrep, gitleaks, testes, portabilidade).
 
 - [ ] **Step 2: Automação Turso DB via CLI**
