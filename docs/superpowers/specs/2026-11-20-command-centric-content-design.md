@@ -188,7 +188,7 @@ CREATE INDEX idx_drills_topic ON drills(topic_slug);
 CREATE INDEX idx_progress_due ON progress(due_date);
 ```
 
-Foreign keys must be enforced (`PRAGMA foreign_keys = ON` per connection) for the cascades to work; verify with an integration test.
+Cascades are not relied upon: Turso over HTTP does not guarantee `PRAGMA foreign_keys` per request, so the importer deletes `progress → drills → document_links → documents` explicitly. `REFERENCES` clauses stay as documentation.
 
 ### Upsert semantics (one `db.batch(..., 'write')` transaction per upload)
 1. Upsert topic.
