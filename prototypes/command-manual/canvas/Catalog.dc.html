@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Manual catalog</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#22c55e}a:hover{color:#4ade80}
+input{font:inherit}
+a:focus-visible,input:focus-visible{outline:2px solid #22c55e;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; overflow: hidden; background: #0c0e14; color: #e2e8f0; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column">
+  <header style="height: 56px; flex-shrink: 0; display: flex; align-items: center; gap: 4px; padding: 0 16px 0 4px; border-bottom: 1px solid #1d2230">
+    <a href="#" aria-label="Back" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #94a3b8">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+    </a>
+    <h1 style="margin: 0; font-size: 17px; font-weight: 600">Manual</h1>
+  </header>
+  <main style="flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 20px">
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <label for="q" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Search commands and procedures</label>
+      <div style="display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 14px; background: #05070a; border: 1.5px solid #262b3d; border-radius: 12px">
+        <span style="font-family: 'JetBrains Mono', monospace; color: #38bdf8; font-weight: 700" aria-hidden="true">$ man</span>
+        <input id="q" type="search" value="s" style="flex: 1; min-width: 0; background: transparent; border: 0; outline: none; color: #e2e8f0; font-family: 'JetBrains Mono', monospace; font-size: 16px">
+      </div>
+    </div>
+
+    <section style="display: flex; flex-direction: column; gap: 8px">
+      <h2 style="margin: 0; font-size: 12px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em">Commands</h2>
+      <a href="Command.dc.html" style="text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; background: #12141c; border: 1px solid #262b3d; border-radius: 12px">
+        <span style="display: flex; justify-content: space-between; gap: 8px"><span style="font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #f1f5f9">ss</span><span style="font-size: 12px; color: #94a3b8">Linux Administration</span></span>
+        <span style="font-size: 13px; color: #94a3b8">Socket inspection via Netlink, the modern netstat replacement</span>
+      </a>
+      <a href="Command.dc.html" style="text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; background: #12141c; border: 1px solid #262b3d; border-radius: 12px">
+        <span style="display: flex; justify-content: space-between; gap: 8px"><span style="font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #f1f5f9">systemctl</span><span style="font-size: 12px; color: #94a3b8">Linux Administration</span></span>
+        <span style="font-size: 13px; color: #94a3b8">Control systemd units and inspect their state</span>
+      </a>
+      <a href="Command.dc.html" style="text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; background: #12141c; border: 1px solid #262b3d; border-radius: 12px">
+        <span style="display: flex; justify-content: space-between; gap: 8px"><span style="font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #f1f5f9">diagnose sys session list</span><span style="font-size: 12px; color: #94a3b8">FortiGate</span></span>
+        <span style="font-size: 13px; color: #94a3b8">List firewall sessions matching the active filter</span>
+      </a>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 8px">
+      <h2 style="margin: 0; font-size: 12px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em">Procedures</h2>
+      <a href="Procedure.dc.html" style="text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; background: #12141c; border: 1px solid #262b3d; border-radius: 12px">
+        <span style="display: flex; justify-content: space-between; gap: 8px"><span style="font-weight: 600; color: #f1f5f9">Triage intermittent OOM in the service cgroup</span></span>
+        <span style="font-size: 13px; color: #94a3b8">3 steps · Linux Administration</span>
+      </a>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

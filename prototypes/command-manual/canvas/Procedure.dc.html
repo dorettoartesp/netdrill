@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Procedure page</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#22c55e}a:hover{color:#4ade80}
+a:focus-visible{outline:2px solid #22c55e;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; overflow: hidden; background: #0c0e14; color: #e2e8f0; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column">
+  <header style="height: 56px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 4px; padding: 0 8px 0 4px; border-bottom: 1px solid #1d2230">
+    <a href="Catalog.dc.html" aria-label="Back to manual" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #94a3b8">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+    </a>
+    <span style="font-size: 12px; color: #94a3b8">Procedure · Linux Administration</span>
+    <a href="#" style="min-height: 40px; padding: 0 12px; display: flex; align-items: center; border-radius: 10px; border: 1px solid #166534; color: #4ade80; font-size: 13px; font-weight: 600; text-decoration: none">Practice</a>
+  </header>
+  <main style="flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 18px">
+    <section style="display: flex; flex-direction: column; gap: 8px">
+      <h1 style="margin: 0; font-size: 20px; line-height: 1.3; color: #f8fafc">Triage intermittent OOM in the service cgroup</h1>
+      <p style="margin: 0; font-size: 14px; color: #cbd5e1">The API is OOM-killed intermittently under load.</p>
+      <p style="margin: 0; font-size: 13px; color: #94a3b8"><strong style="color: #e2e8f0">Goal:</strong> compare cgroup memory usage, limit and OOM events.</p>
+    </section>
+
+    <ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px">
+      <li style="background: #12141c; border: 1px solid #262b3d; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 6px">
+        <span style="font-size: 12px; font-weight: 700; color: #94a3b8">Step 1 · Current usage</span>
+        <code style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #4ade80; white-space: pre-wrap; overflow-wrap: anywhere">$ cat /sys/fs/cgroup/system.slice/api.service/memory.current</code>
+        <pre style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #cbd5e1; background: #05070a; border-radius: 8px; padding: 8px">1879048192</pre>
+        <p style="margin: 0; font-size: 13px; color: #94a3b8">Compare with memory.max in the next step.</p>
+      </li>
+      <li style="background: #12141c; border: 1px solid #262b3d; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 6px">
+        <span style="font-size: 12px; font-weight: 700; color: #94a3b8">Step 2 · Limit</span>
+        <code style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #4ade80; white-space: pre-wrap; overflow-wrap: anywhere">$ cat /sys/fs/cgroup/system.slice/api.service/memory.max</code>
+      </li>
+      <li style="background: #12141c; border: 1px solid #262b3d; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 6px">
+        <span style="font-size: 12px; font-weight: 700; color: #94a3b8">Step 3 · OOM events</span>
+        <code style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #4ade80; white-space: pre-wrap; overflow-wrap: anywhere">$ grep -E "^(oom|oom_kill) " memory.events</code>
+      </li>
+    </ol>
+
+    <section style="display: flex; flex-direction: column; gap: 8px">
+      <h2 style="margin: 0; font-size: 12px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em">Commands used</h2>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px">
+        <a href="Command.dc.html" style="min-height: 36px; padding: 0 12px; display: flex; align-items: center; border-radius: 999px; border: 1px solid #262b3d; font-family: 'JetBrains Mono', monospace; font-size: 13px; text-decoration: none">cat</a>
+        <a href="Command.dc.html" style="min-height: 36px; padding: 0 12px; display: flex; align-items: center; border-radius: 999px; border: 1px solid #262b3d; font-family: 'JetBrains Mono', monospace; font-size: 13px; text-decoration: none">grep</a>
+      </div>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
