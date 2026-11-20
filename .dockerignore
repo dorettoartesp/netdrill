@@ -1,0 +1,71 @@
+# Version control and tooling metadata
+.git/
+.github/
+.codegraph/
+
+# Environment configurations and secret storage
+.secrets/
+.data/
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.key
+*.pem
+*.p12
+*.pfx
+*.cert
+*.crt
+*.sqlite3
+db.sqlite3
+
+# Documentation portal build artifacts
+site/
+docs/
+
+# General log files and temporary directories
+*.log
+tmp/
+temp/
+
+# Python artifacts
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# Node / TypeScript / Frontend artifacts
+node_modules/
+dist/
+build/
+.next/
+out/
+.turbo/
+.npm/
+
+# Java / JVM artifacts
+target/
+.gradle/
+*.class
+*.jar
+*.war
+
+# .NET / C# artifacts
+bin/
+obj/
+*.user
+*.suo
+
+# Rust artifacts
+target/
+
+# Go artifacts
+bin/

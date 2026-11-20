@@ -1,0 +1,23 @@
+# Universal local hooks for open canvas template
+default_install_hook_types: [pre-commit, commit-msg]
+repos:
+  - repo: local
+    hooks:
+      - id: gitleaks
+        name: gitleaks (staged changes)
+        entry: bash scripts/gitleaks.sh staged
+        language: system
+        pass_filenames: false
+
+      - id: check-portability
+        name: check portability (no absolute local paths)
+        entry: bash scripts/check-portability.sh staged
+        language: system
+        pass_filenames: false
+
+      - id: conventional-commit
+        name: Conventional Commits
+        language: pygrep
+        entry: '\A((feat|fix|docs|build|chore|refactor|test|ci|perf|style|revert)(\([a-z0-9,-]+\))?!?: \S|Merge |Revert ")'
+        args: [--multiline, --negate]
+        stages: [commit-msg]

@@ -1,0 +1,52 @@
+# Local data and secrets. Never committed.
+.secrets/
+.data/
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.key
+*.pem
+*.p12
+*.pfx
+*.cert
+*.crt
+*.sqlite3
+db.sqlite3
+
+# Python environments and caches
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# Build artifacts
+dist/
+build/
+site/
+*.egg-info/
+
+# Frontend caches & dependencies
+node_modules/
+.next/
+out/
+.turbo/
+
+# Superpowers local state
+.superpowers/
+
+# Editor and OS caches
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo

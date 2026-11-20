@@ -1,0 +1,33 @@
+# Project Semgrep Security Rules
+rules:
+  - id: tls-verification-disabled
+    languages: [python]
+    severity: ERROR
+    message: TLS certificate verification must never be disabled (verify=False).
+    pattern-either:
+      - pattern: httpx.$METHOD(..., verify=False, ...)
+      - pattern: requests.$METHOD(..., verify=False, ...)
+      - pattern: $CTX.check_hostname = False
+      - pattern: $CTX.verify_mode = ssl.CERT_NONE
+
+  - id: raw-sql-format
+    languages: [python]
+    severity: ERROR
+    message: Never interpolate raw values directly into SQL strings. Use parameterized queries.
+    pattern-either:
+      - pattern: $CURSOR.execute(f"...", ...)
+      - pattern: $CURSOR.execute("..." % (...), ...)
+      - pattern: $CURSOR.execute("...".format(...), ...)
+      - pattern: $MODEL.objects.raw(f"...", ...)
+      - pattern: $MODEL.objects.raw("..." % (...), ...)
+      - pattern: $MODEL.objects.raw("...".format(...), ...)
+
+  - id: secret-key-hardcoded
+    languages: [python]
+    severity: ERROR
+    message: Django SECRET_KEY must be loaded from environment variables, never hardcoded.
+    patterns:
+      - pattern: SECRET_KEY = "..."
+      - pattern-not: SECRET_KEY = env(...)
+      - pattern-not: SECRET_KEY = os.environ[...]
+      - pattern-not: SECRET_KEY = os.getenv(...)

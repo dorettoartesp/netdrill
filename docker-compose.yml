@@ -1,0 +1,92 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: netdrill-postgres
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-appdb}
+      POSTGRES_USER: ${POSTGRES_USER:-appuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-apppassword}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-appuser} -d ${POSTGRES_DB:-appdb} || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - app-network
+
+  valkey:
+    image: valkey/valkey:8-alpine
+    container_name: netdrill-valkey
+    restart: unless-stopped
+    ports:
+      - "${VALKEY_PORT:-6379}:6379"
+    volumes:
+      - valkey_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "valkey-cli ping | grep PONG || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - app-network
+
+  # ----------------------------------------------------------------------------
+  # Application and Background Worker Skeletons (Uncomment when stack is ready)
+  # ----------------------------------------------------------------------------
+  # app:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: netdrill-app
+  #   restart: unless-stopped
+  #   ports:
+  #     - "${APP_PORT:-8000}:${APP_PORT:-8000}"
+  #   env_file:
+  #     - path: .env
+  #       required: false
+  #   environment:
+  #     - DATABASE_URL=postgresql://${POSTGRES_USER:-appuser}:${POSTGRES_PASSWORD:-apppassword}@postgres:5432/${POSTGRES_DB:-appdb}
+  #     - VALKEY_URL=redis://valkey:6379/0
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     valkey:
+  #       condition: service_healthy
+  #   networks:
+  #     - app-network
+  #
+  # worker:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: netdrill-worker
+  #   restart: unless-stopped
+  #   command: ["your-worker-command"]
+  #   env_file:
+  #     - path: .env
+  #       required: false
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     valkey:
+  #       condition: service_healthy
+  #   networks:
+  #     - app-network
+
+networks:
+  app-network:
+    name: netdrill-network
+    driver: bridge
+
+volumes:
+  postgres_data:
+    name: netdrill-postgres-data
+  valkey_data:
+    name: netdrill-valkey-data
