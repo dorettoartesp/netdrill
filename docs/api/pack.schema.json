@@ -1,0 +1,457 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "format": {
+      "type": "string",
+      "const": "netdrill.pack/v1"
+    },
+    "topic": {
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]{0,39}$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        }
+      },
+      "required": [
+        "slug",
+        "title"
+      ]
+    },
+    "commands": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 130,
+            "description": "<topic.slug>.<name>, e.g. linux.ss"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "synopsis": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          },
+          "flags": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "flag": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80,
+                  "description": "Short form, e.g. -t"
+                },
+                "long": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 80
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "argument": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 80
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "description": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 20000
+                },
+                "example": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 400
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "flag",
+                "description"
+              ]
+            }
+          },
+          "examples": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9][a-z0-9-]{0,59}$"
+                },
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "scenario": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 20000,
+                  "description": "Drill prompt shown to the learner"
+                },
+                "command": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 20000,
+                  "description": "Exact command typed by the learner; may be multi-line"
+                },
+                "explanation": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 20000
+                },
+                "output": {
+                  "type": "string",
+                  "maxLength": 20000
+                },
+                "output_notes": {
+                  "default": [],
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "token": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200,
+                        "description": "Exact text as it appears in the output"
+                      },
+                      "meaning": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 20000
+                      },
+                      "normal": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 20000
+                      },
+                      "anomaly": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 20000
+                      },
+                      "severity": {
+                        "default": "info",
+                        "type": "string",
+                        "enum": [
+                          "info",
+                          "warning",
+                          "critical"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "token",
+                      "meaning"
+                    ]
+                  }
+                },
+                "drill": {
+                  "default": true,
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "id",
+                "title",
+                "scenario",
+                "command"
+              ]
+            }
+          },
+          "use_cases": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "situation": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 20000
+                },
+                "severity": {
+                  "default": "routine",
+                  "type": "string",
+                  "enum": [
+                    "routine",
+                    "incident",
+                    "critical"
+                  ]
+                }
+              },
+              "required": [
+                "title",
+                "situation"
+              ]
+            }
+          },
+          "pitfalls": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000
+            }
+          },
+          "related": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 130
+            }
+          },
+          "tags": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 60
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "summary",
+          "synopsis",
+          "description"
+        ]
+      }
+    },
+    "procedures": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 130,
+            "description": "<topic.slug>.<slug>, e.g. linux.cgroup-oom-triage"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "context": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          },
+          "goal": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          },
+          "steps": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "command": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 20000
+                },
+                "purpose": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 20000
+                },
+                "output": {
+                  "type": "string",
+                  "maxLength": 20000
+                },
+                "output_notes": {
+                  "default": [],
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "token": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200,
+                        "description": "Exact text as it appears in the output"
+                      },
+                      "meaning": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 20000
+                      },
+                      "normal": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 20000
+                      },
+                      "anomaly": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 20000
+                      },
+                      "severity": {
+                        "default": "info",
+                        "type": "string",
+                        "enum": [
+                          "info",
+                          "warning",
+                          "critical"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "token",
+                      "meaning"
+                    ]
+                  }
+                },
+                "interpretation": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 20000
+                }
+              },
+              "required": [
+                "command",
+                "purpose"
+              ]
+            }
+          },
+          "uses": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 130
+            }
+          },
+          "use_cases": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "situation": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 20000
+                },
+                "severity": {
+                  "default": "routine",
+                  "type": "string",
+                  "enum": [
+                    "routine",
+                    "incident",
+                    "critical"
+                  ]
+                }
+              },
+              "required": [
+                "title",
+                "situation"
+              ]
+            }
+          },
+          "tags": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 60
+            }
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "context",
+          "steps"
+        ]
+      }
+    },
+    "remove": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 130
+      }
+    }
+  },
+  "required": [
+    "format",
+    "topic"
+  ]
+}

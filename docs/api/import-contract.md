@@ -1,80 +1,51 @@
-# API Contract: Bulk Ingestion (`/api/import`)
+# API Contract: Content Pack Import (`/api/import`)
 
-## Endpoint Specification
+Uploads one **content pack** (`netdrill.pack/v1`): a topic with any number of commands and procedures. See `docs/superpowers/specs/2026-11-20-command-centric-content-design.md` §5–§9 and ADR-0006.
+
+## Endpoint
 - **Method:** `POST`
-- **Path:** `/api/import`
+- **Path:** `/api/import` (apply) or `/api/import?dryRun=true` (validate and report, no writes)
+- **Auth:** session cookie (protected by `src/middleware.ts`)
 - **Content-Type:** `application/json`
+- **Body limit:** 2 MB
 
 ## Request Schema
+The authoritative JSON Schema is generated from `src/lib/content/schema.ts` into [`pack.schema.json`](pack.schema.json) (`npm run content:schema`; a test fails if they drift). Cross-field rules not expressible in JSON Schema:
 
+- Command and procedure `id` must start with `<topic.slug>.` and be unique across the pack.
+- Example `id` must be unique within its command.
+- An id cannot appear both as a command/procedure and in `remove`.
+- The pack must contain at least one of `commands`, `procedures`, `remove`.
+- An id already stored as another kind (command vs procedure) is rejected.
+- `remove` only accepts ids of the pack's topic.
+
+## Semantics
+- Upsert by id; re-uploading the same pack changes nothing and keeps progress.
+- A command's examples with `"drill": true` (default) and every procedure become drills. Drills of examples removed from a command are deleted with their progress.
+- Documents absent from a pack are never touched; only `remove` deletes.
+- Unresolved `uses`/`related` ids and drill lines longer than 100 characters produce **warnings**, not errors.
+- All writes happen in one transaction.
+
+## Responses
+
+`200 OK`
 ```json
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "BulkImportPayload",
-  "type": "object",
-  "required": ["topic", "module", "items"],
-  "properties": {
-    "topic": {
-      "type": "string",
-      "description": "Unique topic slug in lowercase (e.g., 'linux', 'fortigate', 'kubernetes')"
-    },
-    "topic_title": {
-      "type": "string",
-      "description": "Human-readable topic title"
-    },
-    "topic_description": {
-      "type": "string",
-      "description": "Optional summary of the topic"
-    },
-    "module": {
-      "type": "string",
-      "description": "Unique module slug within the topic (e.g., 'troubleshooting', 'routing')"
-    },
-    "module_title": {
-      "type": "string",
-      "description": "Human-readable module title"
-    },
-    "items": {
-      "type": "array",
-      "minItems": 1,
-      "items": {
-        "type": "object",
-        "required": ["type", "title", "prompt", "target"],
-        "properties": {
-          "type": {
-            "type": "string",
-            "enum": ["command", "block", "cloze", "quiz"]
-          },
-          "title": { "type": "string" },
-          "prompt": { "type": "string" },
-          "target": { "type": "string" },
-          "explanation": { "type": "string" },
-          "image_url": { "type": "string" },
-          "tags": { "type": "string" }
-        }
-      }
-    }
-  }
+  "ok": true,
+  "dryRun": false,
+  "summary": { "documentsCreated": 2, "documentsUpdated": 0, "documentsRemoved": 0, "drillsCreated": 3, "drillsRemoved": 0 },
+  "warnings": [{ "path": "procedures[0].uses[1]", "message": "Command \"linux.grep\" is not uploaded yet; the link activates once it is." }]
 }
 ```
 
-## Responses
-- **200 OK:**
-  ```json
-  {
-    "message": "Importação realizada com sucesso: 10 itens cadastrados.",
-    "importedCount": 10
-  }
-  ```
-- **400 Bad Request:**
-  ```json
-  {
-    "error": "Payload inválido: topic, module e items com pelo menos 1 item são obrigatórios."
-  }
-  ```
-- **500 Internal Server Error:**
-  ```json
-  {
-    "error": "Falha ao processar importação"
-  }
-  ```
+`400 Bad Request` (invalid JSON, invalid pack, or conflicting ids)
+```json
+{ "ok": false, "issues": [{ "path": "commands[0].examples[2].command", "message": "Invalid input: expected string, received undefined" }] }
+```
+
+`413 Payload Too Large`
+```json
+{ "ok": false, "issues": [{ "path": "", "message": "The file exceeds the 2 MB limit." }] }
+```
+
+Database failures return a generic message (`The import could not be completed. Please try again.`); details are logged server-side only.

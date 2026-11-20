@@ -131,3 +131,13 @@ describe('packJsonSchema', () => {
     expect(JSON.stringify(packJsonSchema())).toContain('"netdrill.pack/v1"');
   });
 });
+
+import { readFileSync } from 'fs';
+import path from 'path';
+
+describe('documented JSON Schema', () => {
+  it('docs/api/pack.schema.json matches the code (regenerate with npm run content:schema)', () => {
+    const file = JSON.parse(readFileSync(path.resolve(__dirname, '../docs/api/pack.schema.json'), 'utf8'));
+    expect(file).toEqual(packJsonSchema());
+  });
+});

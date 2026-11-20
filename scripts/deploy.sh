@@ -56,8 +56,9 @@ REMOTE_TURSO_TOKEN=$("${TURSO_BIN}" db tokens create "${DB_NAME}")
 
 echo "✓ Turso Database URL: ${REMOTE_TURSO_URL}"
 
-echo "=== [3/5] Applying Schema Migrations & Seeding Remote Database ==="
-TURSO_DATABASE_URL="${REMOTE_TURSO_URL}" TURSO_AUTH_TOKEN="${REMOTE_TURSO_TOKEN}" npm run db:seed
+echo "=== [3/5] Applying Schema Migrations to Remote Database ==="
+# Content is uploaded through /import; there is no seed data.
+TURSO_DATABASE_URL="${REMOTE_TURSO_URL}" TURSO_AUTH_TOKEN="${REMOTE_TURSO_TOKEN}" npm run db:migrate
 
 echo "=== [4/5] Configuring Vercel Project & Environment Variables ==="
 # Link project non-interactively

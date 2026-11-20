@@ -1,43 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbClient } from '@/lib/db';
 import { runMigrations } from '@/lib/migrate';
-import { importBulkData, BulkImportPayload } from '@/lib/importer';
+import { importPack } from '@/lib/content/importer';
+
+export const dynamic = 'force-dynamic';
+
+/** Maximum accepted request body, in bytes (spec §9). */
+const MAX_BODY_BYTES = 2 * 1024 * 1024;
+
+const failure = (message: string, status: number) =>
+  NextResponse.json({ ok: false, issues: [{ path: '', message }] }, { status });
 
 /**
- * Handles HTTP POST requests for bulk module and item ingestion.
+ * Validates and imports a `netdrill.pack/v1` content pack.
+ * `?dryRun=true` validates and reports what would change without writing.
  *
- * @param req - Incoming NextRequest containing the JSON BulkImportPayload.
- * @returns NextResponse containing status confirmation or validation error messages.
+ * @param req - Request whose body is the pack JSON (max 2 MB).
+ * @returns 200 with the import summary and warnings, 400 with validation issues,
+ *          413 when the body is too large, 500 with a generic message on server failure.
  */
 export async function POST(req: NextRequest) {
+  const text = await req.text();
+  if (Buffer.byteLength(text, 'utf8') > MAX_BODY_BYTES) {
+    return failure('The file exceeds the 2 MB limit.', 413);
+  }
+
+  let raw: unknown;
   try {
-    const rawPayload = await req.json();
+    raw = JSON.parse(text);
+  } catch {
+    return failure('The file is not valid JSON.', 400);
+  }
+
+  try {
     const db = getDbClient();
-
-    // Ensure database tables exist
     await runMigrations(db);
-
-    const payloads: BulkImportPayload[] = Array.isArray(rawPayload)
-      ? rawPayload
-      : [rawPayload];
-
-    let totalImported = 0;
-    for (const payload of payloads) {
-      const result = await importBulkData(db, payload);
-      if (!result.success) {
-        return NextResponse.json({ error: result.error }, { status: 400 });
-      }
-      totalImported += result.importedCount || 0;
-    }
-
-    return NextResponse.json({
-      message: `Importação realizada com sucesso: ${totalImported} itens cadastrados.`,
-      importedCount: totalImported,
-    });
-  } catch (err: any) {
-    return NextResponse.json(
-      { error: err.message || 'Falha ao processar importação' },
-      { status: 500 }
-    );
+    const dryRun = req.nextUrl.searchParams.get('dryRun') === 'true';
+    const result = await importPack(db, raw, { dryRun });
+    return NextResponse.json(result, { status: result.ok ? 200 : 400 });
+  } catch (err) {
+    console.error('[api/import] unexpected failure', err);
+    return failure('The import could not be completed. Please try again.', 500);
   }
 }
