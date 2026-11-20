@@ -177,6 +177,27 @@ git commit -m "docs(prototypes): add approved content import and command manual 
 - [ ] **Step 5: Run** `npm test`, `npx tsc --noEmit` → green. Remove `describe.skip` from Task 3.
 - [ ] **Step 6: Commit** `feat(session): build drills queue from content documents`.
 
+### Task 6b: Keyboard-aware typing mode on mobile (fixes hidden input on iPhone)
+
+**Context (root cause, measured at 390×844):** the command field starts at y=568 px in a non-scrolling 844 px page, while ~420–460 px stay visible with the iPhone keyboard open. The layout assumes the viewport shrinks (`interactive-widget=resizes-content` + sticky dock), which iOS Safari ignores, so the field and the 121 px symbol dock end up under the keyboard. The approved `mobile-redesign` screen 3 ("Digitando") typing state was never implemented.
+
+**Files:**
+- Create: `src/lib/visual-viewport.ts`, `src/components/useKeyboardInset.ts`
+- Modify: `src/components/StudySession.tsx`, `src/components/TerminalPrompt.tsx` (expose `onFocusChange?: (focused: boolean) => void`), `src/components/MobileKeyboardBar.tsx`
+- Test: `tests/visual-viewport.test.ts`, extend `tests/mobile-study-session.test.tsx`
+
+**Interfaces:**
+- Produces:
+  - `keyboardInset(layoutHeight: number, viewport: { height: number; offsetTop: number } | null): number` — `max(0, round(layoutHeight - viewport.height - viewport.offsetTop))`, `0` when `viewport` is null (pure, in `visual-viewport.ts`).
+  - `useKeyboardInset(): { inset: number; visibleHeight: number; offsetTop: number }` — subscribes to `window.visualViewport` `resize`/`scroll`; SSR-safe (returns zeros/`innerHeight` fallback).
+  - `StudySession` prop-free internal state `isTyping` (focus of the command field, mobile only via `matchMedia('(max-width: 1023px)')`).
+
+- [ ] **Step 1: Failing tests** `tests/visual-viewport.test.ts`: `keyboardInset(844, null) === 0`; `keyboardInset(844, { height: 470, offsetTop: 0 }) === 374`; `keyboardInset(844, { height: 470, offsetTop: 40 }) === 334`; never negative (`{ height: 900, offsetTop: 0 }` → 0).
+- [ ] **Step 2: Failing SSR test**: export `StudyTypingLayout` (presentational, props `{ isTyping: boolean; visibleHeight: number; offsetTop: number; children }`) → with `isTyping` it renders `class` containing `fixed inset-x-0` and inline `height: 470px; top: 0px` for `visibleHeight=470, offsetTop=0`; without `isTyping` it renders a plain wrapper (no `fixed`).
+- [ ] **Step 3: Run** → FAIL. **Step 4: Implement**: while typing on mobile, the session (compact header + scenario clamped to 3 lines + reference + field + dock) renders inside `StudyTypingLayout` sized to the visual viewport; explanation and the `[STDOUT]` toggle are hidden; the dock becomes the last flex child (no `sticky`), so it sits directly above the keyboard. On focus and on every viewport resize while typing, call `textarea.scrollIntoView({ block: 'nearest' })`. Symbol keys keep `onMouseDown preventDefault` so focus (and the keyboard) stays. Blur restores the reading layout. Desktop (`lg`) unaffected.
+- [ ] **Step 5: Run** `npm test` → PASS. **Step 6: Verify in Chrome** at 390×844 by shrinking the emulated viewport to 390×470 while the field is focused (Android-like) and by overriding `window.visualViewport` via an init script to `{ height: 470, offsetTop: 0 }` with layout 844 (iOS-like): field bottom ≤ visible height and dock directly above it in both. Final confirmation on the owner's iPhone.
+- [ ] **Step 7: Commit** `fix(mobile): keep the command field and dock above the virtual keyboard`.
+
 ### Task 7: Manual on content documents; remove AI (after Task 1 approval)
 
 **Files:**
