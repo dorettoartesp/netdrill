@@ -1,0 +1,17 @@
+import { createClient, Client } from '@libsql/client';
+
+export function getDbClient(overrideUrl?: string): Client {
+  if (overrideUrl) {
+    return createClient({
+      url: overrideUrl,
+    });
+  }
+
+  const url = process.env.TURSO_DATABASE_URL || 'file:local.db';
+  const authToken = process.env.TURSO_AUTH_TOKEN;
+
+  return createClient({
+    url,
+    authToken,
+  });
+}
