@@ -15,6 +15,12 @@ async function main(): Promise<void> {
   console.log('Applying database schema migrations...');
   await runMigrations(db);
 
+  console.log('Resetting existing database records for clean seeding...');
+  await db.execute('DELETE FROM user_progress;');
+  await db.execute('DELETE FROM items;');
+  await db.execute('DELETE FROM modules;');
+  await db.execute('DELETE FROM topics;');
+
   const seedFilePath = path.join(process.cwd(), 'src/data/seed-data.json');
   console.log(`Loading seed exercises from ${seedFilePath}...`);
   const rawData = fs.readFileSync(seedFilePath, 'utf-8');

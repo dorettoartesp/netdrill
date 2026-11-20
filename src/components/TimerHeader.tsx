@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Clock, LogOut } from 'lucide-react';
+import Link from 'next/link';
+import { Clock, LogOut, LayoutGrid } from 'lucide-react';
 
 interface TimerHeaderProps {
   initialMinutes?: number;
@@ -50,7 +51,16 @@ export function TimerHeader({
         </span>
       </div>
 
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center space-x-3">
+        <Link
+          href="/"
+          title="Alterar seleção de tópicos"
+          className="text-xs text-gray-400 hover:text-white border border-gray-700 hover:border-gray-500 px-2.5 py-1.5 rounded transition flex items-center gap-1 font-mono"
+        >
+          <LayoutGrid className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">Mudar Tópicos</span>
+        </Link>
+
         <div className="flex items-center space-x-1.5 font-mono text-amber-400 bg-amber-400/10 px-3 py-1 rounded-md text-sm font-semibold">
           <Clock className="w-4 h-4" />
           <span>{formattedTime}</span>

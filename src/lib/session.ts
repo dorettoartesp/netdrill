@@ -29,21 +29,72 @@ export interface QueueItem {
 }
 
 /**
+ * Summary information for a topic, including total items and reviews due.
+ */
+export interface TopicSummary {
+  /** Unique topic identifier. */
+  id: string;
+  /** Unique topic slug (e.g., 'linux', 'redes', 'fortigate'). */
+  slug: string;
+  /** Human-readable title of the topic. */
+  title: string;
+  /** Summary description of the topic. */
+  description?: string;
+  /** Total count of study items under this topic. */
+  itemCount: number;
+  /** Count of study items currently overdue for spaced repetition review. */
+  dueCount: number;
+}
+
+/**
+ * Retrieves all registered topics with their associated item counts and review statuses.
+ *
+ * @param db - The libSQL Client instance to query.
+ * @returns A Promise resolving to an array of TopicSummary objects.
+ */
+export async function getAvailableTopics(db: Client): Promise<TopicSummary[]> {
+  const now = new Date().toISOString();
+  const query = `
+    SELECT
+      t.id, t.slug, t.title, t.description,
+      COUNT(i.id) as item_count,
+      SUM(CASE WHEN p.due_date IS NOT NULL AND p.due_date <= ? THEN 1 ELSE 0 END) as due_count
+    FROM topics t
+    LEFT JOIN modules m ON m.topic_id = t.id
+    LEFT JOIN items i ON i.module_id = m.id
+    LEFT JOIN user_progress p ON p.item_id = i.id
+    GROUP BY t.id, t.slug, t.title, t.description
+    ORDER BY t.created_at ASC;
+  `;
+
+  const result = await db.execute({ sql: query, args: [now] });
+
+  return result.rows.map((row: any) => ({
+    id: String(row.id),
+    slug: String(row.slug),
+    title: String(row.title),
+    description: row.description ? String(row.description) : undefined,
+    itemCount: Number(row.item_count || 0),
+    dueCount: Number(row.due_count || 0),
+  }));
+}
+
+/**
  * Builds an ordered study session queue prioritizing overdue items first, followed by unstudied items.
  *
  * @param db - The libSQL Client instance to query.
- * @param topicSlug - Optional topic slug filter (e.g., 'linux', 'fortigate').
+ * @param topicFilter - Optional topic slug or array of topic slugs to filter by.
  * @returns A Promise resolving to an array of QueueItem objects ordered by review priority.
  *
  * @example
  * ```ts
- * const queue = await buildSessionQueue(db, 'fortigate');
+ * const queue = await buildSessionQueue(db, ['linux', 'fortigate']);
  * console.log(`Items in queue: ${queue.length}`);
  * ```
  */
 export async function buildSessionQueue(
   db: Client,
-  topicSlug?: string
+  topicFilter?: string | string[]
 ): Promise<QueueItem[]> {
   const now = new Date().toISOString();
 
@@ -64,9 +115,16 @@ export async function buildSessionQueue(
 
   const args: any[] = [now];
 
-  if (topicSlug) {
-    query += ` WHERE t.slug = ? `;
-    args.push(topicSlug);
+  if (topicFilter) {
+    const slugs = (Array.isArray(topicFilter) ? topicFilter : [topicFilter])
+      .map((s) => s.trim().toLowerCase())
+      .filter((s) => s.length > 0);
+
+    if (slugs.length > 0) {
+      const placeholders = slugs.map(() => '?').join(', ');
+      query += ` WHERE t.slug IN (${placeholders}) `;
+      args.push(...slugs);
+    }
   }
 
   query += ` ORDER BY priority_rank ASC, p.due_date ASC, i.created_at ASC;`;
