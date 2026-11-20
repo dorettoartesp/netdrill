@@ -1,18 +1,38 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { getAllManPages, ManPage } from '@/lib/man-engine';
-import { Search, Terminal, ArrowLeft, BookOpen, ExternalLink } from 'lucide-react';
+import { Search, ArrowLeft, BookOpen, ExternalLink, Sparkles } from 'lucide-react';
+
+interface CatalogPageItem extends ManPage {
+  source?: 'bundled' | 'ai_nemotron';
+}
 
 export default function ManCataloguePage() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
-  const allPages = useMemo(() => getAllManPages(), []);
+  const [pages, setPages] = useState<CatalogPageItem[]>(() =>
+    getAllManPages().map((p) => ({ ...p, source: 'bundled' }))
+  );
+
+  // Fetch newly generated pages from DB
+  useEffect(() => {
+    fetch('/api/man')
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setPages(data);
+        }
+      })
+      .catch((err) => console.warn('[Catalogue] Failed to fetch updated pages:', err));
+  }, []);
 
   const filteredPages = useMemo(() => {
-    if (!searchQuery.trim()) return allPages;
+    if (!searchQuery.trim()) return pages;
     const q = searchQuery.trim().toLowerCase();
-    return allPages.filter(
+    return pages.filter(
       (p) =>
         p.command.toLowerCase().includes(q) ||
         p.title.toLowerCase().includes(q) ||
@@ -20,7 +40,19 @@ export default function ManCataloguePage() {
         p.synopsis.toLowerCase().includes(q) ||
         p.options.some((opt) => opt.toLowerCase().includes(q))
     );
-  }, [allPages, searchQuery]);
+  }, [pages, searchQuery]);
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const clean = searchQuery.trim().toLowerCase().split(/\s+/)[0];
+    if (clean) {
+      router.push(`/man/${encodeURIComponent(clean)}`);
+    }
+  };
+
+  const man7SearchUrl = searchQuery.trim()
+    ? `https://www.google.com/search?q=${encodeURIComponent(searchQuery.trim() + ' site:man7.org/linux/man-pages')}`
+    : 'https://man7.org/linux/man-pages/index.html';
 
   return (
     <div className="min-h-screen bg-[#0a0d14] text-gray-200 font-mono p-4 md:p-8">
@@ -41,15 +73,26 @@ export default function ManCataloguePage() {
               <span>Linux Manual (man)</span>
             </h1>
           </div>
-          <span className="text-xs text-gray-500">
-            {filteredPages.length} de {allPages.length} manuais embutidos
-          </span>
+          <div className="flex items-center gap-3">
+            <a
+              href="https://man7.org/linux/man-pages/index.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-gray-400 hover:text-cyan-300 flex items-center gap-1 border border-gray-800 hover:border-cyan-700 px-2.5 py-1.5 rounded transition"
+            >
+              <span>Índice man7.org</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+            <span className="text-xs text-gray-500 hidden sm:inline">
+              {filteredPages.length} manuais catalogados
+            </span>
+          </div>
         </header>
 
-        {/* Search Bar */}
-        <div className="bg-[#10141f] border border-cyan-800/40 rounded-lg p-3 shadow-lg">
+        {/* Search Bar with JIT Generator */}
+        <form onSubmit={handleSearchSubmit} className="bg-[#10141f] border border-cyan-800/40 rounded-lg p-3 shadow-lg">
           <label htmlFor="man-search" className="block text-xs text-cyan-400/80 mb-1.5 font-bold">
-            BUSCAR NO CATÁLOGO DO MANUAL:
+            BUSCAR NO CATÁLOGO OU DIGITAR QUALQUER COMANDO:
           </label>
           <div className="relative flex items-center">
             <span className="absolute left-3 text-cyan-400 font-bold">$ man</span>
@@ -58,23 +101,51 @@ export default function ManCataloguePage() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="digite o comando ou palavra-chave (ex: socket, process, ip)..."
-              className="w-full bg-[#0a0d14] border border-gray-800 rounded pl-20 pr-10 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-cyan-500 transition"
+              placeholder="digite qualquer comando (ex: rsync, strace, jq, tcpdump, ps)..."
+              className="w-full bg-[#0a0d14] border border-gray-800 rounded pl-20 pr-24 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-cyan-500 transition"
               autoFocus
             />
-            <Search className="w-4 h-4 text-gray-500 absolute right-3 pointer-events-none" />
+            <button
+              type="submit"
+              className="absolute right-2 bg-cyan-500 hover:bg-cyan-400 text-black font-bold px-3 py-1.5 rounded text-xs transition cursor-pointer flex items-center gap-1"
+            >
+              <Search className="w-3.5 h-3.5" />
+              <span>Abrir</span>
+            </button>
           </div>
-        </div>
+        </form>
 
         {/* Manual Grid */}
         {filteredPages.length === 0 ? (
-          <div className="text-center py-12 border border-dashed border-gray-800 rounded-lg">
-            <p className="text-gray-400 mb-2">Nenhum manual encontrado para &quot;{searchQuery}&quot;.</p>
-            <p className="text-xs text-gray-600">Tente buscar por termos genéricos como &quot;tcp&quot;, &quot;processo&quot; ou &quot;log&quot;.</p>
+          <div className="text-center py-12 border border-dashed border-gray-800 rounded-lg p-6 space-y-4">
+            <p className="text-white font-bold text-sm">
+              O comando &quot;{searchQuery}&quot; ainda não está catalogado localmente.
+            </p>
+            <p className="text-xs text-gray-400 max-w-md mx-auto">
+              Você pode solicitar a síntese do manual estruturado em português via inteligência artificial ou consultar o repositório canônico upstream no man7.org:
+            </p>
+            <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
+              <Link
+                href={`/man/${encodeURIComponent(searchQuery.trim().toLowerCase().split(/\s+/)[0])}`}
+                className="bg-cyan-500 hover:bg-cyan-400 text-black font-bold px-4 py-2 rounded text-xs transition flex items-center gap-1.5 shadow"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Gerar Manual para &quot;{searchQuery}&quot; via Nemotron AI</span>
+              </Link>
+              <a
+                href={man7SearchUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-[#12151e] border border-cyan-800/80 hover:border-cyan-600 text-cyan-300 px-4 py-2 rounded text-xs transition flex items-center gap-1.5"
+              >
+                <span>Buscar no man7.org via Google</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredPages.map((page: ManPage) => (
+            {filteredPages.map((page: CatalogPageItem) => (
               <div
                 key={page.command}
                 className="bg-[#10141f] border border-gray-800 hover:border-cyan-700/60 rounded-lg p-4 transition flex flex-col justify-between"
@@ -84,9 +155,16 @@ export default function ManCataloguePage() {
                     <span className="text-base font-bold text-cyan-300">
                       {page.command} <span className="text-xs text-gray-500 font-normal">({page.sectionName})</span>
                     </span>
-                    <span className="text-[10px] bg-cyan-950/70 border border-cyan-800/80 text-cyan-300 px-2 py-0.5 rounded">
-                      SEÇÃO {page.sectionName.split(' ')[0]}
-                    </span>
+                    {page.source === 'ai_nemotron' ? (
+                      <span className="text-[10px] bg-purple-950/80 border border-purple-700 text-purple-300 px-2 py-0.5 rounded flex items-center gap-1 font-semibold">
+                        <Sparkles className="w-2.5 h-2.5" />
+                        <span>IA Nemotron</span>
+                      </span>
+                    ) : (
+                      <span className="text-[10px] bg-cyan-950/70 border border-cyan-800/80 text-cyan-300 px-2 py-0.5 rounded font-semibold">
+                        Nativo NetDrill
+                      </span>
+                    )}
                   </div>
 
                   <p className="text-xs text-gray-300 mb-3 line-clamp-2 leading-relaxed">

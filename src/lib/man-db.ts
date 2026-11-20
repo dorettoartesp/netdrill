@@ -26,13 +26,13 @@ export async function getCachedManPage(db: Client, command: string): Promise<Cac
   let examples: string[] = [];
 
   try {
-    options = typeof row.options === 'string' ? JSON.parse(row.options) : (row.options as string[]);
+    options = typeof row.options === 'string' ? JSON.parse(row.options) : (row.options as unknown as string[]);
   } catch {
     options = [];
   }
 
   try {
-    examples = typeof row.examples === 'string' ? JSON.parse(row.examples) : (row.examples as string[]);
+    examples = typeof row.examples === 'string' ? JSON.parse(row.examples) : (row.examples as unknown as string[]);
   } catch {
     examples = [];
   }
@@ -102,13 +102,13 @@ export async function listCachedManPages(db: Client): Promise<CachedManPage[]> {
     let examples: string[] = [];
 
     try {
-      options = typeof row.options === 'string' ? JSON.parse(row.options as string) : (row.options as string[]);
+      options = typeof row.options === 'string' ? JSON.parse(row.options as string) : (row.options as unknown as string[]);
     } catch {
       options = [];
     }
 
     try {
-      examples = typeof row.examples === 'string' ? JSON.parse(row.examples as string) : (row.examples as string[]);
+      examples = typeof row.examples === 'string' ? JSON.parse(row.examples as string) : (row.examples as unknown as string[]);
     } catch {
       examples = [];
     }

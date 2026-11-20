@@ -62,7 +62,7 @@ export async function GET(
   try {
     const result = await generateManPageWithNemotron(cleanCmd, apiKey);
 
-    if ('notFound' in result && result.notFound) {
+    if ('notFound' in result) {
       return NextResponse.json(
         {
           error: `O utilitário '${cleanCmd}' não foi reconhecido como um comando Linux/POSIX válido.`,
