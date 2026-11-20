@@ -51,4 +51,19 @@ CREATE TABLE IF NOT EXISTS user_progress (
 
 CREATE INDEX IF NOT EXISTS idx_modules_topic ON modules(topic_id);
 CREATE INDEX IF NOT EXISTS idx_items_module ON items(module_id);
+
+CREATE TABLE IF NOT EXISTS man_pages (
+    command TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    section_name TEXT NOT NULL,
+    synopsis TEXT NOT NULL,
+    description TEXT NOT NULL,
+    options TEXT NOT NULL,
+    examples TEXT NOT NULL,
+    source TEXT DEFAULT 'ai_nemotron',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_man_pages_command ON man_pages(command);
 CREATE INDEX IF NOT EXISTS idx_progress_due ON user_progress(due_date);
