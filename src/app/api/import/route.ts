@@ -3,6 +3,12 @@ import { getDbClient } from '@/lib/db';
 import { runMigrations } from '@/lib/migrate';
 import { importBulkData, BulkImportPayload } from '@/lib/importer';
 
+/**
+ * Handles HTTP POST requests for bulk module and item ingestion.
+ *
+ * @param req - Incoming NextRequest containing the JSON BulkImportPayload.
+ * @returns NextResponse containing status confirmation or validation error messages.
+ */
 export async function POST(req: NextRequest) {
   try {
     const payload: BulkImportPayload = await req.json();

@@ -1,32 +1,68 @@
 import { Client } from '@libsql/client';
 
+/**
+ * Payload structure for an individual study item to be imported.
+ */
 export interface BulkItemPayload {
+  /** Item type: command, block, cloze, or quiz. */
   type: 'command' | 'block' | 'cloze' | 'quiz';
+  /** Short human-readable title. */
   title: string;
+  /** Scenario, question, or problem prompt. */
   prompt: string;
+  /** Exact target command line or multi-line configuration block. */
   target: string;
+  /** Detailed technical explanation of flags and arguments. */
   explanation?: string;
+  /** Optional screenshot or diagram URL. */
   image_url?: string;
+  /** Optional cloze deletion configuration. */
   cloze_data?: any;
+  /** Optional multiple-choice quiz options. */
   quiz_options?: string[];
+  /** Comma-separated search tags. */
   tags?: string;
 }
 
+/**
+ * Payload structure for a bulk import request covering a topic, module, and associated items.
+ */
 export interface BulkImportPayload {
+  /** Unique topic slug in lowercase (e.g., 'linux', 'fortigate', 'kubernetes'). */
   topic: string;
+  /** Human-readable topic title. */
   topic_title?: string;
+  /** Optional summary description of the topic. */
   topic_description?: string;
+  /** Unique module slug within the topic (e.g., 'firewall-policies', 'troubleshooting'). */
   module: string;
+  /** Human-readable module title. */
   module_title?: string;
+  /** Array of study items belonging to this module. */
   items: BulkItemPayload[];
 }
 
+/**
+ * Result returned upon completing a bulk import transaction.
+ */
 export interface ImportResult {
+  /** Indicates whether the import operation succeeded. */
   success: boolean;
+  /** Number of items successfully created and scheduled. */
   importedCount?: number;
+  /** Error message details if the operation failed. */
   error?: string;
 }
 
+/**
+ * Imports a batch of topics, modules, and study items into the libSQL database in a single transaction.
+ *
+ * @param db - The libSQL Client instance to execute insertions on.
+ * @param payload - The BulkImportPayload containing topic, module, and item definitions.
+ * @returns An ImportResult indicating success status and the total imported item count.
+ *
+ * @throws {Error} If database queries fail unexpectedly during the operation.
+ */
 export async function importBulkData(
   db: Client,
   payload: BulkImportPayload

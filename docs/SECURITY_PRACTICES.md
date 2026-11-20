@@ -1,37 +1,14 @@
-# Security Practices
+# Security Practices — NetDrill
 
-## 1. Zero Secrets in Version Control
+## 1. Secrets and Credential Protection
+- **Zero Secrets in Git:** All secrets (`TURSO_AUTH_TOKEN`, `APP_PIN`, etc.) are injected strictly via environment variables or secret vaults.
+- **Automated Leaks Detection:** Gitleaks scans history and staged commits on every `make check` and pre-commit hook.
+- **Static Application Security Testing (SAST):** Semgrep runs rules in `.semgrep/rules.yml` enforcing secure coding standards.
 
-Never commit secrets, tokens, private keys, or credentials.
-- **Gitleaks:** Runs automatically in pre-commit (staged files) and via `make scan` (full repository history).
-- **Environment Separation:** Injects secrets exclusively via environment variables or secret vaults.
+## 2. Authentication and Session Management
+- **Minimalist PIN Protection:** A personal master PIN is verified server-side.
+- **Secure Cookie Flags:** The session cookie is emitted with `HttpOnly`, `SameSite=Strict`, and `Secure` (in production), preventing XSS token theft.
 
-## 2. Static Application Security Testing (SAST)
-
-Semgrep scans the codebase using project rules in `.semgrep/rules.yml`:
-- Blocks insecure TLS configurations.
-- Blocks raw SQL string interpolations.
-- Blocks hardcoded secrets.
-
-Run SAST manually with:
-```bash
-make semgrep
-```
-
-## 3. Portability and Path Leak Prevention
-
-Hardcoded absolute machine paths (`/home/<user>`, `/Users/<user>`, `C:\Users\`, `file:///home/`) leak host usernames and break cross-machine portability. <!-- portability-ignore -->
-- The gate `scripts/check-portability.sh` audits all tracked files in Git.
-- Enforced on every `git commit` via pre-commit and on `make check`.
-
-## 4. Responsible Vulnerability Disclosure
-
-Vulnerabilities must never be posted in public issues. Refer to `SECURITY.md` in the repository root for contact details and responsible disclosure procedures.
-
-## 5. Four-Tier Environment Security Model
-
-Configurations and credentials follow 12-Factor principles:
-- `.env.local.example`: Developer workstation defaults.
-- `.env.dev.example`: Development and automated pipeline environment.
-- `.env.hml.example`: Staging environment mirroring production network and security isolation.
-- `.env.prd.example`: Production where all secrets are strictly injected via cloud vaults (KMS, HashiCorp Vault, AWS Secrets Manager) and never written to disk or logs.
+## 3. Database Security
+- Turso DB connections utilize HTTPS/TLS and token-based authentication.
+- All SQL queries use parameterized arguments (`args: [...]`) to completely prevent SQL injection vulnerabilities.

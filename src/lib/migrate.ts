@@ -1,5 +1,9 @@
 import { Client } from '@libsql/client';
 
+/**
+ * Complete DDL migration script defining the database schema for NetDrill.
+ * Includes tables for topics, modules, study items, and user spaced repetition progress.
+ */
 export const SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS topics (
     id TEXT PRIMARY KEY,
@@ -52,6 +56,14 @@ CREATE INDEX IF NOT EXISTS idx_items_module ON items(module_id);
 CREATE INDEX IF NOT EXISTS idx_progress_due ON user_progress(due_date);
 `;
 
+/**
+ * Executes idempotent database schema migrations against a provided libSQL client.
+ *
+ * @param db - The libSQL Client instance to execute migrations on.
+ * @returns A Promise that resolves once all DDL statements have successfully executed.
+ *
+ * @throws {Error} If any DDL statement fails execution.
+ */
 export async function runMigrations(db: Client): Promise<void> {
   const statements = SCHEMA_SQL
     .split(';')

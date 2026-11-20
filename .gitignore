@@ -39,6 +39,7 @@ node_modules/
 .next/
 out/
 .turbo/
+coverage/
 
 # Superpowers local state
 .superpowers/
