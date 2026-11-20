@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getManPage } from '@/lib/man-engine';
 import { getDbClient } from '@/lib/db';
+import { runMigrations } from '@/lib/migrate';
 import { getCachedManPage, upsertCachedManPage } from '@/lib/man-db';
 import { generateManPageWithNemotron } from '@/lib/nemotron-generator';
+
+export const dynamic = 'force-dynamic';
+
+const COMMAND_NAME_REGEX = /^[a-z0-9][a-z0-9._+-]{0,63}$/i;
 
 /**
  * Serves structured Linux manual pages as JSON, with instant static lookup,
@@ -12,14 +17,22 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { cmd: string } }
 ) {
-  const { cmd } = params;
-  if (!cmd || typeof cmd !== 'string') {
+  const rawCmd = params?.cmd;
+  if (!rawCmd || typeof rawCmd !== 'string') {
     return NextResponse.json({ error: 'Comando inválido' }, { status: 400 });
   }
 
-  const cleanCmd = cmd.trim().toLowerCase().split(/\s+/)[0];
+  const cleanCmd = rawCmd.trim().toLowerCase().split(/\s+/)[0];
+  const man7Url = `https://www.google.com/search?q=${encodeURIComponent((cleanCmd || 'linux') + ' site:man7.org/linux/man-pages')}`;
+
+  if (!cleanCmd || !COMMAND_NAME_REGEX.test(cleanCmd)) {
+    return NextResponse.json(
+      { error: 'Nome de comando inválido. Use caracteres alfanuméricos simples.', man7Url },
+      { status: 400 }
+    );
+  }
+
   const isRefresh = request.nextUrl?.searchParams?.get('refresh') === 'true';
-  const man7Url = `https://www.google.com/search?q=${encodeURIComponent(cleanCmd + ' site:man7.org/linux/man-pages')}`;
 
   // 1. Check bundled static pages first (immutable reference manuals)
   const staticPage = getManPage(cleanCmd);
@@ -31,6 +44,13 @@ export async function GET(
   }
 
   const db = getDbClient();
+
+  // Ensure DB migrations exist
+  try {
+    await runMigrations(db);
+  } catch (err) {
+    console.warn('[ManAPI] DB migration check warning:', err);
+  }
 
   // 2. Check Turso DB cache (if not explicit refresh)
   if (!isRefresh) {
@@ -52,7 +72,7 @@ export async function GET(
   if (!apiKey) {
     return NextResponse.json(
       {
-        error: `Manual para '${cleanCmd}' não encontrado e OPENROUTER_API_KEY não configurada.`,
+        error: `Manual para '${cleanCmd}' não encontrado. Serviço de geração por IA temporariamente indisponível.`,
         man7Url
       },
       { status: 503 }
@@ -85,10 +105,9 @@ export async function GET(
     );
   } catch (err) {
     console.error(`[ManAPI] Nemotron generation failed for ${cleanCmd}:`, err);
-    const msg = err instanceof Error ? err.message : 'Falha na geração via IA';
     return NextResponse.json(
       {
-        error: `Não foi possível gerar o manual para '${cleanCmd}': ${msg}`,
+        error: `Não foi possível gerar o manual para '${cleanCmd}' no momento. Tente novamente em instantes.`,
         man7Url
       },
       { status: 503 }

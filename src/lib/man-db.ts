@@ -26,13 +26,15 @@ export async function getCachedManPage(db: Client, command: string): Promise<Cac
   let examples: string[] = [];
 
   try {
-    options = typeof row.options === 'string' ? JSON.parse(row.options) : (row.options as unknown as string[]);
+    const parsed = typeof row.options === 'string' ? JSON.parse(row.options) : row.options;
+    options = Array.isArray(parsed) ? parsed : [];
   } catch {
     options = [];
   }
 
   try {
-    examples = typeof row.examples === 'string' ? JSON.parse(row.examples) : (row.examples as unknown as string[]);
+    const parsed = typeof row.examples === 'string' ? JSON.parse(row.examples) : row.examples;
+    examples = Array.isArray(parsed) ? parsed : [];
   } catch {
     examples = [];
   }

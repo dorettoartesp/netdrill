@@ -20,7 +20,10 @@ export default function ManCataloguePage() {
   // Fetch newly generated pages from DB
   useEffect(() => {
     fetch('/api/man')
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
           setPages(data);
@@ -181,7 +184,7 @@ export default function ManCataloguePage() {
                     {page.options.length} flags catalogadas
                   </span>
                   <Link
-                    href={`/man/${page.command}`}
+                    href={`/man/${encodeURIComponent(page.command)}`}
                     className="text-cyan-400 hover:text-cyan-200 flex items-center gap-1 font-bold transition hover:underline"
                   >
                     <span>Abrir Manual</span>

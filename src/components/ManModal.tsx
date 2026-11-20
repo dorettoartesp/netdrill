@@ -25,10 +25,17 @@ export function ManModal({ isOpen, initialCommand = 'ps', onClose }: ManModalPro
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const fetchManPage = useCallback(async (cmd: string, forceRefresh = false) => {
     const clean = cmd.trim().toLowerCase().split(/\s+/)[0];
     if (!clean) return;
+
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
     // Check bundled static first (unless force refreshing non-bundled)
     const staticPage = getManPage(clean);
@@ -45,17 +52,24 @@ export function ManModal({ isOpen, initialCommand = 'ps', onClose }: ManModalPro
 
     try {
       const url = `/api/man/${encodeURIComponent(clean)}${forceRefresh ? '?refresh=true' : ''}`;
-      const res = await fetch(url);
-      const data = await res.json();
+      const res = await fetch(url, { signal: controller.signal });
+      const text = await res.text();
+      let data: Record<string, any> = {};
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { error: 'Resposta inválida do servidor de manuais.' };
+      }
 
       if (!res.ok) {
         setErrorMessage(data.error || 'Manual não encontrado para este comando.');
         setManPage(null);
       } else {
-        setManPage(data);
+        setManPage(data as LoadedManPage);
         setErrorMessage(null);
       }
-    } catch (err) {
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') return;
       console.error('[ManModal] Fetch error:', err);
       setErrorMessage('Falha ao conectar com o serviço de manuais.');
       setManPage(null);
@@ -64,15 +78,22 @@ export function ManModal({ isOpen, initialCommand = 'ps', onClose }: ManModalPro
     }
   }, []);
 
-  // Update command when initialCommand changes
+  // Update command and fetch ONLY when modal is open
   useEffect(() => {
+    if (!isOpen) {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      return;
+    }
+
     if (initialCommand) {
       const clean = initialCommand.trim().split(/\s+/)[0];
       setQuery(clean);
       setActiveCmd(clean);
       fetchManPage(clean);
     }
-  }, [initialCommand, fetchManPage]);
+  }, [isOpen, initialCommand, fetchManPage]);
 
   // Elapsed seconds timer during generation
   useEffect(() => {
@@ -198,8 +219,9 @@ export function ManModal({ isOpen, initialCommand = 'ps', onClose }: ManModalPro
             <button
               key={cmd}
               type="button"
+              disabled={isLoading}
               onClick={() => handleSelectCommand(cmd)}
-              className={`px-1.5 py-0.5 rounded border transition cursor-pointer whitespace-nowrap ${
+              className={`px-1.5 py-0.5 rounded border transition cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed ${
                 activeCmd.toLowerCase() === cmd
                   ? 'bg-cyan-950 border-cyan-500 text-cyan-300 font-bold'
                   : 'bg-[#12151e] border-gray-800 text-gray-400 hover:text-gray-200 hover:border-gray-700'

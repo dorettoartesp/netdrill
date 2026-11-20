@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ArrowLeft, BookOpen, Terminal, RefreshCw, ExternalLink, Sparkles, AlertCircle } from 'lucide-react';
-import { ManPage } from '@/lib/man-engine';
+import { ManPage, getManPage } from '@/lib/man-engine';
 
 interface LoadedManPage extends ManPage {
   source?: 'bundled' | 'ai_nemotron';
@@ -14,32 +14,62 @@ interface LoadedManPage extends ManPage {
 export default function ManCmdPage() {
   const params = useParams();
   const rawCmd = typeof params?.cmd === 'string' ? params.cmd : Array.isArray(params?.cmd) ? params.cmd[0] : '';
-  const cleanCmd = rawCmd.trim().toLowerCase();
+  const cleanCmd = decodeURIComponent(rawCmd || '').trim().toLowerCase().split(/\s+/)[0];
 
-  const [page, setPage] = useState<LoadedManPage | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const staticInitial = cleanCmd ? getManPage(cleanCmd) : null;
+  const [page, setPage] = useState<LoadedManPage | null>(
+    staticInitial ? { ...staticInitial, source: 'bundled' } : null
+  );
+  const [isLoading, setIsLoading] = useState(!staticInitial && Boolean(cleanCmd));
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const abortControllerRef = React.useRef<AbortController | null>(null);
 
   const fetchPage = useCallback(async (cmd: string, forceRefresh = false) => {
-    if (!cmd) return;
+    if (!cmd) {
+      setIsLoading(false);
+      return;
+    }
+
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    // Check static bundled fast-path
+    const staticPage = getManPage(cmd);
+    if (staticPage && !forceRefresh) {
+      setPage({ ...staticPage, source: 'bundled' });
+      setIsLoading(false);
+      setErrorMsg(null);
+      return;
+    }
+
     setIsLoading(true);
     setElapsedSeconds(0);
     setErrorMsg(null);
 
     try {
       const url = `/api/man/${encodeURIComponent(cmd)}${forceRefresh ? '?refresh=true' : ''}`;
-      const res = await fetch(url);
-      const data = await res.json();
+      const res = await fetch(url, { signal: controller.signal });
+      const text = await res.text();
+      let data: Record<string, any> = {};
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { error: 'Resposta inválida do servidor de manuais.' };
+      }
 
       if (!res.ok) {
         setErrorMsg(data.error || 'Manual não encontrado para este comando.');
         setPage(null);
       } else {
-        setPage(data);
+        setPage(data as LoadedManPage);
         setErrorMsg(null);
       }
-    } catch (err) {
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') return;
       console.error('[ManReader] Fetch error:', err);
       setErrorMsg('Falha ao comunicar com o servidor de manuais.');
       setPage(null);
@@ -49,10 +79,15 @@ export default function ManCmdPage() {
   }, []);
 
   useEffect(() => {
-    if (cleanCmd) {
+    if (cleanCmd && !staticInitial) {
       fetchPage(cleanCmd);
     }
-  }, [cleanCmd, fetchPage]);
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [cleanCmd, fetchPage, staticInitial]);
 
   // Elapsed timer during AI generation
   useEffect(() => {

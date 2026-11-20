@@ -12,14 +12,70 @@ export interface NemotronNotFound {
 }
 
 /**
- * Extracts and parses JSON from raw LLM output, safely stripping markdown fences.
+ * Validates that an object conforms to the strict ManPage schema,
+ * ensuring all required strings and arrays are non-empty.
+ */
+export function validateManPageSchema(obj: unknown): asserts obj is ManPage {
+  if (typeof obj !== 'object' || obj === null || Array.isArray(obj)) {
+    throw new Error('Resposta do modelo não é um objeto JSON válido');
+  }
+
+  const candidate = obj as Record<string, unknown>;
+
+  const checkNonEmptyString = (field: string) => {
+    const val = candidate[field];
+    if (typeof val !== 'string' || !val.trim()) {
+      throw new Error(`Campo obrigatório ausente ou vazio: ${field}`);
+    }
+  };
+
+  checkNonEmptyString('command');
+  checkNonEmptyString('title');
+  checkNonEmptyString('sectionName');
+  checkNonEmptyString('synopsis');
+  checkNonEmptyString('description');
+
+  if (!Array.isArray(candidate.options) || candidate.options.length === 0) {
+    throw new Error('Campo "options" deve ser uma lista não vazia de opções');
+  }
+
+  for (const opt of candidate.options) {
+    if (typeof opt !== 'string' || !opt.trim()) {
+      throw new Error('Item inválido em "options": deve ser uma string não vazia');
+    }
+  }
+
+  if (!Array.isArray(candidate.examples) || candidate.examples.length === 0) {
+    throw new Error('Campo "examples" deve ser uma lista não vazia de exemplos');
+  }
+
+  for (const ex of candidate.examples) {
+    if (typeof ex !== 'string' || !ex.trim()) {
+      throw new Error('Item inválido em "examples": deve ser uma string não vazia');
+    }
+  }
+}
+
+/**
+ * Extracts and parses JSON from raw LLM output, safely stripping markdown fences
+ * and reasoning tags like <think>...</think>.
  */
 export function extractJsonFromResponse(rawContent: string): unknown {
-  const sanitized = rawContent
-    .trim()
+  // Strip reasoning / think tags
+  const withoutThinking = rawContent.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+
+  // Strip markdown fences
+  let sanitized = withoutThinking
     .replace(/^```(?:json)?\s*/i, '')
     .replace(/\s*```$/i, '')
     .trim();
+
+  // If there is still surrounding text, isolate the outermost JSON object
+  const firstBrace = sanitized.indexOf('{');
+  const lastBrace = sanitized.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    sanitized = sanitized.slice(firstBrace, lastBrace + 1);
+  }
 
   return JSON.parse(sanitized);
 }
@@ -33,10 +89,13 @@ export async function generateManPageWithNemotron(
 ): Promise<GeneratedManPage | NemotronNotFound> {
   const resolvedKey = apiKey || process.env.OPENROUTER_API_KEY;
   if (!resolvedKey) {
-    throw new Error('OPENROUTER_API_KEY não configurada. Defina a chave no .env.local ou variáveis da Vercel.');
+    throw new Error('Serviço de geração por IA temporariamente indisponível.');
   }
 
   const cleanCmd = command.trim().toLowerCase().split(/\s+/)[0];
+  if (!cleanCmd || !/^[a-z0-9][a-z0-9._+-]{0,63}$/i.test(cleanCmd)) {
+    throw new Error(`Comando inválido para documentação: ${cleanCmd}`);
+  }
 
   const systemPrompt = `Você é um especialista sênior em engenharia de sistemas Linux, DevOps e SRE do NetDrill.
 Sua missão é gerar páginas de manual do Linux (manpages) estruturadas em formato JSON estrito, prontas para consumo por um leitor de terminal.
@@ -91,13 +150,14 @@ Estrutura JSON Obrigatória para comandos válidos:
 
     if (!res.ok) {
       const errorText = await res.text().catch(() => '');
-      throw new Error(`OpenRouter API respondeu com status ${res.status}: ${errorText}`);
+      console.error(`[Nemotron] Upstream error: status ${res.status}, body: ${errorText}`);
+      throw new Error(`Falha na comunicação com o modelo de inteligência artificial (status ${res.status}).`);
     }
 
     const data = await res.json();
     const rawContent = data.choices?.[0]?.message?.content;
     if (!rawContent) {
-      throw new Error('Resposta vazia recebida do modelo Nemotron');
+      throw new Error('Resposta vazia recebida do modelo de IA');
     }
 
     const parsed = extractJsonFromResponse(rawContent) as Record<string, unknown>;
@@ -105,18 +165,16 @@ Estrutura JSON Obrigatória para comandos válidos:
       return { notFound: true };
     }
 
-    if (!parsed || !parsed.command || !parsed.title || !parsed.description) {
-      throw new Error('JSON retornado pelo Nemotron não contém os campos obrigatórios da manpage');
-    }
+    validateManPageSchema(parsed);
 
     return {
-      command: String(parsed.command).toLowerCase(),
-      title: String(parsed.title),
-      sectionName: String(parsed.sectionName || '1 (Comandos de Usuário)'),
-      synopsis: String(parsed.synopsis || parsed.command),
-      description: String(parsed.description),
-      options: Array.isArray(parsed.options) ? parsed.options.map(String) : [],
-      examples: Array.isArray(parsed.examples) ? parsed.examples.map(String) : [],
+      command: cleanCmd, // Pin to cleanCmd to prevent LLM normalization miskeying the cache
+      title: parsed.title,
+      sectionName: parsed.sectionName,
+      synopsis: parsed.synopsis,
+      description: parsed.description,
+      options: parsed.options,
+      examples: parsed.examples,
       source: 'ai_nemotron'
     };
   } finally {

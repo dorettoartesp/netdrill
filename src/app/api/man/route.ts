@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 import { getAllManPages } from '@/lib/man-engine';
 import { getDbClient } from '@/lib/db';
+import { runMigrations } from '@/lib/migrate';
 import { listCachedManPages, CachedManPage } from '@/lib/man-db';
+
+export const dynamic = 'force-dynamic';
 
 /**
  * Returns all catalogued manual pages, combining bundled static manuals
@@ -16,12 +19,13 @@ export async function GET() {
   let cached: CachedManPage[] = [];
   try {
     const db = getDbClient();
+    await runMigrations(db);
     cached = await listCachedManPages(db);
   } catch (err) {
     console.warn('[ManCatalogAPI] DB lookup error:', err);
   }
 
-  const map = new Map<string, any>();
+  const map = new Map<string, CachedManPage>();
   for (const b of bundled) {
     map.set(b.command.toLowerCase(), b);
   }
