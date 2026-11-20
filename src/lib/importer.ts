@@ -1,4 +1,4 @@
-import { Client } from '@libsql/client';
+import { Client, InStatement } from '@libsql/client';
 
 /**
  * Payload structure for an individual study item to be imported.
@@ -106,18 +106,19 @@ export async function importBulkData(
       args: [moduleId, topicId, moduleSlug, moduleTitle],
     });
 
-    // 3. Insert items and initial user progress
+    // 3. Batch insert items and initial user progress
     let count = 0;
     const now = new Date().toISOString();
+    const statements: InStatement[] = [];
 
     for (const item of payload.items) {
       if (!item.title || !item.prompt || !item.target) {
         continue;
       }
 
-      const itemId = `item_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      const itemId = `item_${Date.now()}_${Math.random().toString(36).substring(2, 9)}_${count}`;
 
-      await db.execute({
+      statements.push({
         sql: `INSERT INTO items (id, module_id, type, title, prompt, target, output_sample, explanation, image_url, cloze_data, quiz_options, tags)
               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
         args: [
@@ -136,13 +137,20 @@ export async function importBulkData(
         ],
       });
 
-      await db.execute({
+      statements.push({
         sql: `INSERT INTO user_progress (id, item_id, repetitions, interval_days, ease_factor, due_date)
               VALUES (?, ?, 0, 0, 2.5, ?);`,
         args: [`prog_${itemId}`, itemId, now],
       });
 
       count++;
+    }
+
+    // Execute in fast transaction batches of 100 statements
+    const CHUNK_SIZE = 100;
+    for (let i = 0; i < statements.length; i += CHUNK_SIZE) {
+      const chunk = statements.slice(i, i + CHUNK_SIZE);
+      await db.batch(chunk, 'write');
     }
 
     return {
