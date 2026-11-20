@@ -55,7 +55,10 @@ endif
 # If CMD_LINT was not set by stack.mk, provide default fallback
 CMD_LINT ?= @echo "No lint command configured (skipping lint)."
 
-.PHONY: help dev lint test scan portability semgrep check new-project test-bootstrap docs docs-serve changelog version docker-up docker-down docker-logs prototypes
+.PHONY: help dev lint test scan portability semgrep check new-project test-bootstrap docs docs-serve changelog version docker-up docker-down docker-logs prototypes deploy
+
+deploy: ## Run zero-touch automated deployment to Turso DB and Vercel
+	@bash scripts/deploy.sh
 
 prototypes: ## Serve local interactive prototypes gallery (AGENTS.md Section 3)
 	@node scripts/serve-prototypes.js

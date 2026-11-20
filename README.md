@@ -1,88 +1,77 @@
 # NetDrill
 
-A universal, stack-agnostic software development template engineered specifically for autonomous LLM coding agents and human engineering teams.
+Plataforma de alta intensidade de repetição espaçada (SM-2) e memória muscular para digitação e fixação cega de comandos técnicos e blocos de configuração (Linux, Redes, FortiGate Firewall, Kubernetes e PostgreSQL).
 
-## Overview
+---
 
-`netdrill` provides a clean, open root canvas ready to receive any programming language runtime or framework (C#/.NET, Java, Rust, Node/TypeScript, Python, Go, etc.) while pre-configuring a battle-tested AI agent engineering ecosystem:
+## ⚡ Funcionalidades Principais
 
-- **Adaptive Execution Facade (`Makefile`):** Automatically dispatches `test`, `lint`, and `dev` targets based on detected language manifests (`*.csproj`, `pom.xml`, `build.gradle`, `Cargo.toml`, `package.json`, `pyproject.toml`, `go.mod`), with support for explicit overrides via `stack.mk`.
-- **Integrated AI Skills Kit (`.agents/skills/`):** Full suite of 24 versioned agent capabilities including Superpowers (TDD, systematic debugging, plan execution, parallel agents), Ponytail (anti-overengineering), RTK (command output compression), and OpenDesign (prior visual screen approvals).
-- **Local Infrastructure Baseline (`docker-compose.yml`):** Ready-to-use local backing services with **PostgreSQL 16** and **Valkey 8** (open-source Redis alternative) with healthchecks and persistent storage (`make docker-up`).
-- **Four-Tier 12-Factor Environment Architecture:** Complete templates for `local`, `dev`, `hml`, and `prd` (`.env.*.example`) with stack hints.
-- **The Inviolable Quality Gate (`make check`):** Enforces static security analysis (Semgrep), credential leak detection (Gitleaks), local filesystem portability, and conventional commits.
-- **Structured Knowledge Management (`docs/`):** Living documentation portal (MkDocs Material) with pre-configured directories for Architecture Decision Records (`docs/adr/`), Product & Engineering Backlog (`docs/backlog/`), Operations & SRE (`docs/runbooks/`), and API Contracts (`docs/api/`).
-- **Project Bootstrap Wizard (`make new-project`):** Rapid rebranding, metadata replacement, and Git history reinitialization with automated sandbox testing (`make test-bootstrap`).
+- **Treino de Digitação Livre (Loop Infinito):** Digitação repetitiva do comando ou bloco de configuração até fixação muscular. Digite `:done` ou pressione `Ctrl+Enter` para finalizar.
+- **Teste Cego com SM-2:** Recall ativo sem visualização da resposta com auto-avaliação (1 a 5) calculando o próximo intervalo de revisão.
+- **Suporte a Comandos Multilinha:** Para blocos de configuração (ex.: FortiGate), a caixa de digitação possui exatamente a mesma altura da pré-visualização, evitando quebras visuais e rolagem incômoda.
+- **100% Navegável por Teclado:** Controle completo de fluxo via teclado (`Ctrl+Enter` para avançar, `Esc` para reiniciar, `Tab` para navegação, teclas `1-5` para nota).
+- **Mobile & Tablet Friendly:** Barra de teclado virtual acessória móvel com símbolos frequentes (`/`, `-`, `_`, `|`, `"`, `$`, `:`, `Tab`, `Ctrl+Enter`) e alvos de toque >= 44x44px. Desativação estrita de corretor e capitalização automática.
+- **Importação em Lote via JSON:** Importe decks e tópicos completos com facilidade via UI (`/import`) ou API (`/api/import`). Prompt pronto em `prompts/gerador-conteudo.md`.
+- **Autenticação Simples:** Protegido por senha mestra (`APP_PASSWORD=havaianas`) com cookies seguros `HttpOnly`.
+- **Galeria de Protótipos:** Servidor local de protótipos de baixa fidelidade via `make prototypes`.
 
-## Quickstart
+---
+
+## 🚀 Quickstart Local
 
 ```bash
-# 1. View available Makefile targets
-make help
+# 1. Instalar dependências
+npm install
 
-# 2. Run the quality gate (clean exit 0 on uninitialized canvas)
-make check
+# 2. Executar migrações e popular banco de dados local com 30 itens essenciais
+npm run db:seed
 
-# 3. Initialize your chosen language or framework directly in the root
-cargo init .      # for Rust
-dotnet new web    # for C#
-npm init -y       # for Node.js
-uv init .         # for Python
-go mod init app   # for Go
+# 3. Iniciar servidor de desenvolvimento
+npm run dev
 
-# 4. make check automatically adapts and tests your stack!
-make check
-
-# 5. Build living documentation
-make docs
+# 4. Acessar a aplicação
+# Abra http://localhost:3000
+# Senha de acesso: havaianas
 ```
 
-## Adaptive Multi-Stack Detection
+---
 
-| Stack | Detected Files | `make test` | `make lint` | `make dev` |
-|---|---|---|---|---|
-| **C# / .NET** | `*.csproj`, `*.sln` | `dotnet test` | `dotnet format --verify-no-changes` | `dotnet run` |
-| **Java (Maven)** | `pom.xml` | `mvn test` | `mvn checkstyle:check` | `mvn spring-boot:run` |
-| **Java (Gradle)** | `build.gradle*` | `./gradlew test` | `./gradlew check` | `./gradlew bootRun` |
-| **Rust** | `Cargo.toml` | `cargo test` | `cargo clippy` | `cargo run` |
-| **Node.js** | `package.json` | `npm test` | `npm run lint` | `npm run dev` |
-| **Python** | `pyproject.toml` | `pytest` | `ruff check .` | `python -m app` |
-| **Go** | `go.mod` | `go test ./...` | `golangci-lint run` | `go run .` |
-| **Custom** | `stack.mk` | `$(CMD_TEST)` | `$(CMD_LINT)` | `$(CMD_DEV)` |
+## 🛠️ Comandos Makefile
 
-## Repository Structure
+| Comando | Descrição |
+|---|---|
+| `make check` | O portão de qualidade inviolável: lint, Semgrep (SAST), Vitest, Gitleaks e portabilidade. |
+| `make test` | Executa a suíte de testes automatizados com cobertura (Vitest). |
+| `make lint` | Executa o linter (ESLint). |
+| `make prototypes` | Sobe o servidor local interativo da galeria de protótipos aprovados na porta 3333. |
+| `make deploy` | Provisiona o banco serverless Turso e publica a aplicação na Vercel via CLI. |
 
-```text
-.
-├── .agents/                    # Agent ecosystem: memory, context, skills, workflows
-├── .codegraph/                 # Semantic code intelligence
-├── .dockerignore               # Universal container build exclusion rules
-├── .editorconfig               # Universal formatting
-├── .env.example                # 12-Factor environment templates (.local, .dev, .hml, .prd)
-├── .gitattributes              # Binary and line-ending controls
-├── .github/                    # GitHub community issue and PR templates
-├── .gitignore                  # Universal git ignore
-├── .pre-commit-config.yaml     # Gitleaks, portability, and format hooks
-├── .semgrep/                   # Project SAST rules
-├── AGENTS.md                   # Inviolable agent engineering and quality rules
-├── CHANGELOG.md                # Automated release notes from Conventional Commits
-├── cliff.toml                  # Git-cliff changelog generator configuration
-├── CONTRIBUTING.md             # Contributor workflows and commit conventions
-├── docker-compose.yml          # Local backing services (PostgreSQL 16 + Valkey 8)
-├── docs/                       # Living engineering documentation
-│   ├── adr/                    # Architecture Decision Records (MADR format)
-│   ├── api/                    # API contracts and specifications
-│   ├── backlog/                # Backlog management, roadmap, and task matrix
-│   └── runbooks/               # Operational guides and SRE runbooks
-├── LICENSE                     # License specification
-├── Makefile                    # Universal adaptive lifecycle facade
-├── mkdocs.yml                  # MkDocs Material configuration
-├── README.md                   # Project overview
-├── scripts/                    # Automated tooling (bootstrap, portability, security)
-├── SECURITY.md                 # Security and vulnerability disclosure policy
-└── skills-lock.json            # Pinned skills manifest
-```
+---
 
-## License
+## ☁️ Deploy em Produção (Turso + Vercel)
+
+A plataforma é pronta para deploy serverless gratuito (Hobby Tier) na Vercel com banco de dados distribuído Turso (libSQL):
+
+1. Autentique as CLIs em seu terminal:
+   ```bash
+   turso auth login
+   npx vercel login
+   ```
+2. Execute o deploy automatizado zero-touch:
+   ```bash
+   make deploy
+   ```
+
+O script criará o banco `netdrill-prd`, aplicará as migrações e o seed de 30 itens, configurará as variáveis na Vercel e publicará a aplicação executando um smoke test na URL final.
+
+---
+
+## 📝 Importação de Novos Decks
+
+Use o gerador de conteúdo com IA em [`prompts/gerador-conteudo.md`](prompts/gerador-conteudo.md) para gerar JSONs estruturados e importe diretamente em `/import` no navegador.
+
+---
+
+## 📄 Licença
 
 Apache 2.0
