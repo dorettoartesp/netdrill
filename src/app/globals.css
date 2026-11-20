@@ -12,3 +12,33 @@ body {
   background: var(--background);
   font-family: monospace;
 }
+
+@layer base {
+  /* Prevent iOS Safari from auto-zooming on input and textarea focus by enforcing 16px font-size on mobile */
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+
+  @media (min-width: 768px) {
+    input,
+    textarea,
+    select {
+      font-size: 14px !important;
+    }
+  }
+
+  /* Prevent double-tap zoom delay on interactive touch targets */
+  button,
+  input,
+  textarea,
+  a {
+    touch-action: manipulation;
+  }
+}
+
+/* Safe area support for iOS devices with notch and home swipe indicator */
+.pb-safe {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0.75rem));
+}

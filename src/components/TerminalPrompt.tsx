@@ -111,7 +111,7 @@ export function TerminalPrompt({
               onChange={(e) => onChange(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Digite o código acima..."
-              className="flex-1 w-full bg-transparent border-none outline-none resize-none text-green-300 font-mono text-sm leading-relaxed focus:ring-0 p-0"
+              className="flex-1 w-full bg-transparent border-none outline-none resize-none text-green-300 font-mono text-[16px] md:text-sm leading-relaxed focus:ring-0 p-0"
               autoCorrect="off"
               autoCapitalize="none"
               spellCheck={false}
@@ -175,7 +175,7 @@ export function TerminalPrompt({
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={isBlindTest ? 'Digite o comando de memória...' : target}
-            className="flex-1 bg-transparent border-none outline-none text-green-300 focus:ring-0 text-sm font-mono p-0"
+            className="flex-1 bg-transparent border-none outline-none text-green-300 focus:ring-0 text-[16px] md:text-sm font-mono p-0"
             autoCorrect="off"
             autoCapitalize="none"
             spellCheck={false}

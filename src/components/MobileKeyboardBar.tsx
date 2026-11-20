@@ -29,7 +29,7 @@ export function MobileKeyboardBar({
   const keys = ['-', '_', '/', '|', '"', '$', ':', 'Tab'];
 
   return (
-    <div className="lg:hidden sticky bottom-0 z-30 w-full border-t border-gray-800 bg-[#161922]/95 backdrop-blur-md pt-2 pb-3 px-3 shadow-2xl space-y-2 font-mono">
+    <div className="lg:hidden sticky bottom-0 z-30 w-full border-t border-gray-800 bg-[#161922]/95 backdrop-blur-md pt-2 pb-safe px-3 shadow-2xl space-y-2 font-mono">
       {/* Row 1: Horizontal scroll of frequent CLI characters */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
         {keys.map((k) => (

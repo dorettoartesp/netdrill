@@ -191,8 +191,8 @@ export function TopicSelector({ topics }: TopicSelectorProps) {
                   const val = parseInt(e.target.value, 10);
                   setDurationMinutes(isNaN(val) ? 0 : Math.max(1, Math.min(180, val)));
                 }}
-                placeholder="Personalizado"
-                className="w-12 bg-transparent text-white text-xs outline-none text-right font-mono"
+                placeholder="15"
+                className="w-14 bg-transparent text-white text-[16px] md:text-xs outline-none text-right font-mono"
               />
               <span className="text-gray-500 text-xs">min</span>
             </div>
