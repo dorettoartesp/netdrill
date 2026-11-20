@@ -486,7 +486,7 @@ export function StudySession({
             <div className="space-y-3">
               {effectiveUseCases.map((uc, idx) => {
                 const isCritical = uc.severity === 'critical';
-                const borderColor = isCritical ? 'border-l-red-500' : 'border-l-amber-500';
+                const cardBorder = isCritical ? 'border-red-800/60' : 'border-amber-800/60';
                 const badgeColor = isCritical
                   ? 'bg-red-950/80 border-red-800 text-red-300'
                   : 'bg-amber-950/80 border-amber-800 text-amber-300';
@@ -494,7 +494,7 @@ export function StudySession({
                 return (
                   <div
                     key={idx}
-                    className={`bg-[#0f121a] border border-gray-800 ${borderColor} border-l-4 rounded-lg p-4 space-y-2`}
+                    className={`bg-[#0f121a] border ${cardBorder} rounded-lg p-4 space-y-2`}
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-white font-bold text-sm">{uc.title}</span>
@@ -603,14 +603,14 @@ export function StudySession({
 
                         <p className="text-gray-300 leading-relaxed">{m.description}</p>
 
-                        <div className="bg-[#121622] border-l-2 border-emerald-500 p-2.5 rounded-r">
+                        <div className="bg-[#121622] border border-emerald-800/40 p-2.5 rounded">
                           <span className="text-emerald-400 font-bold block mb-1">
                             ✓ Linha de Base Normal:
                           </span>
                           <span className="text-gray-300">{m.normalBaseline}</span>
                         </div>
 
-                        <div className="bg-[#121622] border-l-2 border-red-500 p-2.5 rounded-r">
+                        <div className="bg-[#121622] border border-red-800/40 p-2.5 rounded">
                           <span className="text-red-400 font-bold block mb-1">
                             ⚠ Alerta de Anomalia / Perigo:
                           </span>
@@ -750,7 +750,7 @@ export function StudySession({
                   </span>
                 </button>
                 {showStdout && (
-                  <div className="mt-2.5 pt-2 border-t border-gray-800 font-mono text-xs text-slate-300 bg-[#0c0e14] p-3.5 border-l-4 border-l-cyan-500 overflow-x-auto leading-relaxed whitespace-pre rounded">
+                  <div className="mt-2.5 pt-2 border-t border-gray-800 font-mono text-xs text-slate-300 bg-[#0c0e14] p-3.5 border border-cyan-800/50 overflow-x-auto leading-relaxed whitespace-pre rounded">
                     {currentItem.output_sample}
                   </div>
                 )}

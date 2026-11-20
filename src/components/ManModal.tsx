@@ -183,7 +183,7 @@ export function ManModal({ isOpen, initialCommand = 'ps', onClose }: ManModalPro
                     const flag = parts[0];
                     const exp = parts.slice(1).join(' : ');
                     return (
-                      <div key={idx} className="bg-[#121622] border-l-2 border-cyan-500/60 p-2 rounded-r">
+                      <div key={idx} className="bg-[#121622] border border-cyan-800/40 p-2 rounded">
                         <span className="text-amber-300 font-bold font-mono">{flag}</span>
                         {exp && <p className="text-gray-300 mt-0.5 leading-relaxed">{exp}</p>}
                       </div>

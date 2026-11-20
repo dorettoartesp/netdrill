@@ -101,7 +101,7 @@ export default function ManCmdPage({ params }: ManCmdPageProps) {
                 const flag = parts[0];
                 const exp = parts.slice(1).join(' : ');
                 return (
-                  <div key={idx} className="bg-[#121622] border-l-2 border-cyan-500/60 p-2.5 rounded-r text-xs">
+                  <div key={idx} className="bg-[#121622] border border-cyan-800/40 p-2.5 rounded text-xs">
                     <span className="text-amber-300 font-bold font-mono">{flag}</span>
                     {exp && <p className="text-gray-300 mt-1 leading-relaxed">{exp}</p>}
                   </div>
