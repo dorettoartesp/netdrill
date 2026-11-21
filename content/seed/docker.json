@@ -1,0 +1,431 @@
+{
+  "format": "netdrill.pack/v1",
+  "topic": {
+    "slug": "docker",
+    "title": "Docker",
+    "description": "Containers, images, logs, networks, volumes and Docker Compose operations"
+  },
+  "commands": [
+    {
+      "id": "docker.ps",
+      "name": "docker ps",
+      "summary": "List containers",
+      "synopsis": "docker ps [options]",
+      "description": "Lists running containers; with -a also stopped ones, with status, ports and names.",
+      "flags": [
+        { "flag": "-a", "description": "Include stopped containers." },
+        { "flag": "-q", "description": "Only IDs." },
+        { "flag": "--filter", "argument": "<key=value>", "description": "Filter, e.g. status=exited.", "example": "docker ps -a --filter status=exited" },
+        { "flag": "--format", "argument": "<template>", "description": "Go template for the output." }
+      ],
+      "examples": [
+        {
+          "id": "all",
+          "title": "All containers",
+          "scenario": "List every container, including stopped ones.",
+          "command": "docker ps -a",
+          "output": "CONTAINER ID  IMAGE         STATUS                     PORTS                 NAMES\n3f2a1b9c8d7e  nginx:1.27    Up 2 hours                 0.0.0.0:80->80/tcp    web\n9a8b7c6d5e4f  app:2.4.1     Restarting (1) 5 seconds ago                     api",
+          "output_notes": [
+            { "token": "Restarting (1)", "meaning": "Container exits with code 1 and the restart policy starts it again.", "normal": "Up …", "anomaly": "Restarting or Exited (non-zero): crash loop.", "severity": "critical" },
+            { "token": "0.0.0.0:80->80/tcp", "meaning": "Host port 80 published to container port 80.", "normal": "Expected published ports only.", "anomaly": "Missing mapping: service unreachable from outside.", "severity": "info" }
+          ]
+        },
+        {
+          "id": "exited",
+          "title": "Only exited containers",
+          "scenario": "List containers that have exited.",
+          "command": "docker ps -a --filter status=exited"
+        },
+        {
+          "id": "names-status",
+          "title": "Compact view",
+          "scenario": "Show only name and status of running containers.",
+          "command": "docker ps --format \"{{.Names}}\\t{{.Status}}\""
+        }
+      ],
+      "use_cases": [
+        { "title": "Service down", "situation": "First check whether the container is up or restarting.", "severity": "incident" }
+      ],
+      "related": ["docker.logs", "docker.inspect"],
+      "tags": ["containers"]
+    },
+    {
+      "id": "docker.logs",
+      "name": "docker logs",
+      "summary": "Read a container's output",
+      "synopsis": "docker logs [options] container",
+      "description": "Prints stdout and stderr captured from a container.",
+      "flags": [
+        { "flag": "-f", "description": "Follow new output." },
+        { "flag": "--tail", "argument": "<n>", "description": "Only the last N lines." },
+        { "flag": "--since", "argument": "<time>", "description": "Only logs since a time or duration, e.g. 10m." },
+        { "flag": "-t", "description": "Show timestamps." }
+      ],
+      "examples": [
+        {
+          "id": "tail-follow",
+          "title": "Follow the last lines",
+          "scenario": "Follow the api container's logs starting from the last 100 lines.",
+          "command": "docker logs -f --tail 100 api"
+        },
+        {
+          "id": "since",
+          "title": "Last 10 minutes with timestamps",
+          "scenario": "Show the api logs from the last 10 minutes with timestamps.",
+          "command": "docker logs --since 10m -t api"
+        },
+        {
+          "id": "grep-errors",
+          "title": "Errors only",
+          "scenario": "Search the api logs for ERROR, including stderr.",
+          "command": "docker logs api 2>&1 | grep ERROR"
+        }
+      ],
+      "use_cases": [
+        { "title": "Crash loop", "situation": "Read why the process exits right after start.", "severity": "incident" }
+      ],
+      "pitfalls": ["docker logs writes the container's stderr to your stderr; add 2>&1 before piping to grep."],
+      "related": ["docker.ps"],
+      "tags": ["logs"]
+    },
+    {
+      "id": "docker.exec",
+      "name": "docker exec",
+      "summary": "Run a command inside a running container",
+      "synopsis": "docker exec [options] container command",
+      "description": "Starts an extra process in a running container, e.g. a shell or a diagnostic command.",
+      "flags": [
+        { "flag": "-i", "description": "Keep STDIN open." },
+        { "flag": "-t", "description": "Allocate a terminal." },
+        { "flag": "-u", "argument": "<user>", "description": "Run as another user." },
+        { "flag": "-e", "argument": "<VAR=value>", "description": "Set an environment variable." }
+      ],
+      "examples": [
+        {
+          "id": "shell",
+          "title": "Open a shell",
+          "scenario": "Open an interactive shell in the api container.",
+          "command": "docker exec -it api sh"
+        },
+        {
+          "id": "env",
+          "title": "Check environment",
+          "scenario": "Print the environment variables seen by the api container.",
+          "command": "docker exec api env"
+        },
+        {
+          "id": "psql",
+          "title": "psql inside the database container",
+          "scenario": "Open psql as postgres inside the db container.",
+          "command": "docker exec -it db psql -U postgres"
+        }
+      ],
+      "use_cases": [
+        { "title": "Config not applied", "situation": "Check the files and variables the process really sees.", "severity": "routine" }
+      ],
+      "pitfalls": ["Minimal images may not ship bash; use sh."],
+      "tags": ["containers"]
+    },
+    {
+      "id": "docker.inspect",
+      "name": "docker inspect",
+      "summary": "Low-level JSON details of containers and images",
+      "synopsis": "docker inspect [options] name",
+      "description": "Prints configuration and state (IP, mounts, health, exit code) as JSON; --format extracts single fields.",
+      "flags": [
+        { "flag": "-f", "long": "--format", "argument": "<template>", "description": "Go template to extract a field." }
+      ],
+      "examples": [
+        {
+          "id": "exit-code",
+          "title": "Why did it exit?",
+          "scenario": "Print the exit code and OOM flag of the api container.",
+          "command": "docker inspect -f \"{{.State.ExitCode}} {{.State.OOMKilled}}\" api",
+          "output": "137 true",
+          "output_notes": [
+            { "token": "137", "meaning": "128 + 9: killed by SIGKILL.", "normal": "0 after a clean stop.", "anomaly": "137 with OOMKilled true: memory limit reached.", "severity": "critical" }
+          ]
+        },
+        {
+          "id": "health",
+          "title": "Health status",
+          "scenario": "Print the health check status of the api container.",
+          "command": "docker inspect -f \"{{.State.Health.Status}}\" api"
+        },
+        {
+          "id": "mounts",
+          "title": "Mounted volumes",
+          "scenario": "Show the mounts of the db container as JSON.",
+          "command": "docker inspect -f \"{{json .Mounts}}\" db"
+        }
+      ],
+      "use_cases": [
+        { "title": "Container killed", "situation": "Distinguish an OOM kill from an application error.", "severity": "incident" }
+      ],
+      "related": ["docker.stats"],
+      "tags": ["containers"]
+    },
+    {
+      "id": "docker.stats",
+      "name": "docker stats",
+      "summary": "Live CPU, memory and I/O per container",
+      "synopsis": "docker stats [options] [container...]",
+      "description": "Streams resource usage per container; --no-stream prints one sample.",
+      "flags": [
+        { "flag": "--no-stream", "description": "Print one sample and exit." }
+      ],
+      "examples": [
+        {
+          "id": "snapshot",
+          "title": "One snapshot",
+          "scenario": "Print a single sample of resource usage for every running container.",
+          "command": "docker stats --no-stream",
+          "output": "NAME  CPU %   MEM USAGE / LIMIT   MEM %\napi   182.4%  1.92GiB / 2GiB      96.0%\nweb   0.3%    12MiB / 7.7GiB      0.15%",
+          "output_notes": [
+            { "token": "MEM %", "meaning": "Usage relative to the container memory limit.", "normal": "< 80%", "anomaly": "Near 100%: OOM kill imminent.", "severity": "critical" }
+          ]
+        }
+      ],
+      "use_cases": [
+        { "title": "Noisy neighbor", "situation": "Find the container saturating CPU or memory on a shared host.", "severity": "incident" }
+      ],
+      "related": ["docker.inspect"],
+      "tags": ["performance"]
+    },
+    {
+      "id": "docker.run",
+      "name": "docker run",
+      "summary": "Create and start a container",
+      "synopsis": "docker run [options] image [command]",
+      "description": "Creates a container from an image with ports, volumes, environment and restart policy.",
+      "flags": [
+        { "flag": "-d", "description": "Run in the background." },
+        { "flag": "--name", "argument": "<name>", "description": "Container name." },
+        { "flag": "-p", "argument": "host:container", "description": "Publish a port." },
+        { "flag": "-v", "argument": "src:dst", "description": "Mount a volume or host path." },
+        { "flag": "-e", "argument": "VAR=value", "description": "Environment variable." },
+        { "flag": "--rm", "description": "Remove the container when it exits." },
+        { "flag": "--restart", "argument": "<policy>", "description": "no, on-failure, unless-stopped, always." }
+      ],
+      "examples": [
+        {
+          "id": "nginx",
+          "title": "Background web server",
+          "scenario": "Run nginx:1.27 in the background as 'web', publishing host port 8080 to 80.",
+          "command": "docker run -d --name web -p 8080:80 nginx:1.27"
+        },
+        {
+          "id": "throwaway",
+          "title": "Throwaway debug container",
+          "scenario": "Start a temporary Alpine shell that is removed when you exit.",
+          "command": "docker run --rm -it alpine:3.20 sh"
+        },
+        {
+          "id": "postgres",
+          "title": "PostgreSQL with a volume",
+          "scenario": "Run postgres:16 as 'db' with a named volume pgdata and a password.",
+          "command": "docker run -d --name db -e POSTGRES_PASSWORD=secret \\\n  -v pgdata:/var/lib/postgresql/data postgres:16"
+        }
+      ],
+      "use_cases": [
+        { "title": "Quick reproduction", "situation": "Spin up an isolated service to reproduce a bug.", "severity": "routine" }
+      ],
+      "pitfalls": ["Without a volume, data written inside the container is lost when it is removed."],
+      "related": ["docker.volume"],
+      "tags": ["containers"]
+    },
+    {
+      "id": "docker.images",
+      "name": "docker image",
+      "summary": "List, pull and clean images",
+      "synopsis": "docker image [ls|pull|prune|rm] ...",
+      "description": "Manages local images: list sizes, pull updates and remove unused layers.",
+      "flags": [
+        { "flag": "ls", "description": "List images with size." },
+        { "flag": "pull", "description": "Download or update an image." },
+        { "flag": "prune -a", "description": "Remove images not used by any container." }
+      ],
+      "examples": [
+        { "id": "list", "title": "List images", "scenario": "List local images and their sizes.", "command": "docker image ls" },
+        { "id": "pull", "title": "Pull an update", "scenario": "Download the latest nginx 1.27 image.", "command": "docker pull nginx:1.27" },
+        { "id": "prune", "title": "Remove unused images", "scenario": "Free disk by removing images not used by any container.", "command": "docker image prune -a" }
+      ],
+      "use_cases": [
+        { "title": "Disk full on the Docker host", "situation": "Old image versions accumulate after every deploy.", "severity": "incident" }
+      ],
+      "related": ["docker.system"],
+      "tags": ["images"]
+    },
+    {
+      "id": "docker.system",
+      "name": "docker system",
+      "summary": "Disk usage and cleanup of Docker objects",
+      "synopsis": "docker system [df|prune] [options]",
+      "description": "Shows space used by images, containers, volumes and build cache, and removes unused objects.",
+      "flags": [
+        { "flag": "df", "description": "Space used per object type." },
+        { "flag": "prune", "description": "Remove stopped containers, unused networks, dangling images and build cache." },
+        { "flag": "--volumes", "description": "With prune: also remove unused volumes (data loss risk)." }
+      ],
+      "examples": [
+        { "id": "df", "title": "Docker disk usage", "scenario": "How much disk do images, containers, volumes and cache use?", "command": "docker system df" },
+        { "id": "prune", "title": "Safe cleanup", "scenario": "Remove stopped containers, unused networks and dangling images.", "command": "docker system prune" }
+      ],
+      "use_cases": [
+        { "title": "/var/lib/docker full", "situation": "Measure before deleting, then prune unused objects.", "severity": "incident" }
+      ],
+      "pitfalls": ["Never add --volumes casually: unused volumes may hold the only copy of a database."],
+      "related": ["docker.images"],
+      "tags": ["disk"]
+    },
+    {
+      "id": "docker.network",
+      "name": "docker network",
+      "summary": "Inspect and manage container networks",
+      "synopsis": "docker network [ls|inspect|create|connect] ...",
+      "description": "Containers on the same user-defined network reach each other by name through Docker's embedded DNS.",
+      "examples": [
+        { "id": "list", "title": "List networks", "scenario": "List Docker networks on this host.", "command": "docker network ls" },
+        {
+          "id": "members",
+          "title": "Containers on a network",
+          "scenario": "Which containers are attached to the network app_default?",
+          "command": "docker network inspect -f \"{{range .Containers}}{{.Name}} {{end}}\" app_default"
+        },
+        { "id": "connect", "title": "Attach a container", "scenario": "Attach the running container api to the network backend.", "command": "docker network connect backend api" }
+      ],
+      "use_cases": [
+        { "title": "Service cannot resolve 'db'", "situation": "Both containers must share a user-defined network to resolve each other by name.", "severity": "incident" }
+      ],
+      "tags": ["network"]
+    },
+    {
+      "id": "docker.volume",
+      "name": "docker volume",
+      "summary": "Manage persistent volumes",
+      "synopsis": "docker volume [ls|inspect|create|rm] ...",
+      "description": "Named volumes keep data outside the container lifecycle under /var/lib/docker/volumes.",
+      "examples": [
+        { "id": "list", "title": "List volumes", "scenario": "List Docker volumes on this host.", "command": "docker volume ls" },
+        { "id": "inspect", "title": "Where the data lives", "scenario": "Show the mountpoint on the host of volume pgdata.", "command": "docker volume inspect -f \"{{.Mountpoint}}\" pgdata" },
+        {
+          "id": "backup",
+          "title": "Back up a volume (reference)",
+          "scenario": "Reference: archive volume pgdata into the current directory using a temporary container.",
+          "command": "docker run --rm -v pgdata:/data -v \"$PWD\":/backup alpine:3.20 tar czf /backup/pgdata.tgz -C /data .",
+          "drill": false
+        }
+      ],
+      "use_cases": [
+        { "title": "Before upgrading a database image", "situation": "Know where the data lives and back it up first.", "severity": "routine" }
+      ],
+      "related": ["docker.run"],
+      "tags": ["storage"]
+    },
+    {
+      "id": "docker.compose",
+      "name": "docker compose",
+      "summary": "Run multi-container applications",
+      "synopsis": "docker compose [options] command",
+      "description": "Manages the services defined in compose.yaml: start, stop, rebuild, logs and status.",
+      "flags": [
+        { "flag": "up -d", "description": "Create and start services in the background." },
+        { "flag": "down", "description": "Stop and remove containers and networks (volumes kept)." },
+        { "flag": "ps", "description": "Status of the project's services." },
+        { "flag": "logs -f", "description": "Follow logs of services." },
+        { "flag": "pull", "description": "Pull newer images." },
+        { "flag": "restart", "description": "Restart services." },
+        { "flag": "config", "description": "Validate and print the resolved configuration." }
+      ],
+      "examples": [
+        { "id": "up", "title": "Start the stack", "scenario": "Start every service of the project in the background.", "command": "docker compose up -d" },
+        { "id": "status", "title": "Stack status", "scenario": "Show the status of the project's services.", "command": "docker compose ps" },
+        { "id": "logs", "title": "Follow one service", "scenario": "Follow the logs of the api service, last 50 lines first.", "command": "docker compose logs -f --tail 50 api" },
+        {
+          "id": "update",
+          "title": "Update images and recreate",
+          "scenario": "Pull newer images and recreate only the changed services.",
+          "command": "docker compose pull\ndocker compose up -d"
+        },
+        { "id": "config", "title": "Validate the file", "scenario": "Check compose.yaml for errors and print the resolved configuration.", "command": "docker compose config" },
+        { "id": "restart-one", "title": "Restart one service", "scenario": "Restart only the web service.", "command": "docker compose restart web" }
+      ],
+      "use_cases": [
+        { "title": "Routine update", "situation": "Apply new image versions with minimal downtime.", "severity": "routine" }
+      ],
+      "pitfalls": ["docker compose down -v also deletes named volumes, including databases."],
+      "tags": ["compose"]
+    }
+  ],
+  "procedures": [
+    {
+      "id": "docker.crash-loop",
+      "title": "Investigate a container stuck in a restart loop",
+      "context": "The api container shows 'Restarting (1)' in docker ps.",
+      "goal": "Find the exit reason and whether it was an OOM kill.",
+      "steps": [
+        { "command": "docker ps -a --filter name=api", "purpose": "Current status" },
+        { "command": "docker logs --tail 50 api", "purpose": "Last output before exiting" },
+        { "command": "docker inspect -f \"{{.State.ExitCode}} {{.State.OOMKilled}}\" api", "purpose": "Exit code and OOM flag", "interpretation": "137 true: raise the memory limit or fix the leak; 1 false: application error in the logs." }
+      ],
+      "uses": ["docker.ps", "docker.logs", "docker.inspect"],
+      "use_cases": [{ "title": "Bad release", "situation": "A new image fails on start because of a missing variable.", "severity": "incident" }],
+      "tags": ["containers"]
+    },
+    {
+      "id": "docker.disk-cleanup",
+      "title": "Free disk on a Docker host safely",
+      "context": "/var/lib/docker filled the root disk after months of deploys.",
+      "goal": "Measure usage and remove only what is unused, keeping volumes.",
+      "steps": [
+        { "command": "df -h /var/lib/docker", "purpose": "Confirm the filesystem is full" },
+        { "command": "docker system df", "purpose": "Usage per object type" },
+        { "command": "docker image prune -a", "purpose": "Remove unused images" },
+        { "command": "docker builder prune", "purpose": "Remove build cache" }
+      ],
+      "uses": ["docker.system", "docker.images", "linux.df"],
+      "tags": ["disk"]
+    },
+    {
+      "id": "docker.compose-update",
+      "title": "Update a Compose stack and verify it",
+      "context": "A new version of the app image was published.",
+      "goal": "Pull, recreate and confirm the stack is healthy.",
+      "steps": [
+        { "command": "docker compose pull", "purpose": "Download new images" },
+        { "command": "docker compose up -d", "purpose": "Recreate changed services" },
+        { "command": "docker compose ps", "purpose": "All services running" },
+        { "command": "docker compose logs --tail 20 api", "purpose": "No errors after start" }
+      ],
+      "uses": ["docker.compose"],
+      "tags": ["compose"]
+    },
+    {
+      "id": "docker.name-resolution",
+      "title": "Fix 'could not translate host name db'",
+      "context": "The api container cannot resolve the hostname db.",
+      "goal": "Check both containers share a network and connect them.",
+      "steps": [
+        { "command": "docker network ls", "purpose": "Available networks" },
+        { "command": "docker inspect -f \"{{json .NetworkSettings.Networks}}\" api", "purpose": "Networks of api" },
+        { "command": "docker inspect -f \"{{json .NetworkSettings.Networks}}\" db", "purpose": "Networks of db" },
+        { "command": "docker network connect backend api", "purpose": "Attach api to db's network" }
+      ],
+      "uses": ["docker.network", "docker.inspect"],
+      "tags": ["network"]
+    },
+    {
+      "id": "docker.db-backup",
+      "title": "Back up PostgreSQL running in a container",
+      "context": "The db container runs postgres:16 with data in volume pgdata.",
+      "goal": "Produce a restorable dump on the host.",
+      "steps": [
+        { "command": "docker exec db pg_dump -U postgres -Fc -f /tmp/app.dump appdb", "purpose": "Dump inside the container" },
+        { "command": "docker cp db:/tmp/app.dump ./app.dump", "purpose": "Copy the dump to the host" },
+        { "command": "docker exec db rm /tmp/app.dump", "purpose": "Clean up inside the container" }
+      ],
+      "uses": ["docker.exec", "postgresql.pg-dump"],
+      "tags": ["backup"]
+    }
+  ]
+}

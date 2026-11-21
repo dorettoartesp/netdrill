@@ -9,6 +9,7 @@
     "lint": "next lint",
     "test": "vitest run",
     "db:migrate": "tsx scripts/migrate.ts",
+    "db:seed": "tsx scripts/seed.ts",
     "content:schema": "tsx scripts/content-schema.ts"
   },
   "dependencies": {

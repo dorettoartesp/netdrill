@@ -24,7 +24,7 @@ Plataforma de alta intensidade de repetição espaçada (SM-2) e memória muscul
 npm install
 
 # 2. Executar migrações (o conteúdo é enviado depois pela tela /import)
-npm run db:migrate
+npm run db:migrate && npm run db:seed
 
 # 3. Iniciar servidor de desenvolvimento
 npm run dev

@@ -1,0 +1,688 @@
+{
+  "format": "netdrill.pack/v1",
+  "topic": {
+    "slug": "linux",
+    "title": "Linux Administration",
+    "description": "Processes, services, logs, disks, files and permissions on Linux servers"
+  },
+  "commands": [
+    {
+      "id": "linux.ps",
+      "name": "ps",
+      "summary": "Snapshot of running processes",
+      "synopsis": "ps [options]",
+      "description": "Prints a one-time snapshot of processes. BSD-style options (aux) and standard options (-ef, -o) can select and format columns.",
+      "flags": [
+        { "flag": "a", "description": "BSD style: processes of all users that have a terminal." },
+        { "flag": "u", "description": "BSD style: user-oriented format with %CPU, %MEM, VSZ and RSS." },
+        { "flag": "x", "description": "BSD style: include processes without a terminal (daemons)." },
+        { "flag": "-e", "description": "Select every process." },
+        { "flag": "-o", "argument": "<format>", "description": "User-defined output columns.", "example": "ps -eo pid,comm" },
+        { "flag": "--sort", "argument": "<key>", "description": "Sort by a column; prefix with - for descending.", "example": "ps aux --sort=-%mem" },
+        { "flag": "-p", "argument": "<pid>", "description": "Select processes by PID." }
+      ],
+      "examples": [
+        {
+          "id": "all-processes",
+          "title": "All processes with resource usage",
+          "scenario": "The server is slow. List every process with user, CPU and memory usage.",
+          "command": "ps aux",
+          "explanation": "a: all users, u: user-oriented columns, x: include daemons without a terminal.",
+          "output": "USER       PID %CPU %MEM    VSZ   RSS TTY  STAT START TIME COMMAND\nroot         1  0.0  0.1 168000 12800 ?    Ss   09:01 0:02 /sbin/init\nwww-data  1421  2.3  0.5  88320 43120 ?    S    09:02 0:13 nginx: worker",
+          "output_notes": [
+            { "token": "RSS", "meaning": "Resident memory in KiB actually held in RAM.", "normal": "Stable after warm-up.", "anomaly": "Steady growth over hours: likely leak.", "severity": "info" },
+            { "token": "STAT", "meaning": "Process state: R running, S sleeping, D uninterruptible I/O wait, Z zombie.", "normal": "Mostly S and R.", "anomaly": "Many D or Z states.", "severity": "warning" }
+          ]
+        },
+        {
+          "id": "top-memory",
+          "title": "Top memory consumers",
+          "scenario": "Find which processes use the most memory, largest first.",
+          "command": "ps aux --sort=-%mem | head",
+          "explanation": "--sort=-%mem orders by memory descending; head keeps the first 10 lines."
+        },
+        {
+          "id": "custom-columns",
+          "title": "Custom columns for one PID",
+          "scenario": "Show PID, parent PID, state, CPU, memory and command line for process 3100.",
+          "command": "ps -o pid,ppid,stat,%cpu,%mem,args -p 3100",
+          "explanation": "-o picks the columns, -p selects the process."
+        }
+      ],
+      "use_cases": [
+        { "title": "Load spike", "situation": "Identify the process responsible for a sudden CPU or memory spike.", "severity": "incident" },
+        { "title": "Zombie hunting", "situation": "Find defunct processes and their parent with ps -o pid,ppid,stat,comm.", "severity": "routine" }
+      ],
+      "pitfalls": ["%CPU is averaged over the process lifetime, not the current instant; use top for live usage."],
+      "related": ["linux.kill", "linux.uptime"],
+      "tags": ["processes"]
+    },
+    {
+      "id": "linux.systemctl",
+      "name": "systemctl",
+      "summary": "Control systemd services and inspect their state",
+      "synopsis": "systemctl [command] [unit]",
+      "description": "Starts, stops, restarts and inspects systemd units and controls whether they start at boot.",
+      "flags": [
+        { "flag": "status", "description": "State, main PID, recent log lines of a unit." },
+        { "flag": "restart", "description": "Stop then start a unit." },
+        { "flag": "reload", "description": "Ask the service to reload its configuration without stopping." },
+        { "flag": "enable", "description": "Start the unit at boot; --now also starts it immediately.", "example": "systemctl enable --now nginx" },
+        { "flag": "is-active", "description": "Print active/inactive; exit code 0 when active." },
+        { "flag": "--failed", "description": "List units in failed state." },
+        { "flag": "daemon-reload", "description": "Reload unit files after editing them." }
+      ],
+      "examples": [
+        {
+          "id": "status",
+          "title": "Service status",
+          "scenario": "Check whether nginx is running and see its latest log lines.",
+          "command": "systemctl status nginx",
+          "output": "● nginx.service - A high performance web server\n     Loaded: loaded (/lib/systemd/system/nginx.service; enabled)\n     Active: active (running) since Thu 2026-11-19 09:02:11 UTC; 1 day ago\n   Main PID: 1419 (nginx)",
+          "output_notes": [
+            { "token": "Active: active (running)", "meaning": "The service is up.", "normal": "active (running)", "anomaly": "failed or activating (auto-restart): crash loop.", "severity": "info" },
+            { "token": "enabled", "meaning": "The unit starts at boot.", "normal": "enabled for production services.", "anomaly": "disabled: will not come back after reboot.", "severity": "warning" }
+          ]
+        },
+        {
+          "id": "restart",
+          "title": "Restart a service",
+          "scenario": "Apply a new configuration by restarting the api service.",
+          "command": "sudo systemctl restart api.service"
+        },
+        {
+          "id": "enable-now",
+          "title": "Enable and start",
+          "scenario": "Make nginx start at boot and start it right now.",
+          "command": "sudo systemctl enable --now nginx"
+        },
+        {
+          "id": "failed",
+          "title": "Failed units",
+          "scenario": "After a reboot, list every unit that failed to start.",
+          "command": "systemctl --failed"
+        }
+      ],
+      "use_cases": [
+        { "title": "Service down after deploy", "situation": "Confirm the unit state and read the last log lines in one view.", "severity": "incident" },
+        { "title": "Post-reboot check", "situation": "Ensure no unit failed after maintenance.", "severity": "routine" }
+      ],
+      "pitfalls": ["After editing a unit file, run systemctl daemon-reload before restarting, or the old definition is used."],
+      "related": ["linux.journalctl"],
+      "tags": ["services", "systemd"]
+    },
+    {
+      "id": "linux.journalctl",
+      "name": "journalctl",
+      "summary": "Query the systemd journal",
+      "synopsis": "journalctl [options]",
+      "description": "Reads logs collected by systemd-journald, filtered by unit, time, priority or boot.",
+      "flags": [
+        { "flag": "-u", "argument": "<unit>", "description": "Only logs of a unit.", "example": "journalctl -u nginx" },
+        { "flag": "-f", "description": "Follow new entries." },
+        { "flag": "-n", "argument": "<lines>", "description": "Show the last N entries." },
+        { "flag": "--since", "argument": "<time>", "description": "Start time, e.g. \"1 hour ago\" or \"2026-11-20 10:00\"." },
+        { "flag": "-p", "argument": "<priority>", "description": "Minimum priority: err, warning, info…", "example": "journalctl -p err" },
+        { "flag": "-b", "description": "Current boot only; -b -1 for the previous boot." },
+        { "flag": "--no-pager", "description": "Print without the pager (useful in scripts)." }
+      ],
+      "examples": [
+        {
+          "id": "unit-follow",
+          "title": "Follow a unit's logs",
+          "scenario": "Watch the api service logs live while reproducing an error.",
+          "command": "journalctl -u api.service -f"
+        },
+        {
+          "id": "since-hour",
+          "title": "Logs from the last hour",
+          "scenario": "Read nginx logs from the last hour only.",
+          "command": "journalctl -u nginx --since \"1 hour ago\""
+        },
+        {
+          "id": "errors-boot",
+          "title": "Errors in this boot",
+          "scenario": "List every error-level message since the last boot.",
+          "command": "journalctl -b -p err"
+        },
+        {
+          "id": "previous-boot",
+          "title": "Previous boot tail",
+          "scenario": "The server rebooted unexpectedly. Show the last 50 lines of the previous boot.",
+          "command": "journalctl -b -1 -n 50"
+        }
+      ],
+      "use_cases": [
+        { "title": "Unexpected reboot", "situation": "Inspect the end of the previous boot for OOM or kernel panics.", "severity": "critical" },
+        { "title": "Crash loop", "situation": "Follow a unit while systemd restarts it to capture the failure.", "severity": "incident" }
+      ],
+      "pitfalls": ["Without persistent storage (/var/log/journal), previous boots are not kept."],
+      "related": ["linux.systemctl"],
+      "tags": ["logs", "systemd"]
+    },
+    {
+      "id": "linux.df",
+      "name": "df",
+      "summary": "Free space per filesystem",
+      "synopsis": "df [options] [path]",
+      "description": "Reports used and available space and inodes for mounted filesystems.",
+      "flags": [
+        { "flag": "-h", "description": "Human-readable sizes (K, M, G)." },
+        { "flag": "-i", "description": "Inode usage instead of blocks." },
+        { "flag": "-T", "description": "Show the filesystem type." }
+      ],
+      "examples": [
+        {
+          "id": "human",
+          "title": "Disk usage per mount",
+          "scenario": "Writes are failing. Check free space on every mounted filesystem.",
+          "command": "df -h",
+          "output": "Filesystem      Size  Used Avail Use% Mounted on\n/dev/vda1        50G   48G  2.0G  97% /\n/dev/vdb1       200G   61G  139G  31% /data",
+          "output_notes": [
+            { "token": "Use%", "meaning": "Share of blocks in use.", "normal": "< 80%", "anomaly": "> 90%: writes and logs will soon fail.", "severity": "critical" }
+          ]
+        },
+        {
+          "id": "inodes",
+          "title": "Inode exhaustion",
+          "scenario": "Disk shows free space but files cannot be created. Check inode usage.",
+          "command": "df -i",
+          "explanation": "Millions of tiny files can exhaust inodes while blocks are still free."
+        },
+        {
+          "id": "type",
+          "title": "Filesystem types",
+          "scenario": "List mounts with their filesystem type in human-readable sizes.",
+          "command": "df -hT"
+        }
+      ],
+      "use_cases": [
+        { "title": "No space left on device", "situation": "Confirm which mount is full before cleaning up.", "severity": "critical" }
+      ],
+      "pitfalls": ["Deleted files still held open by a process keep using space; check with lsof +L1."],
+      "related": ["linux.du", "linux.lsof"],
+      "tags": ["disk"]
+    },
+    {
+      "id": "linux.du",
+      "name": "du",
+      "summary": "Disk usage of files and directories",
+      "synopsis": "du [options] [path...]",
+      "description": "Estimates space used by files and directories, recursively.",
+      "flags": [
+        { "flag": "-s", "description": "Only a total per argument." },
+        { "flag": "-h", "description": "Human-readable sizes." },
+        { "flag": "-d", "argument": "<depth>", "description": "Limit the reported depth.", "example": "du -h -d 1 /var" },
+        { "flag": "-x", "description": "Stay on one filesystem." }
+      ],
+      "examples": [
+        {
+          "id": "top-level",
+          "title": "Largest directories one level deep",
+          "scenario": "/var is full. Show the size of each directory directly under it.",
+          "command": "du -h -d 1 /var | sort -h",
+          "explanation": "-d 1 limits depth; sort -h orders human-readable sizes."
+        },
+        {
+          "id": "summary",
+          "title": "Total size of a directory",
+          "scenario": "How much space does /var/log use in total?",
+          "command": "du -sh /var/log"
+        },
+        {
+          "id": "one-fs",
+          "title": "Stay on the root filesystem",
+          "scenario": "Find what fills / without descending into other mounts.",
+          "command": "sudo du -xh -d 1 / | sort -h"
+        }
+      ],
+      "use_cases": [
+        { "title": "Find what filled the disk", "situation": "Drill down directory by directory until the culprit appears.", "severity": "incident" }
+      ],
+      "pitfalls": ["du and df can disagree when deleted files are still open."],
+      "related": ["linux.df"],
+      "tags": ["disk"]
+    },
+    {
+      "id": "linux.free",
+      "name": "free",
+      "summary": "Memory and swap usage",
+      "synopsis": "free [options]",
+      "description": "Shows total, used and available memory and swap.",
+      "flags": [
+        { "flag": "-h", "description": "Human-readable units." },
+        { "flag": "-s", "argument": "<seconds>", "description": "Repeat every N seconds." }
+      ],
+      "examples": [
+        {
+          "id": "human",
+          "title": "Memory overview",
+          "scenario": "Check how much memory is really available for new processes.",
+          "command": "free -h",
+          "output": "               total        used        free      shared  buff/cache   available\nMem:           7.7Gi       5.9Gi       210Mi        12Mi       1.6Gi       1.5Gi\nSwap:          2.0Gi       1.1Gi       0.9Gi",
+          "output_notes": [
+            { "token": "available", "meaning": "Memory usable by new processes without swapping (includes reclaimable cache).", "normal": "> 15% of total", "anomaly": "Near zero: OOM killer risk.", "severity": "critical" },
+            { "token": "Swap:", "meaning": "Swap usage.", "normal": "Low and stable.", "anomaly": "Growing swap with low available memory: thrashing.", "severity": "warning" }
+          ]
+        },
+        {
+          "id": "watch",
+          "title": "Sample every 5 seconds",
+          "scenario": "Watch memory every 5 seconds during a load test.",
+          "command": "free -h -s 5"
+        }
+      ],
+      "use_cases": [
+        { "title": "OOM investigation", "situation": "Confirm memory pressure before looking for the consumer with ps.", "severity": "incident" }
+      ],
+      "pitfalls": ["Low 'free' is normal: Linux uses spare RAM as cache. Read 'available'."],
+      "related": ["linux.ps"],
+      "tags": ["memory"]
+    },
+    {
+      "id": "linux.lsof",
+      "name": "lsof",
+      "summary": "List open files, sockets and their processes",
+      "synopsis": "lsof [options]",
+      "description": "Lists files opened by processes; in Linux, sockets and pipes are files too.",
+      "flags": [
+        { "flag": "-i", "argument": "[:port]", "description": "Network files, optionally by port.", "example": "lsof -i :443" },
+        { "flag": "-p", "argument": "<pid>", "description": "Files of one process." },
+        { "flag": "+L1", "description": "Deleted files still open (link count < 1)." },
+        { "flag": "-n", "description": "Do not resolve host names." },
+        { "flag": "-P", "description": "Do not resolve port names." }
+      ],
+      "examples": [
+        {
+          "id": "port",
+          "title": "Who uses a port",
+          "scenario": "nginx cannot bind port 80. Find which process already uses it.",
+          "command": "sudo lsof -nP -i :80"
+        },
+        {
+          "id": "deleted",
+          "title": "Deleted but open files",
+          "scenario": "df shows a full disk but du does not. Find deleted files still held open.",
+          "command": "sudo lsof +L1"
+        },
+        {
+          "id": "process-files",
+          "title": "Files of a process",
+          "scenario": "Count how many files process 3100 has open.",
+          "command": "sudo lsof -p 3100 | wc -l"
+        }
+      ],
+      "use_cases": [
+        { "title": "Address already in use", "situation": "Identify the process holding a port before restarting a service.", "severity": "incident" },
+        { "title": "Too many open files", "situation": "Measure open descriptors against the process limit.", "severity": "incident" }
+      ],
+      "related": ["linux.df", "networking.ss"],
+      "tags": ["processes", "files"]
+    },
+    {
+      "id": "linux.find",
+      "name": "find",
+      "summary": "Search the filesystem by name, size, age or type",
+      "synopsis": "find [path] [expression]",
+      "description": "Walks directory trees and selects files matching tests; can run actions on them.",
+      "flags": [
+        { "flag": "-name", "argument": "<pattern>", "description": "Match the base name (quote wildcards)." },
+        { "flag": "-type", "argument": "f|d", "description": "Regular files or directories." },
+        { "flag": "-size", "argument": "+N[kMG]", "description": "Larger than N.", "example": "find / -size +1G" },
+        { "flag": "-mtime", "argument": "+N|-N", "description": "Modified more/less than N days ago." },
+        { "flag": "-delete", "description": "Delete the matches (place last)." },
+        { "flag": "-exec", "argument": "cmd {} \\;", "description": "Run a command per match." }
+      ],
+      "examples": [
+        {
+          "id": "large-files",
+          "title": "Files larger than 1 GB",
+          "scenario": "Find files larger than 1 GB under /var.",
+          "command": "sudo find /var -type f -size +1G"
+        },
+        {
+          "id": "old-logs",
+          "title": "Old compressed logs",
+          "scenario": "List compressed logs older than 30 days in /var/log/app.",
+          "command": "find /var/log/app -name \"*.gz\" -mtime +30"
+        },
+        {
+          "id": "delete-old",
+          "title": "Delete old temp files",
+          "scenario": "Delete files in /tmp/app older than 7 days.",
+          "command": "find /tmp/app -type f -mtime +7 -delete"
+        }
+      ],
+      "use_cases": [
+        { "title": "Disk cleanup", "situation": "Locate oversized or stale files before freeing space.", "severity": "routine" }
+      ],
+      "pitfalls": ["Run the expression without -delete first to review what would be removed."],
+      "related": ["linux.du"],
+      "tags": ["files"]
+    },
+    {
+      "id": "linux.grep",
+      "name": "grep",
+      "summary": "Search text by pattern",
+      "synopsis": "grep [options] pattern [file...]",
+      "description": "Prints lines matching a regular expression.",
+      "flags": [
+        { "flag": "-i", "description": "Case-insensitive." },
+        { "flag": "-r", "description": "Recurse into directories." },
+        { "flag": "-n", "description": "Show line numbers." },
+        { "flag": "-v", "description": "Invert the match." },
+        { "flag": "-c", "description": "Count matching lines." },
+        { "flag": "-E", "description": "Extended regular expressions (|, +, ?)." },
+        { "flag": "-C", "argument": "<n>", "description": "Show N lines of context." }
+      ],
+      "examples": [
+        {
+          "id": "count-errors",
+          "title": "Count errors in a log",
+          "scenario": "How many lines in /var/log/app.log contain ERROR?",
+          "command": "grep -c ERROR /var/log/app.log"
+        },
+        {
+          "id": "context",
+          "title": "Errors with context",
+          "scenario": "Show each 'timeout' (any case) in app.log with 3 lines of context.",
+          "command": "grep -i -C 3 timeout /var/log/app.log"
+        },
+        {
+          "id": "recursive",
+          "title": "Search a config tree",
+          "scenario": "Find where listen ports are configured under /etc/nginx, with line numbers.",
+          "command": "grep -rn listen /etc/nginx"
+        },
+        {
+          "id": "alternation",
+          "title": "Multiple patterns",
+          "scenario": "Show lines with either 'oom' or 'killed' in kern.log.",
+          "command": "grep -E \"oom|killed\" /var/log/kern.log"
+        }
+      ],
+      "use_cases": [
+        { "title": "Log triage", "situation": "Narrow a large log to the lines around a failure.", "severity": "routine" }
+      ],
+      "related": ["linux.tail"],
+      "tags": ["text", "logs"]
+    },
+    {
+      "id": "linux.tail",
+      "name": "tail",
+      "summary": "Show the end of a file, optionally following it",
+      "synopsis": "tail [options] [file]",
+      "description": "Prints the last lines of files and can follow growth in real time.",
+      "flags": [
+        { "flag": "-n", "argument": "<lines>", "description": "Number of lines." },
+        { "flag": "-f", "description": "Follow appended data." },
+        { "flag": "-F", "description": "Follow and reopen when the file is rotated." }
+      ],
+      "examples": [
+        {
+          "id": "follow",
+          "title": "Follow a log through rotation",
+          "scenario": "Watch /var/log/nginx/error.log live, surviving log rotation.",
+          "command": "tail -F /var/log/nginx/error.log"
+        },
+        {
+          "id": "last-200",
+          "title": "Last 200 lines",
+          "scenario": "Show the last 200 lines of /var/log/app.log.",
+          "command": "tail -n 200 /var/log/app.log"
+        }
+      ],
+      "use_cases": [
+        { "title": "Live debugging", "situation": "Watch errors while reproducing a request.", "severity": "routine" }
+      ],
+      "related": ["linux.grep", "linux.journalctl"],
+      "tags": ["logs"]
+    },
+    {
+      "id": "linux.chmod",
+      "name": "chmod",
+      "summary": "Change file permissions",
+      "synopsis": "chmod [options] mode file...",
+      "description": "Sets read/write/execute permissions with octal (640) or symbolic (u+x) modes.",
+      "flags": [
+        { "flag": "-R", "description": "Recurse into directories." },
+        { "flag": "u+x", "description": "Symbolic: add execute for the owner." },
+        { "flag": "640", "description": "Octal: owner rw, group r, others none." }
+      ],
+      "examples": [
+        {
+          "id": "executable",
+          "title": "Make a script executable",
+          "scenario": "Allow the owner to execute deploy.sh.",
+          "command": "chmod u+x deploy.sh"
+        },
+        {
+          "id": "private-key",
+          "title": "Protect a private key",
+          "scenario": "SSH refuses id_ed25519 because it is too open. Restrict it to the owner.",
+          "command": "chmod 600 ~/.ssh/id_ed25519"
+        },
+        {
+          "id": "config-640",
+          "title": "Readable by the service group",
+          "scenario": "Let the owner write and the group read /etc/app/config.yml, others nothing.",
+          "command": "chmod 640 /etc/app/config.yml"
+        }
+      ],
+      "use_cases": [
+        { "title": "Permission denied", "situation": "Fix modes after copying files with the wrong umask.", "severity": "routine" }
+      ],
+      "pitfalls": ["Avoid chmod -R 777: it exposes files to every user and hides the real ownership problem."],
+      "related": ["linux.chown"],
+      "tags": ["permissions"]
+    },
+    {
+      "id": "linux.chown",
+      "name": "chown",
+      "summary": "Change file owner and group",
+      "synopsis": "chown [options] user[:group] file...",
+      "description": "Changes the owning user and/or group of files.",
+      "flags": [
+        { "flag": "-R", "description": "Recurse into directories." }
+      ],
+      "examples": [
+        {
+          "id": "web-root",
+          "title": "Give the web root to www-data",
+          "scenario": "Make www-data the owner and group of /var/www/app, recursively.",
+          "command": "sudo chown -R www-data:www-data /var/www/app"
+        },
+        {
+          "id": "group-only",
+          "title": "Change only the group",
+          "scenario": "Set the group of /srv/backup to 'backup' without changing the owner.",
+          "command": "sudo chown :backup /srv/backup"
+        }
+      ],
+      "use_cases": [
+        { "title": "Upload fails with 403", "situation": "The service user cannot write into a directory owned by root.", "severity": "incident" }
+      ],
+      "related": ["linux.chmod"],
+      "tags": ["permissions"]
+    },
+    {
+      "id": "linux.kill",
+      "name": "kill",
+      "summary": "Send signals to processes",
+      "synopsis": "kill [-signal] pid...",
+      "description": "Sends a signal (TERM by default) to processes; also used to pause and resume them.",
+      "flags": [
+        { "flag": "-TERM", "description": "Polite termination (default, 15)." },
+        { "flag": "-KILL", "description": "Immediate kill that cannot be caught (9)." },
+        { "flag": "-HUP", "description": "Hang-up; many daemons reload configuration on it." },
+        { "flag": "-STOP", "description": "Pause the process." },
+        { "flag": "-CONT", "description": "Resume a paused process." },
+        { "flag": "-l", "description": "List signal names." }
+      ],
+      "examples": [
+        {
+          "id": "terminate",
+          "title": "Graceful stop",
+          "scenario": "Ask process 3100 to terminate gracefully.",
+          "command": "kill -TERM 3100"
+        },
+        {
+          "id": "force",
+          "title": "Force kill",
+          "scenario": "Process 3100 ignored TERM for a minute. Kill it immediately.",
+          "command": "kill -KILL 3100"
+        },
+        {
+          "id": "reload",
+          "title": "Reload configuration",
+          "scenario": "Make the nginx master process (PID 1419) reload its configuration.",
+          "command": "kill -HUP 1419"
+        }
+      ],
+      "use_cases": [
+        { "title": "Hung worker", "situation": "Stop a stuck worker after TERM fails.", "severity": "incident" }
+      ],
+      "pitfalls": ["KILL skips cleanup (temp files, locks, flushes). Try TERM first."],
+      "related": ["linux.ps"],
+      "tags": ["processes", "signals"]
+    },
+    {
+      "id": "linux.tar",
+      "name": "tar",
+      "summary": "Create and extract archives",
+      "synopsis": "tar [options] [archive] [files]",
+      "description": "Bundles files into archives, optionally compressed with gzip (-z).",
+      "flags": [
+        { "flag": "-c", "description": "Create an archive." },
+        { "flag": "-x", "description": "Extract an archive." },
+        { "flag": "-t", "description": "List contents." },
+        { "flag": "-z", "description": "gzip compression." },
+        { "flag": "-f", "argument": "<file>", "description": "Archive file name (must precede it)." },
+        { "flag": "-C", "argument": "<dir>", "description": "Change to a directory before acting." }
+      ],
+      "examples": [
+        {
+          "id": "create",
+          "title": "Back up a directory",
+          "scenario": "Create a gzip archive app.tar.gz of /etc/app.",
+          "command": "tar -czf app.tar.gz /etc/app"
+        },
+        {
+          "id": "list",
+          "title": "Inspect before extracting",
+          "scenario": "List the contents of app.tar.gz without extracting.",
+          "command": "tar -tzf app.tar.gz"
+        },
+        {
+          "id": "extract-to",
+          "title": "Extract into a directory",
+          "scenario": "Extract app.tar.gz into /tmp/restore.",
+          "command": "tar -xzf app.tar.gz -C /tmp/restore"
+        }
+      ],
+      "use_cases": [
+        { "title": "Pre-change backup", "situation": "Archive a config directory before editing it.", "severity": "routine" }
+      ],
+      "tags": ["backup", "files"]
+    },
+    {
+      "id": "linux.uptime",
+      "name": "uptime",
+      "summary": "Uptime and load averages",
+      "synopsis": "uptime",
+      "description": "Shows how long the system has run and the 1, 5 and 15 minute load averages.",
+      "examples": [
+        {
+          "id": "load",
+          "title": "Load averages",
+          "scenario": "Get a quick sense of system load and how long it has been up.",
+          "command": "uptime",
+          "output": " 10:42:01 up 3 days,  2:11,  2 users,  load average: 7.85, 6.10, 3.02",
+          "output_notes": [
+            { "token": "load average", "meaning": "Average runnable plus uninterruptible tasks over 1, 5 and 15 minutes.", "normal": "Below the number of vCPUs.", "anomaly": "1-minute value well above the vCPU count and rising.", "severity": "warning" }
+          ]
+        }
+      ],
+      "use_cases": [
+        { "title": "First look", "situation": "Is the box overloaded, and did it reboot recently?", "severity": "routine" }
+      ],
+      "pitfalls": ["Processes in D state (I/O wait) raise load without using CPU."],
+      "related": ["linux.ps"],
+      "tags": ["load"]
+    }
+  ],
+  "procedures": [
+    {
+      "id": "linux.disk-full-triage",
+      "title": "Triage a full root filesystem",
+      "context": "Writes fail with 'No space left on device' on /.",
+      "goal": "Find what fills the disk, including deleted files still held open.",
+      "steps": [
+        { "command": "df -h /", "purpose": "Confirm usage", "output": "/dev/vda1  50G  49G  1.0G  98% /", "interpretation": "Root is 98% full." },
+        { "command": "sudo du -xh -d 1 / | sort -h", "purpose": "Biggest top-level directories", "interpretation": "Usually /var or /home stands out." },
+        { "command": "sudo du -xh -d 1 /var | sort -h", "purpose": "Drill down" },
+        { "command": "sudo lsof +L1", "purpose": "Deleted files still open", "interpretation": "Restart the owning process to release the space." }
+      ],
+      "uses": ["linux.df", "linux.du", "linux.lsof"],
+      "use_cases": [{ "title": "Log explosion", "situation": "A verbose log filled / overnight.", "severity": "critical" }],
+      "tags": ["disk"]
+    },
+    {
+      "id": "linux.service-crash-loop",
+      "title": "Investigate a service crash loop",
+      "context": "The api service keeps restarting after a deploy.",
+      "goal": "Read the failure reason and confirm the fix.",
+      "steps": [
+        { "command": "systemctl status api.service", "purpose": "Current state and restart count", "output": "Active: activating (auto-restart) (Result: exit-code)" },
+        { "command": "journalctl -u api.service -n 50 --no-pager", "purpose": "Last log lines", "interpretation": "Look for the first error before each exit." },
+        { "command": "sudo systemctl restart api.service", "purpose": "Restart after fixing" },
+        { "command": "systemctl is-active api.service", "purpose": "Confirm it stays up", "output": "active" }
+      ],
+      "uses": ["linux.systemctl", "linux.journalctl"],
+      "use_cases": [{ "title": "Bad config after deploy", "situation": "A typo in the config file makes the process exit at start.", "severity": "incident" }],
+      "tags": ["services"]
+    },
+    {
+      "id": "linux.memory-pressure",
+      "title": "Find the cause of memory pressure",
+      "context": "The OOM killer terminated a process during the night.",
+      "goal": "Confirm the pressure, find the consumer and the kill record.",
+      "steps": [
+        { "command": "free -h", "purpose": "Available memory and swap" },
+        { "command": "ps aux --sort=-%mem | head", "purpose": "Largest consumers" },
+        { "command": "journalctl -k -b | grep -i oom", "purpose": "Kernel OOM records", "output": "Out of memory: Killed process 3100 (java) total-vm:8123456kB", "interpretation": "Shows which process the kernel killed." }
+      ],
+      "uses": ["linux.free", "linux.ps", "linux.journalctl", "linux.grep"],
+      "use_cases": [{ "title": "Leaking worker", "situation": "A worker grows until the kernel kills it.", "severity": "critical" }],
+      "tags": ["memory"]
+    },
+    {
+      "id": "linux.port-in-use",
+      "title": "Free a port that is already in use",
+      "context": "nginx fails to start: bind() to 0.0.0.0:80 failed (Address already in use).",
+      "goal": "Identify the holder, stop it and start nginx.",
+      "steps": [
+        { "command": "sudo lsof -nP -i :80", "purpose": "Process holding the port", "output": "apache2 902 root 4u IPv6 TCP *:80 (LISTEN)" },
+        { "command": "sudo systemctl stop apache2", "purpose": "Stop the conflicting service" },
+        { "command": "sudo systemctl disable apache2", "purpose": "Keep it from starting at boot" },
+        { "command": "sudo systemctl start nginx", "purpose": "Start the intended service" }
+      ],
+      "uses": ["linux.lsof", "linux.systemctl"],
+      "tags": ["services", "network"]
+    },
+    {
+      "id": "linux.reproduce-stopped",
+      "title": "Reproduce the stopped (T) process state",
+      "context": "You want to see what a paused process looks like without touching production services.",
+      "goal": "Start a dummy process, pause it, inspect it and clean up.",
+      "steps": [
+        { "command": "sleep 600 &", "purpose": "Start a disposable process" },
+        { "command": "kill -STOP $!", "purpose": "Pause it ($! is the last background PID)" },
+        { "command": "ps -o pid,stat,comm -p $!", "purpose": "Inspect the state", "output": "  PID STAT COMMAND\n 4242 T    sleep", "interpretation": "T means stopped by a signal." },
+        { "command": "kill -TERM $!", "purpose": "Clean up" }
+      ],
+      "uses": ["linux.kill", "linux.ps"],
+      "tags": ["processes", "signals"]
+    }
+  ]
+}

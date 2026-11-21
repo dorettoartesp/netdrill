@@ -1,0 +1,503 @@
+{
+  "format": "netdrill.pack/v1",
+  "topic": {
+    "slug": "networking",
+    "title": "Networking",
+    "description": "Addresses, routes, sockets, DNS, HTTP checks and packet capture from a Linux host"
+  },
+  "commands": [
+    {
+      "id": "networking.ip",
+      "name": "ip",
+      "summary": "Show and change addresses, links, routes and neighbors",
+      "synopsis": "ip [options] object command",
+      "description": "The iproute2 tool for interfaces (link), addresses (addr), routing (route) and ARP/neighbor tables (neigh). Replaces ifconfig, route and arp.",
+      "flags": [
+        { "flag": "-br", "description": "Brief, one line per interface." },
+        { "flag": "-c", "description": "Colored output." },
+        { "flag": "addr", "description": "IP addresses per interface." },
+        { "flag": "route", "description": "Routing table." },
+        { "flag": "link", "description": "Link layer state (UP/DOWN, MAC, MTU)." },
+        { "flag": "neigh", "description": "ARP/NDP neighbor cache." }
+      ],
+      "examples": [
+        {
+          "id": "brief-addr",
+          "title": "Addresses at a glance",
+          "scenario": "List every interface with its state and IP addresses, one per line.",
+          "command": "ip -br addr",
+          "output": "lo     UNKNOWN  127.0.0.1/8 ::1/128\neth0   UP       192.168.1.15/24 fe80::5054:ff:fe12:3456/64",
+          "output_notes": [
+            { "token": "UP", "meaning": "Operational state of the link.", "normal": "UP for connected interfaces.", "anomaly": "DOWN: cable, driver or switch port problem.", "severity": "warning" }
+          ]
+        },
+        {
+          "id": "default-route",
+          "title": "Default gateway",
+          "scenario": "Which gateway does this host use for traffic outside its subnets?",
+          "command": "ip route show default",
+          "output": "default via 192.168.1.1 dev eth0 proto dhcp src 192.168.1.15 metric 100"
+        },
+        {
+          "id": "route-get",
+          "title": "Route chosen for a destination",
+          "scenario": "Which interface and source address will be used to reach 10.20.0.5?",
+          "command": "ip route get 10.20.0.5"
+        },
+        {
+          "id": "neigh",
+          "title": "ARP table",
+          "scenario": "Check whether the gateway's MAC address was resolved.",
+          "command": "ip neigh",
+          "output": "192.168.1.1 dev eth0 lladdr 00:11:22:33:44:55 REACHABLE",
+          "output_notes": [
+            { "token": "REACHABLE", "meaning": "Neighbor confirmed recently.", "normal": "REACHABLE or STALE", "anomaly": "FAILED or INCOMPLETE: L2 problem or host down.", "severity": "warning" }
+          ]
+        },
+        {
+          "id": "link-up",
+          "title": "Bring an interface up",
+          "scenario": "Interface eth1 is DOWN. Bring it up.",
+          "command": "sudo ip link set eth1 up"
+        }
+      ],
+      "use_cases": [
+        { "title": "Host unreachable", "situation": "Verify address, link and default route before blaming the network.", "severity": "incident" }
+      ],
+      "pitfalls": ["Changes made with ip are not persistent; configure netplan or NetworkManager for reboots."],
+      "related": ["networking.ping"],
+      "tags": ["routing", "interfaces"]
+    },
+    {
+      "id": "networking.ping",
+      "name": "ping",
+      "summary": "Test reachability and latency with ICMP echo",
+      "synopsis": "ping [options] host",
+      "description": "Sends ICMP echo requests and reports loss and round-trip time.",
+      "flags": [
+        { "flag": "-c", "argument": "<count>", "description": "Stop after N packets." },
+        { "flag": "-i", "argument": "<seconds>", "description": "Interval between packets." },
+        { "flag": "-s", "argument": "<bytes>", "description": "Payload size." },
+        { "flag": "-M", "argument": "do", "description": "Forbid fragmentation (path MTU tests)." }
+      ],
+      "examples": [
+        {
+          "id": "count",
+          "title": "Five pings",
+          "scenario": "Check reachability of the gateway 192.168.1.1 with five packets.",
+          "command": "ping -c 5 192.168.1.1",
+          "output": "5 packets transmitted, 5 received, 0% packet loss, time 4006ms\nrtt min/avg/max/mdev = 0.412/0.530/0.711/0.101 ms",
+          "output_notes": [
+            { "token": "packet loss", "meaning": "Share of requests without reply.", "normal": "0%", "anomaly": "Any loss on a LAN; > 1% on a WAN.", "severity": "warning" },
+            { "token": "mdev", "meaning": "Jitter (standard deviation of RTT).", "normal": "Small compared with avg.", "anomaly": "Large mdev: congestion or wireless issues.", "severity": "info" }
+          ]
+        },
+        {
+          "id": "mtu",
+          "title": "Path MTU test",
+          "scenario": "Check whether 1472-byte packets pass to 10.0.0.1 without fragmentation.",
+          "command": "ping -c 3 -M do -s 1472 10.0.0.1",
+          "explanation": "1472 bytes payload + 28 bytes of headers = 1500 MTU."
+        }
+      ],
+      "use_cases": [
+        { "title": "Is it the network?", "situation": "First check from the affected host to gateway, then to the target.", "severity": "routine" }
+      ],
+      "pitfalls": ["Many firewalls drop ICMP; no reply does not prove the host is down."],
+      "related": ["networking.traceroute"],
+      "tags": ["icmp"]
+    },
+    {
+      "id": "networking.traceroute",
+      "name": "traceroute",
+      "summary": "Show the hops to a destination",
+      "synopsis": "traceroute [options] host",
+      "description": "Sends probes with increasing TTL to reveal each router on the path.",
+      "flags": [
+        { "flag": "-n", "description": "Do not resolve hop names." },
+        { "flag": "-T", "description": "TCP SYN probes (needs root)." },
+        { "flag": "-p", "argument": "<port>", "description": "Destination port for probes." }
+      ],
+      "examples": [
+        {
+          "id": "numeric",
+          "title": "Numeric path",
+          "scenario": "Show the path to 8.8.8.8 without DNS lookups.",
+          "command": "traceroute -n 8.8.8.8"
+        },
+        {
+          "id": "tcp-443",
+          "title": "TCP path through firewalls",
+          "scenario": "ICMP is filtered. Trace the path to api.example.com using TCP port 443.",
+          "command": "sudo traceroute -T -p 443 api.example.com"
+        }
+      ],
+      "use_cases": [
+        { "title": "Where does it stop?", "situation": "Find the last responding hop when a remote network is unreachable.", "severity": "incident" }
+      ],
+      "pitfalls": ["Hops showing * * * may just ignore probes; only a persistent stop is meaningful."],
+      "related": ["networking.ping"],
+      "tags": ["routing"]
+    },
+    {
+      "id": "networking.ss",
+      "name": "ss",
+      "summary": "Inspect sockets via Netlink",
+      "synopsis": "ss [options] [filter]",
+      "description": "Lists TCP/UDP sockets, their states, queues and owning processes. Modern replacement for netstat.",
+      "flags": [
+        { "flag": "-t", "long": "--tcp", "description": "TCP sockets." },
+        { "flag": "-u", "long": "--udp", "description": "UDP sockets." },
+        { "flag": "-l", "long": "--listening", "description": "Listening sockets only." },
+        { "flag": "-p", "long": "--processes", "description": "Owning process (requires root for others' processes)." },
+        { "flag": "-n", "long": "--numeric", "description": "No name resolution." },
+        { "flag": "-s", "long": "--summary", "description": "Totals per state." }
+      ],
+      "examples": [
+        {
+          "id": "listening",
+          "title": "Listening ports with process",
+          "scenario": "Port 8080 does not answer. List listening TCP and UDP sockets with process, numerically.",
+          "command": "sudo ss -tulpn",
+          "output": "Netid State  Recv-Q Send-Q Local Address:Port Process\ntcp   LISTEN 0      511    0.0.0.0:80         users:((\"nginx\",pid=1420,fd=6))",
+          "output_notes": [
+            { "token": "Recv-Q", "meaning": "For LISTEN sockets, connections waiting for accept().", "normal": "0 or low and transient.", "anomaly": "Close to Send-Q (backlog): the app is not accepting fast enough.", "severity": "warning" },
+            { "token": "0.0.0.0:80", "meaning": "Bound to every IPv4 address.", "normal": "Expected for public services.", "anomaly": "127.0.0.1 when remote clients must connect.", "severity": "info" }
+          ]
+        },
+        {
+          "id": "established-443",
+          "title": "Connections to a port",
+          "scenario": "List established TCP connections to local port 443.",
+          "command": "ss -tn state established '( sport = :443 )'"
+        },
+        {
+          "id": "summary",
+          "title": "Socket summary",
+          "scenario": "Get totals of sockets per state, e.g. to spot TIME-WAIT buildup.",
+          "command": "ss -s"
+        }
+      ],
+      "use_cases": [
+        { "title": "Service not reachable", "situation": "Confirm the process listens on the expected address and port.", "severity": "incident" }
+      ],
+      "related": ["networking.nc"],
+      "tags": ["sockets"]
+    },
+    {
+      "id": "networking.dig",
+      "name": "dig",
+      "summary": "Query DNS servers",
+      "synopsis": "dig [@server] name [type] [+options]",
+      "description": "Sends DNS queries and prints the full answer, including TTLs and the server that answered.",
+      "flags": [
+        { "flag": "+short", "description": "Only the answer values." },
+        { "flag": "@server", "description": "Query a specific resolver.", "example": "dig @1.1.1.1 example.com" },
+        { "flag": "-x", "argument": "<ip>", "description": "Reverse lookup (PTR)." },
+        { "flag": "+trace", "description": "Follow delegation from the root servers." }
+      ],
+      "examples": [
+        {
+          "id": "short",
+          "title": "Resolve an A record",
+          "scenario": "Which IP does api.example.com resolve to?",
+          "command": "dig +short api.example.com"
+        },
+        {
+          "id": "specific-resolver",
+          "title": "Compare resolvers",
+          "scenario": "Check what the public resolver 1.1.1.1 returns for api.example.com.",
+          "command": "dig @1.1.1.1 api.example.com +short"
+        },
+        {
+          "id": "mx",
+          "title": "Mail servers",
+          "scenario": "List the MX records of example.com.",
+          "command": "dig example.com MX +short"
+        },
+        {
+          "id": "reverse",
+          "title": "Reverse lookup",
+          "scenario": "Find the host name of 8.8.8.8.",
+          "command": "dig -x 8.8.8.8 +short"
+        }
+      ],
+      "use_cases": [
+        { "title": "DNS change not visible", "situation": "Compare the internal resolver with a public one after a record change.", "severity": "routine" }
+      ],
+      "pitfalls": ["Caches respect TTLs: an old answer can persist until the TTL expires."],
+      "tags": ["dns"]
+    },
+    {
+      "id": "networking.curl",
+      "name": "curl",
+      "summary": "Make HTTP requests from the terminal",
+      "synopsis": "curl [options] url",
+      "description": "Transfers data over HTTP(S) and many other protocols; ideal for health checks and API debugging.",
+      "flags": [
+        { "flag": "-I", "description": "Fetch headers only (HEAD request)." },
+        { "flag": "-s", "description": "Silent: no progress bar." },
+        { "flag": "-o", "argument": "<file>", "description": "Write the body to a file (/dev/null to discard)." },
+        { "flag": "-w", "argument": "<format>", "description": "Print variables after the transfer.", "example": "curl -w \"%{http_code}\"" },
+        { "flag": "-v", "description": "Verbose: TLS handshake and headers." },
+        { "flag": "-k", "description": "Skip TLS verification (testing only)." },
+        { "flag": "-H", "argument": "<header>", "description": "Add a request header." }
+      ],
+      "examples": [
+        {
+          "id": "headers",
+          "title": "Response headers",
+          "scenario": "Check status and headers returned by https://example.com.",
+          "command": "curl -I https://example.com"
+        },
+        {
+          "id": "status-code",
+          "title": "Status code only",
+          "scenario": "Print only the HTTP status code of the local health endpoint.",
+          "command": "curl -s -o /dev/null -w \"%{http_code}\\n\" localhost:8000/health"
+        },
+        {
+          "id": "total-time",
+          "title": "Total request time",
+          "scenario": "Measure how long the health endpoint takes in total.",
+          "command": "curl -s -o /dev/null -w \"%{time_total}\\n\" localhost:8000/health"
+        },
+        {
+          "id": "full-timing",
+          "title": "Full timing breakdown (reference)",
+          "scenario": "Reference: connect, first byte and total time in one line.",
+          "command": "curl -s -o /dev/null -w \"connect=%{time_connect} ttfb=%{time_starttransfer} total=%{time_total}\\n\" localhost:8000/health",
+          "explanation": "time_connect: TCP done; time_starttransfer: first byte (server think time); time_total: everything.",
+          "drill": false
+        },
+        {
+          "id": "json-post",
+          "title": "POST JSON",
+          "scenario": "POST {\"ok\":true} as JSON to localhost:8000/api/ping.",
+          "command": "curl -H \"Content-Type: application/json\" -d '{\"ok\":true}' localhost:8000/api/ping"
+        }
+      ],
+      "use_cases": [
+        { "title": "Slow API", "situation": "Separate connection time from server processing time.", "severity": "incident" },
+        { "title": "Post-deploy smoke test", "situation": "Confirm the health endpoint returns 200.", "severity": "routine" }
+      ],
+      "related": ["networking.nc"],
+      "tags": ["http"]
+    },
+    {
+      "id": "networking.nc",
+      "name": "nc",
+      "summary": "Open raw TCP/UDP connections",
+      "synopsis": "nc [options] host port",
+      "description": "netcat: tests whether a port accepts connections, or sends and receives raw data.",
+      "flags": [
+        { "flag": "-z", "description": "Scan without sending data." },
+        { "flag": "-v", "description": "Verbose result." },
+        { "flag": "-w", "argument": "<seconds>", "description": "Connection timeout." },
+        { "flag": "-u", "description": "UDP instead of TCP." },
+        { "flag": "-l", "description": "Listen mode." }
+      ],
+      "examples": [
+        {
+          "id": "port-check",
+          "title": "Is the port open?",
+          "scenario": "Check whether db.internal accepts TCP connections on port 5432, waiting 3 seconds at most.",
+          "command": "nc -zv -w 3 db.internal 5432",
+          "output": "Connection to db.internal (10.0.0.12) 5432 port [tcp/postgresql] succeeded!"
+        },
+        {
+          "id": "listen",
+          "title": "Temporary listener",
+          "scenario": "Open a listener on port 9000 to test a firewall rule from another host.",
+          "command": "nc -l 9000"
+        }
+      ],
+      "use_cases": [
+        { "title": "Firewall or service?", "situation": "A refused connection means the host answered; a timeout points to filtering.", "severity": "incident" }
+      ],
+      "related": ["networking.ss"],
+      "tags": ["tcp"]
+    },
+    {
+      "id": "networking.tcpdump",
+      "name": "tcpdump",
+      "summary": "Capture packets",
+      "synopsis": "tcpdump [options] [filter]",
+      "description": "Captures packets on an interface with BPF filters; can save to pcap for Wireshark.",
+      "flags": [
+        { "flag": "-i", "argument": "<iface>", "description": "Interface (any for all)." },
+        { "flag": "-n", "description": "No name or port resolution." },
+        { "flag": "-c", "argument": "<count>", "description": "Stop after N packets." },
+        { "flag": "-w", "argument": "<file>", "description": "Write raw packets to a pcap file." },
+        { "flag": "-A", "description": "Print payload as ASCII." }
+      ],
+      "examples": [
+        {
+          "id": "port-443",
+          "title": "Traffic on a port",
+          "scenario": "Capture 20 packets to or from port 443 on eth0, numerically.",
+          "command": "sudo tcpdump -i eth0 -n -c 20 port 443"
+        },
+        {
+          "id": "host",
+          "title": "Traffic with one host",
+          "scenario": "Show traffic between this host and 10.0.0.12.",
+          "command": "sudo tcpdump -i any -n host 10.0.0.12"
+        },
+        {
+          "id": "save",
+          "title": "Save for Wireshark",
+          "scenario": "Save DNS traffic on eth0 to dns.pcap for later analysis.",
+          "command": "sudo tcpdump -i eth0 -w dns.pcap port 53"
+        }
+      ],
+      "use_cases": [
+        { "title": "Is the packet arriving?", "situation": "Prove whether requests reach the host before debugging the app.", "severity": "incident" }
+      ],
+      "pitfalls": ["Always filter on busy servers; unfiltered captures can drop packets and fill the disk."],
+      "tags": ["capture"]
+    },
+    {
+      "id": "networking.ssh",
+      "name": "ssh",
+      "summary": "Secure remote shell and tunnels",
+      "synopsis": "ssh [options] [user@]host [command]",
+      "description": "Connects to remote hosts, runs commands and forwards ports through encrypted tunnels.",
+      "flags": [
+        { "flag": "-p", "argument": "<port>", "description": "Remote port." },
+        { "flag": "-i", "argument": "<key>", "description": "Identity (private key) file." },
+        { "flag": "-L", "argument": "local:host:port", "description": "Local port forwarding." },
+        { "flag": "-J", "argument": "<jump>", "description": "Connect through a jump host." },
+        { "flag": "-v", "description": "Verbose (debug authentication)." }
+      ],
+      "examples": [
+        {
+          "id": "port-key",
+          "title": "Custom port and key",
+          "scenario": "Connect as deploy to app.example.com on port 2222 with key ~/.ssh/deploy.",
+          "command": "ssh -p 2222 -i ~/.ssh/deploy deploy@app.example.com"
+        },
+        {
+          "id": "tunnel",
+          "title": "Tunnel to a private database",
+          "scenario": "Reach PostgreSQL on db.internal:5432 via bastion, exposed locally on 15432.",
+          "command": "ssh -L 15432:db.internal:5432 user@bastion"
+        },
+        {
+          "id": "jump",
+          "title": "Jump host",
+          "scenario": "Connect to 10.0.0.20 through the bastion host in one command.",
+          "command": "ssh -J user@bastion user@10.0.0.20"
+        }
+      ],
+      "use_cases": [
+        { "title": "Private service access", "situation": "Reach an internal database without opening firewall ports.", "severity": "routine" }
+      ],
+      "pitfalls": ["Permission denied (publickey): check key permissions (600) and run ssh -v."],
+      "tags": ["remote"]
+    },
+    {
+      "id": "networking.ethtool",
+      "name": "ethtool",
+      "summary": "NIC speed, duplex and error counters",
+      "synopsis": "ethtool [options] iface",
+      "description": "Shows and tunes network interface hardware settings and statistics.",
+      "flags": [
+        { "flag": "-S", "description": "NIC statistics (errors, drops)." },
+        { "flag": "-i", "description": "Driver information." }
+      ],
+      "examples": [
+        {
+          "id": "link",
+          "title": "Link speed and duplex",
+          "scenario": "Transfers are slow. Check negotiated speed and duplex of eth0.",
+          "command": "ethtool eth0",
+          "output": "Speed: 100Mb/s\nDuplex: Half\nLink detected: yes",
+          "output_notes": [
+            { "token": "Duplex: Half", "meaning": "Only one direction at a time.", "normal": "Full", "anomaly": "Half: auto-negotiation mismatch, causes collisions.", "severity": "critical" }
+          ]
+        },
+        {
+          "id": "errors",
+          "title": "Error counters",
+          "scenario": "Look for errors or drops in eth0's statistics.",
+          "command": "ethtool -S eth0 | grep -iE \"err|drop\""
+        }
+      ],
+      "use_cases": [
+        { "title": "Slow transfers on one host", "situation": "A bad cable or port often shows as low speed or errors.", "severity": "incident" }
+      ],
+      "tags": ["interfaces"]
+    }
+  ],
+  "procedures": [
+    {
+      "id": "networking.host-unreachable",
+      "title": "Triage a host that cannot reach a remote network",
+      "context": "The app server cannot reach the partner API at 203.0.113.10.",
+      "goal": "Locate the failing layer: interface, gateway, path or remote port.",
+      "steps": [
+        { "command": "ip -br addr", "purpose": "Interface up with an address" },
+        { "command": "ip route get 203.0.113.10", "purpose": "Route and source address used" },
+        { "command": "ping -c 3 192.168.1.1", "purpose": "Gateway reachable", "interpretation": "Failure here is local (L2/L3)." },
+        { "command": "traceroute -n 203.0.113.10", "purpose": "Where the path stops" },
+        { "command": "nc -zv -w 3 203.0.113.10 443", "purpose": "Remote port accepts TCP", "interpretation": "Timeout: filtered; refused: host up, service closed." }
+      ],
+      "uses": ["networking.ip", "networking.ping", "networking.traceroute", "networking.nc"],
+      "use_cases": [{ "title": "Partner integration down", "situation": "Prove which side is failing before opening a ticket.", "severity": "incident" }],
+      "tags": ["routing"]
+    },
+    {
+      "id": "networking.dns-mismatch",
+      "title": "Investigate a DNS answer mismatch",
+      "context": "Users reach the old server after api.example.com was moved to a new IP.",
+      "goal": "Compare resolvers and find stale caches.",
+      "steps": [
+        { "command": "dig +short api.example.com", "purpose": "Answer from the local resolver" },
+        { "command": "dig @1.1.1.1 api.example.com +short", "purpose": "Answer from a public resolver" },
+        { "command": "dig api.example.com", "purpose": "Full answer with TTL", "interpretation": "The TTL shows how long caches may keep the old address." }
+      ],
+      "uses": ["networking.dig"],
+      "tags": ["dns"]
+    },
+    {
+      "id": "networking.slow-api",
+      "title": "Find where an HTTP request spends time",
+      "context": "The API feels slow, but only from some hosts.",
+      "goal": "Separate network latency from server processing time.",
+      "steps": [
+        { "command": "ping -c 5 api.internal", "purpose": "Baseline network latency" },
+        { "command": "curl -s -o /dev/null -w \"%{time_connect}\\n\" api.internal/health", "purpose": "TCP connect time" },
+        { "command": "curl -s -o /dev/null -w \"%{time_starttransfer}\\n\" api.internal/health", "purpose": "Time to first byte", "interpretation": "Large gap between connect and first byte: the server is slow, not the network." }
+      ],
+      "uses": ["networking.ping", "networking.curl"],
+      "tags": ["http"]
+    },
+    {
+      "id": "networking.verify-listener",
+      "title": "Verify a new service is reachable",
+      "context": "A new service was deployed on port 8080 but clients time out.",
+      "goal": "Check the listener locally, then the traffic on the wire.",
+      "steps": [
+        { "command": "sudo ss -tlpn 'sport = :8080'", "purpose": "Listening address and process", "interpretation": "127.0.0.1:8080 means only local clients can connect." },
+        { "command": "curl -s -o /dev/null -w \"%{http_code}\\n\" localhost:8080", "purpose": "Works locally" },
+        { "command": "sudo tcpdump -i eth0 -n -c 10 port 8080", "purpose": "Remote SYNs arriving", "interpretation": "SYNs without replies: host firewall drops them." }
+      ],
+      "uses": ["networking.ss", "networking.curl", "networking.tcpdump"],
+      "tags": ["sockets"]
+    },
+    {
+      "id": "networking.db-through-bastion",
+      "title": "Reach a private database through a bastion",
+      "context": "You need psql access to db.internal, reachable only from the bastion host.",
+      "goal": "Open a tunnel and test the forwarded port.",
+      "steps": [
+        { "command": "ssh -N -L 15432:db.internal:5432 user@bastion", "purpose": "Open the tunnel (-N: no remote shell)" },
+        { "command": "nc -zv localhost 15432", "purpose": "Tunnel accepts connections" },
+        { "command": "psql -h localhost -p 15432 -U app appdb", "purpose": "Connect through the tunnel" }
+      ],
+      "uses": ["networking.ssh", "networking.nc", "postgresql.psql"],
+      "tags": ["remote"]
+    }
+  ]
+}

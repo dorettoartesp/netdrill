@@ -24,5 +24,6 @@ make check
 ## 3. Makefile Targets
 - `make dev`: Starts the Next.js local development server (`npm run dev`).
 - `make lint`: Runs ESLint and Next.js static analysis (`npm run lint`).
+- `npm run db:seed`: Imports the starter content packs in `content/seed/` (idempotent; keeps progress). Uses `TURSO_DATABASE_URL` when set, otherwise `local.db`.
 - `make test`: Runs automated test suite via Vitest (`npm test`). React components are tested by rendering them to static markup with `react-dom/server` in the node environment (see `tests/mobile-*.test.tsx`); keep interaction logic in pure exported helpers so it can be unit-tested without a DOM.
 - `make check`: Inviolable quality gate enforcing lint, SAST Semgrep, Gitleaks, Vitest tests, and zero hardcoded host paths.
