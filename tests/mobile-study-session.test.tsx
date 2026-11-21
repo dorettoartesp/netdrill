@@ -16,6 +16,7 @@ const item: QueueItem = {
   isMultiLine: false,
   output_sample: 'Netid State  Recv-Q Send-Q\ntcp   LISTEN 0      128',
   output_notes: [],
+  no_output: false,
   use_cases: [],
   is_favorite: false,
   needs_review: false,

@@ -21,6 +21,29 @@ describe('seed content packs', () => {
     });
   }
 
+  for (const { file, data } of packs) {
+    it(`${file} meets the content quality bar`, () => {
+      const pack = data as any;
+      const gaps: string[] = [];
+      pack.commands.forEach((c: any) => {
+        if ((c.use_cases ?? []).length < 3) gaps.push(`${c.id}: fewer than 3 use cases`);
+        (c.examples ?? []).forEach((e: any) => {
+          if (e.drill === false) return;
+          if (!e.output && !e.no_output) gaps.push(`${c.id}#${e.id}: no output and not marked no_output`);
+          if (e.output && !(e.output_notes ?? []).length) gaps.push(`${c.id}#${e.id}: output without notes`);
+        });
+      });
+      pack.procedures.forEach((p: any) => {
+        if (!(p.use_cases ?? []).length) gaps.push(`${p.id}: no use cases`);
+        p.steps.forEach((st: any, i: number) => {
+          if (!st.output && !st.no_output) gaps.push(`${p.id} step ${i + 1}: no output and not marked no_output`);
+          if (!st.interpretation) gaps.push(`${p.id} step ${i + 1}: no interpretation`);
+        });
+      });
+      expect(gaps).toEqual([]);
+    });
+  }
+
   it('uses each topic slug once', () => {
     const slugs = packs.map((p) => (p.data as any).topic.slug);
     expect(new Set(slugs).size).toBe(slugs.length);

@@ -16,6 +16,8 @@ interface AnnotatedOutputProps {
   selectedKey: string | null;
   /** Called with the metric key of the tapped token. */
   onSelect: (metricKey: string) => void;
+  /** True when the command prints nothing on success. */
+  noOutput?: boolean;
 }
 
 /**
@@ -23,7 +25,7 @@ interface AnnotatedOutputProps {
  * Keeps terminal columns (horizontal scroll) by default; an optional toggle wraps long lines,
  * and the box grows with its content instead of being squeezed by a scrolling flex parent.
  */
-export function AnnotatedOutput({ command, segments, selectedKey, onSelect }: AnnotatedOutputProps) {
+export function AnnotatedOutput({ command, segments, selectedKey, onSelect, noOutput = false }: AnnotatedOutputProps) {
   const [wrap, setWrap] = useState(false);
 
   useEffect(() => {
@@ -50,7 +52,7 @@ export function AnnotatedOutput({ command, segments, selectedKey, onSelect }: An
     return (
       <section className="shrink-0 rounded-lg border border-gray-800 bg-[#05070a] px-3 py-4 font-sans">
         <code className="block font-mono text-[13px] font-bold text-cyan-300 break-all">$ {command}</code>
-        <p className="m-0 mt-2 text-xs text-slate-400">No sample output for this drill.</p>
+        <p className="m-0 mt-2 text-xs text-slate-400">{noOutput ? 'Prints no output on success.' : 'No sample output for this drill.'}</p>
       </section>
     );
   }

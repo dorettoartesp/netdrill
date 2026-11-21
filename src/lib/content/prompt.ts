@@ -37,10 +37,16 @@ const EXAMPLE_PACK = {
           title: 'Socket summary',
           scenario: 'Get a quick summary of socket counts by state.',
           command: 'ss -s',
+          output: 'Total: 412\nTCP:   389 (estab 120, closed 251, orphaned 0, timewait 249)',
+          output_notes: [
+            { token: 'timewait', meaning: 'Closed connections waiting out 2*MSL.', normal: 'Proportional to connection churn.', anomaly: 'Tens of thousands: missing keep-alive or connection pooling.', severity: 'warning' },
+          ],
         },
       ],
       use_cases: [
         { title: 'Port down after a deploy', situation: 'Confirm whether the new process is listening on the expected address and port.', severity: 'incident' },
+        { title: 'Unexpected listener', situation: 'An audit finds an unknown open port; ss -tulpn names the process behind it.', severity: 'critical' },
+        { title: 'Connection churn', situation: 'ss -s shows thousands of TIME-WAIT sockets after a client stopped reusing connections.', severity: 'routine' },
       ],
       pitfalls: ['Without -n, DNS resolution can stall the output.'],
       related: ['linux.lsof'],
@@ -55,7 +61,7 @@ const EXAMPLE_PACK = {
       goal: 'Compare cgroup memory usage, limit and OOM events.',
       steps: [
         { command: 'cat /sys/fs/cgroup/api.service/memory.current', purpose: 'Current usage', output: '1879048192', interpretation: 'Compare with the limit.' },
-        { command: 'cat /sys/fs/cgroup/api.service/memory.max', purpose: 'Configured limit', output: '2147483648' },
+        { command: 'cat /sys/fs/cgroup/api.service/memory.max', purpose: 'Configured limit', output: '2147483648', interpretation: 'Usage at 87% of the 2 GiB limit leaves little headroom.' },
         { command: 'grep oom /sys/fs/cgroup/api.service/memory.events', purpose: 'OOM events', output: 'oom 3\noom_kill 3', interpretation: 'Non-zero oom_kill confirms kills by the cgroup limit.' },
       ],
       uses: ['linux.cat', 'linux.grep'],
@@ -82,9 +88,10 @@ Produce one pack (format "${PACK_FORMAT}") for a single topic, following these r
 3. Each example is a drill the learner types from memory: one idea per drill, each line under 80 characters. Split long commands into short, progressive examples, and keep the full long form as a reference example with "drill": false.
 4. Use short realistic placeholders (localhost:8000, api.service, /var/log/app.log) instead of long IPs or paths.
 5. A procedure is a multi-step real task (investigation, reproduction, configuration block). Each step has the exact command, its purpose, a realistic output when useful and how to interpret it. List the command ids it uses in "uses".
-6. Give realistic outputs and annotate meaningful tokens in "output_notes" (meaning, normal baseline, anomaly, severity).
+6. Every example and every procedure step that prints something must include a realistic "output" and annotate its meaningful tokens in "output_notes" (meaning, normal baseline, anomaly, severity). If the command prints nothing on success, set "no_output": true instead.
+6b. Every procedure step needs an "interpretation": what the learner should conclude from that step.
 7. Use stable ids: "<topic.slug>.<name>" for commands and procedures (lowercase, digits, dots, hyphens) and short kebab-case ids for examples. Keep the same ids when you revise a pack so re-uploads update instead of duplicating.
-8. Use cases are real production situations with severity "routine", "incident" or "critical".
+8. Give every command at least 3 use cases and every procedure at least 1: concrete production situations (what broke or what was needed, and how this command helps), with severity "routine", "incident" or "critical".
 9. Output only the JSON, with no commentary and no code fences.
 
 JSON Schema:

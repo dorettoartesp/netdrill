@@ -42,6 +42,7 @@ const exampleSchema = z.object({
   explanation: text().optional(),
   output: z.string().max(20_000).optional(),
   output_notes: z.array(outputNoteSchema).default([]),
+  no_output: z.boolean().default(false).describe('true when the command prints nothing on success'),
   drill: z.boolean().default(true),
 });
 
@@ -50,6 +51,7 @@ const stepSchema = z.object({
   purpose: text(),
   output: z.string().max(20_000).optional(),
   output_notes: z.array(outputNoteSchema).default([]),
+  no_output: z.boolean().default(false).describe('true when the command prints nothing on success'),
   interpretation: text().optional(),
 });
 

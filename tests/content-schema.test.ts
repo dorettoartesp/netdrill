@@ -141,3 +141,11 @@ describe('documented JSON Schema', () => {
     expect(file).toEqual(packJsonSchema());
   });
 });
+
+describe('no_output flag', () => {
+  it('defaults to false on examples and steps', () => {
+    const r = validatePack(validPack());
+    expect(r.ok && r.pack.commands[0].examples[0].no_output).toBe(false);
+    expect(r.ok && r.pack.procedures[0].steps[0].no_output).toBe(false);
+  });
+});

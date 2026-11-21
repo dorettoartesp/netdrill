@@ -13,12 +13,30 @@
       "synopsis": "ip [options] object command",
       "description": "The iproute2 tool for interfaces (link), addresses (addr), routing (route) and ARP/neighbor tables (neigh). Replaces ifconfig, route and arp.",
       "flags": [
-        { "flag": "-br", "description": "Brief, one line per interface." },
-        { "flag": "-c", "description": "Colored output." },
-        { "flag": "addr", "description": "IP addresses per interface." },
-        { "flag": "route", "description": "Routing table." },
-        { "flag": "link", "description": "Link layer state (UP/DOWN, MAC, MTU)." },
-        { "flag": "neigh", "description": "ARP/NDP neighbor cache." }
+        {
+          "flag": "-br",
+          "description": "Brief, one line per interface."
+        },
+        {
+          "flag": "-c",
+          "description": "Colored output."
+        },
+        {
+          "flag": "addr",
+          "description": "IP addresses per interface."
+        },
+        {
+          "flag": "route",
+          "description": "Routing table."
+        },
+        {
+          "flag": "link",
+          "description": "Link layer state (UP/DOWN, MAC, MTU)."
+        },
+        {
+          "flag": "neigh",
+          "description": "ARP/NDP neighbor cache."
+        }
       ],
       "examples": [
         {
@@ -28,7 +46,13 @@
           "command": "ip -br addr",
           "output": "lo     UNKNOWN  127.0.0.1/8 ::1/128\neth0   UP       192.168.1.15/24 fe80::5054:ff:fe12:3456/64",
           "output_notes": [
-            { "token": "UP", "meaning": "Operational state of the link.", "normal": "UP for connected interfaces.", "anomaly": "DOWN: cable, driver or switch port problem.", "severity": "warning" }
+            {
+              "token": "UP",
+              "meaning": "Operational state of the link.",
+              "normal": "UP for connected interfaces.",
+              "anomaly": "DOWN: cable, driver or switch port problem.",
+              "severity": "warning"
+            }
           ]
         },
         {
@@ -36,13 +60,43 @@
           "title": "Default gateway",
           "scenario": "Which gateway does this host use for traffic outside its subnets?",
           "command": "ip route show default",
-          "output": "default via 192.168.1.1 dev eth0 proto dhcp src 192.168.1.15 metric 100"
+          "output": "default via 192.168.1.1 dev eth0 proto dhcp src 192.168.1.15 metric 100",
+          "output_notes": [
+            {
+              "token": "via 192.168.1.1",
+              "meaning": "Next hop for non-local traffic.",
+              "severity": "critical",
+              "normal": "The expected gateway.",
+              "anomaly": "Missing default route: only local subnets are reachable."
+            },
+            {
+              "token": "metric 100",
+              "meaning": "Route preference; the lowest metric wins.",
+              "severity": "warning",
+              "anomaly": "Two default routes with close metrics: traffic may leave by the wrong interface."
+            }
+          ]
         },
         {
           "id": "route-get",
           "title": "Route chosen for a destination",
           "scenario": "Which interface and source address will be used to reach 10.20.0.5?",
-          "command": "ip route get 10.20.0.5"
+          "command": "ip route get 10.20.0.5",
+          "output": "10.20.0.5 via 192.168.1.254 dev eth0 src 192.168.1.15 uid 1000",
+          "output_notes": [
+            {
+              "token": "via 192.168.1.254",
+              "meaning": "Gateway the kernel will use for this destination.",
+              "severity": "warning",
+              "normal": "The router that knows the branch network.",
+              "anomaly": "The default gateway instead: the specific route is missing."
+            },
+            {
+              "token": "src 192.168.1.15",
+              "meaning": "Source address that will be used.",
+              "severity": "info"
+            }
+          ]
         },
         {
           "id": "neigh",
@@ -51,22 +105,50 @@
           "command": "ip neigh",
           "output": "192.168.1.1 dev eth0 lladdr 00:11:22:33:44:55 REACHABLE",
           "output_notes": [
-            { "token": "REACHABLE", "meaning": "Neighbor confirmed recently.", "normal": "REACHABLE or STALE", "anomaly": "FAILED or INCOMPLETE: L2 problem or host down.", "severity": "warning" }
+            {
+              "token": "REACHABLE",
+              "meaning": "Neighbor confirmed recently.",
+              "normal": "REACHABLE or STALE",
+              "anomaly": "FAILED or INCOMPLETE: L2 problem or host down.",
+              "severity": "warning"
+            }
           ]
         },
         {
           "id": "link-up",
           "title": "Bring an interface up",
           "scenario": "Interface eth1 is DOWN. Bring it up.",
-          "command": "sudo ip link set eth1 up"
+          "command": "sudo ip link set eth1 up",
+          "no_output": true
         }
       ],
       "use_cases": [
-        { "title": "Host unreachable", "situation": "Verify address, link and default route before blaming the network.", "severity": "incident" }
+        {
+          "title": "Host unreachable",
+          "situation": "Verify address, link and default route before blaming the network.",
+          "severity": "incident"
+        },
+        {
+          "title": "Wrong source address",
+          "situation": "Replies leave by another interface because a second default route was added.",
+          "severity": "incident"
+        },
+        {
+          "title": "New VLAN interface",
+          "situation": "Confirm the address and link state after configuring a VLAN.",
+          "severity": "routine"
+        }
       ],
-      "pitfalls": ["Changes made with ip are not persistent; configure netplan or NetworkManager for reboots."],
-      "related": ["networking.ping"],
-      "tags": ["routing", "interfaces"]
+      "pitfalls": [
+        "Changes made with ip are not persistent; configure netplan or NetworkManager for reboots."
+      ],
+      "related": [
+        "networking.ping"
+      ],
+      "tags": [
+        "routing",
+        "interfaces"
+      ]
     },
     {
       "id": "networking.ping",
@@ -75,10 +157,26 @@
       "synopsis": "ping [options] host",
       "description": "Sends ICMP echo requests and reports loss and round-trip time.",
       "flags": [
-        { "flag": "-c", "argument": "<count>", "description": "Stop after N packets." },
-        { "flag": "-i", "argument": "<seconds>", "description": "Interval between packets." },
-        { "flag": "-s", "argument": "<bytes>", "description": "Payload size." },
-        { "flag": "-M", "argument": "do", "description": "Forbid fragmentation (path MTU tests)." }
+        {
+          "flag": "-c",
+          "argument": "<count>",
+          "description": "Stop after N packets."
+        },
+        {
+          "flag": "-i",
+          "argument": "<seconds>",
+          "description": "Interval between packets."
+        },
+        {
+          "flag": "-s",
+          "argument": "<bytes>",
+          "description": "Payload size."
+        },
+        {
+          "flag": "-M",
+          "argument": "do",
+          "description": "Forbid fragmentation (path MTU tests)."
+        }
       ],
       "examples": [
         {
@@ -88,8 +186,20 @@
           "command": "ping -c 5 192.168.1.1",
           "output": "5 packets transmitted, 5 received, 0% packet loss, time 4006ms\nrtt min/avg/max/mdev = 0.412/0.530/0.711/0.101 ms",
           "output_notes": [
-            { "token": "packet loss", "meaning": "Share of requests without reply.", "normal": "0%", "anomaly": "Any loss on a LAN; > 1% on a WAN.", "severity": "warning" },
-            { "token": "mdev", "meaning": "Jitter (standard deviation of RTT).", "normal": "Small compared with avg.", "anomaly": "Large mdev: congestion or wireless issues.", "severity": "info" }
+            {
+              "token": "packet loss",
+              "meaning": "Share of requests without reply.",
+              "normal": "0%",
+              "anomaly": "Any loss on a LAN; > 1% on a WAN.",
+              "severity": "warning"
+            },
+            {
+              "token": "mdev",
+              "meaning": "Jitter (standard deviation of RTT).",
+              "normal": "Small compared with avg.",
+              "anomaly": "Large mdev: congestion or wireless issues.",
+              "severity": "info"
+            }
           ]
         },
         {
@@ -97,15 +207,45 @@
           "title": "Path MTU test",
           "scenario": "Check whether 1472-byte packets pass to 10.0.0.1 without fragmentation.",
           "command": "ping -c 3 -M do -s 1472 10.0.0.1",
-          "explanation": "1472 bytes payload + 28 bytes of headers = 1500 MTU."
+          "explanation": "1472 bytes payload + 28 bytes of headers = 1500 MTU.",
+          "output": "PING 10.0.0.1 (10.0.0.1) 1472(1500) bytes of data.\nping: local error: message too long, mtu=1420",
+          "output_notes": [
+            {
+              "token": "mtu=1420",
+              "meaning": "The path MTU is lower than 1500 (typical of tunnels).",
+              "severity": "warning",
+              "normal": "1500 on plain Ethernet.",
+              "anomaly": "Lower MTU without MSS clamping: large transfers hang."
+            }
+          ]
         }
       ],
       "use_cases": [
-        { "title": "Is it the network?", "situation": "First check from the affected host to gateway, then to the target.", "severity": "routine" }
+        {
+          "title": "Is it the network?",
+          "situation": "First check from the affected host to gateway, then to the target.",
+          "severity": "routine"
+        },
+        {
+          "title": "VPN drops large packets",
+          "situation": "Small pings pass but 1472-byte pings fail: MTU on the tunnel is lower.",
+          "severity": "incident"
+        },
+        {
+          "title": "Packet loss on the WAN",
+          "situation": "Intermittent loss to the ISP gateway explains failed uploads.",
+          "severity": "incident"
+        }
       ],
-      "pitfalls": ["Many firewalls drop ICMP; no reply does not prove the host is down."],
-      "related": ["networking.traceroute"],
-      "tags": ["icmp"]
+      "pitfalls": [
+        "Many firewalls drop ICMP; no reply does not prove the host is down."
+      ],
+      "related": [
+        "networking.traceroute"
+      ],
+      "tags": [
+        "icmp"
+      ]
     },
     {
       "id": "networking.traceroute",
@@ -114,30 +254,84 @@
       "synopsis": "traceroute [options] host",
       "description": "Sends probes with increasing TTL to reveal each router on the path.",
       "flags": [
-        { "flag": "-n", "description": "Do not resolve hop names." },
-        { "flag": "-T", "description": "TCP SYN probes (needs root)." },
-        { "flag": "-p", "argument": "<port>", "description": "Destination port for probes." }
+        {
+          "flag": "-n",
+          "description": "Do not resolve hop names."
+        },
+        {
+          "flag": "-T",
+          "description": "TCP SYN probes (needs root)."
+        },
+        {
+          "flag": "-p",
+          "argument": "<port>",
+          "description": "Destination port for probes."
+        }
       ],
       "examples": [
         {
           "id": "numeric",
           "title": "Numeric path",
           "scenario": "Show the path to 8.8.8.8 without DNS lookups.",
-          "command": "traceroute -n 8.8.8.8"
+          "command": "traceroute -n 8.8.8.8",
+          "output": " 1  192.168.1.1  0.512 ms  0.488 ms  0.471 ms\n 2  100.64.0.1  4.902 ms  5.118 ms  4.887 ms\n 3  * * *\n 4  8.8.8.8  11.203 ms  11.017 ms  10.996 ms",
+          "output_notes": [
+            {
+              "token": "* * *",
+              "meaning": "That hop did not answer the probes.",
+              "severity": "info",
+              "normal": "Common for routers that rate-limit ICMP.",
+              "anomaly": "Stars until the end: the path is broken there."
+            },
+            {
+              "token": "100.64.0.1",
+              "meaning": "Carrier-grade NAT range: the ISP is translating addresses.",
+              "severity": "info"
+            }
+          ]
         },
         {
           "id": "tcp-443",
           "title": "TCP path through firewalls",
           "scenario": "ICMP is filtered. Trace the path to api.example.com using TCP port 443.",
-          "command": "sudo traceroute -T -p 443 api.example.com"
+          "command": "sudo traceroute -T -p 443 api.example.com",
+          "output": " 1  192.168.1.1  0.501 ms\n 2  100.64.0.1  4.877 ms\n 3  203.0.113.10  12.442 ms",
+          "output_notes": [
+            {
+              "token": "203.0.113.10",
+              "meaning": "The destination answered the TCP probe.",
+              "severity": "info",
+              "normal": "Last hop is the target."
+            }
+          ]
         }
       ],
       "use_cases": [
-        { "title": "Where does it stop?", "situation": "Find the last responding hop when a remote network is unreachable.", "severity": "incident" }
+        {
+          "title": "Where does it stop?",
+          "situation": "Find the last responding hop when a remote network is unreachable.",
+          "severity": "incident"
+        },
+        {
+          "title": "ISP routing problem",
+          "situation": "The trace stops inside the ISP network; open a ticket with the hop list.",
+          "severity": "incident"
+        },
+        {
+          "title": "Asymmetric firewall rules",
+          "situation": "ICMP traces stop but TCP 443 traces reach the server.",
+          "severity": "routine"
+        }
       ],
-      "pitfalls": ["Hops showing * * * may just ignore probes; only a persistent stop is meaningful."],
-      "related": ["networking.ping"],
-      "tags": ["routing"]
+      "pitfalls": [
+        "Hops showing * * * may just ignore probes; only a persistent stop is meaningful."
+      ],
+      "related": [
+        "networking.ping"
+      ],
+      "tags": [
+        "routing"
+      ]
     },
     {
       "id": "networking.ss",
@@ -146,12 +340,36 @@
       "synopsis": "ss [options] [filter]",
       "description": "Lists TCP/UDP sockets, their states, queues and owning processes. Modern replacement for netstat.",
       "flags": [
-        { "flag": "-t", "long": "--tcp", "description": "TCP sockets." },
-        { "flag": "-u", "long": "--udp", "description": "UDP sockets." },
-        { "flag": "-l", "long": "--listening", "description": "Listening sockets only." },
-        { "flag": "-p", "long": "--processes", "description": "Owning process (requires root for others' processes)." },
-        { "flag": "-n", "long": "--numeric", "description": "No name resolution." },
-        { "flag": "-s", "long": "--summary", "description": "Totals per state." }
+        {
+          "flag": "-t",
+          "long": "--tcp",
+          "description": "TCP sockets."
+        },
+        {
+          "flag": "-u",
+          "long": "--udp",
+          "description": "UDP sockets."
+        },
+        {
+          "flag": "-l",
+          "long": "--listening",
+          "description": "Listening sockets only."
+        },
+        {
+          "flag": "-p",
+          "long": "--processes",
+          "description": "Owning process (requires root for others' processes)."
+        },
+        {
+          "flag": "-n",
+          "long": "--numeric",
+          "description": "No name resolution."
+        },
+        {
+          "flag": "-s",
+          "long": "--summary",
+          "description": "Totals per state."
+        }
       ],
       "examples": [
         {
@@ -161,28 +379,85 @@
           "command": "sudo ss -tulpn",
           "output": "Netid State  Recv-Q Send-Q Local Address:Port Process\ntcp   LISTEN 0      511    0.0.0.0:80         users:((\"nginx\",pid=1420,fd=6))",
           "output_notes": [
-            { "token": "Recv-Q", "meaning": "For LISTEN sockets, connections waiting for accept().", "normal": "0 or low and transient.", "anomaly": "Close to Send-Q (backlog): the app is not accepting fast enough.", "severity": "warning" },
-            { "token": "0.0.0.0:80", "meaning": "Bound to every IPv4 address.", "normal": "Expected for public services.", "anomaly": "127.0.0.1 when remote clients must connect.", "severity": "info" }
+            {
+              "token": "Recv-Q",
+              "meaning": "For LISTEN sockets, connections waiting for accept().",
+              "normal": "0 or low and transient.",
+              "anomaly": "Close to Send-Q (backlog): the app is not accepting fast enough.",
+              "severity": "warning"
+            },
+            {
+              "token": "0.0.0.0:80",
+              "meaning": "Bound to every IPv4 address.",
+              "normal": "Expected for public services.",
+              "anomaly": "127.0.0.1 when remote clients must connect.",
+              "severity": "info"
+            }
           ]
         },
         {
           "id": "established-443",
           "title": "Connections to a port",
           "scenario": "List established TCP connections to local port 443.",
-          "command": "ss -tn state established '( sport = :443 )'"
+          "command": "ss -tn state established '( sport = :443 )'",
+          "output": "Recv-Q Send-Q Local Address:Port  Peer Address:Port\n0      0      10.0.0.5:443        198.51.100.7:51544\n0      43008  10.0.0.5:443        203.0.113.99:40211",
+          "output_notes": [
+            {
+              "token": "43008",
+              "meaning": "Bytes sent but not yet acknowledged by that client.",
+              "severity": "warning",
+              "normal": "0 or briefly non-zero.",
+              "anomaly": "Persistently high: slow client or congested link."
+            }
+          ]
         },
         {
           "id": "summary",
           "title": "Socket summary",
           "scenario": "Get totals of sockets per state, e.g. to spot TIME-WAIT buildup.",
-          "command": "ss -s"
+          "command": "ss -s",
+          "output": "Total: 412\nTCP:   389 (estab 120, closed 251, orphaned 0, timewait 249)",
+          "output_notes": [
+            {
+              "token": "timewait",
+              "meaning": "Closed connections waiting out 2*MSL.",
+              "severity": "warning",
+              "normal": "Proportional to connection churn.",
+              "anomaly": "Tens of thousands: no keep-alive or pooling."
+            },
+            {
+              "token": "orphaned",
+              "meaning": "Sockets no longer attached to a process.",
+              "severity": "warning",
+              "normal": "0",
+              "anomaly": "Growing: application closing connections badly."
+            }
+          ]
         }
       ],
       "use_cases": [
-        { "title": "Service not reachable", "situation": "Confirm the process listens on the expected address and port.", "severity": "incident" }
+        {
+          "title": "Service not reachable",
+          "situation": "Confirm the process listens on the expected address and port.",
+          "severity": "incident"
+        },
+        {
+          "title": "TIME-WAIT buildup",
+          "situation": "A client opening a new connection per request leaves thousands of TIME-WAIT sockets.",
+          "severity": "routine"
+        },
+        {
+          "title": "Backlog overflow",
+          "situation": "Recv-Q on a LISTEN socket reaches Send-Q during traffic peaks.",
+          "severity": "critical"
+        }
       ],
-      "related": ["networking.nc"],
-      "tags": ["sockets"]
+      "related": [
+        "networking.nc"
+      ],
+      "tags": [
+        "sockets"
+      ]
     },
     {
       "id": "networking.dig",
@@ -191,42 +466,111 @@
       "synopsis": "dig [@server] name [type] [+options]",
       "description": "Sends DNS queries and prints the full answer, including TTLs and the server that answered.",
       "flags": [
-        { "flag": "+short", "description": "Only the answer values." },
-        { "flag": "@server", "description": "Query a specific resolver.", "example": "dig @1.1.1.1 example.com" },
-        { "flag": "-x", "argument": "<ip>", "description": "Reverse lookup (PTR)." },
-        { "flag": "+trace", "description": "Follow delegation from the root servers." }
+        {
+          "flag": "+short",
+          "description": "Only the answer values."
+        },
+        {
+          "flag": "@server",
+          "description": "Query a specific resolver.",
+          "example": "dig @1.1.1.1 example.com"
+        },
+        {
+          "flag": "-x",
+          "argument": "<ip>",
+          "description": "Reverse lookup (PTR)."
+        },
+        {
+          "flag": "+trace",
+          "description": "Follow delegation from the root servers."
+        }
       ],
       "examples": [
         {
           "id": "short",
           "title": "Resolve an A record",
           "scenario": "Which IP does api.example.com resolve to?",
-          "command": "dig +short api.example.com"
+          "command": "dig +short api.example.com",
+          "output": "203.0.113.10",
+          "output_notes": [
+            {
+              "token": "203.0.113.10",
+              "meaning": "Address returned by the local resolver.",
+              "severity": "warning",
+              "normal": "The current address of the service.",
+              "anomaly": "An old address: cached record or wrong zone."
+            }
+          ]
         },
         {
           "id": "specific-resolver",
           "title": "Compare resolvers",
           "scenario": "Check what the public resolver 1.1.1.1 returns for api.example.com.",
-          "command": "dig @1.1.1.1 api.example.com +short"
+          "command": "dig @1.1.1.1 api.example.com +short",
+          "output": "198.51.100.20",
+          "output_notes": [
+            {
+              "token": "198.51.100.20",
+              "meaning": "Address according to the public resolver.",
+              "severity": "warning",
+              "normal": "Same as the local resolver.",
+              "anomaly": "Different answers: one of them is stale."
+            }
+          ]
         },
         {
           "id": "mx",
           "title": "Mail servers",
           "scenario": "List the MX records of example.com.",
-          "command": "dig example.com MX +short"
+          "command": "dig example.com MX +short",
+          "output": "10 mx1.example.com.\n20 mx2.example.com.",
+          "output_notes": [
+            {
+              "token": "10 mx1.example.com.",
+              "meaning": "Preference 10: lower values are tried first.",
+              "severity": "info"
+            }
+          ]
         },
         {
           "id": "reverse",
           "title": "Reverse lookup",
           "scenario": "Find the host name of 8.8.8.8.",
-          "command": "dig -x 8.8.8.8 +short"
+          "command": "dig -x 8.8.8.8 +short",
+          "output": "dns.google.",
+          "output_notes": [
+            {
+              "token": "dns.google.",
+              "meaning": "PTR name of the address.",
+              "severity": "info",
+              "anomaly": "No PTR for a mail server: many receivers reject its mail."
+            }
+          ]
         }
       ],
       "use_cases": [
-        { "title": "DNS change not visible", "situation": "Compare the internal resolver with a public one after a record change.", "severity": "routine" }
+        {
+          "title": "DNS change not visible",
+          "situation": "Compare the internal resolver with a public one after a record change.",
+          "severity": "routine"
+        },
+        {
+          "title": "Split-horizon confusion",
+          "situation": "Internal and public resolvers return different addresses for the same name.",
+          "severity": "incident"
+        },
+        {
+          "title": "Email not delivered",
+          "situation": "Check MX records after a mail provider change.",
+          "severity": "incident"
+        }
       ],
-      "pitfalls": ["Caches respect TTLs: an old answer can persist until the TTL expires."],
-      "tags": ["dns"]
+      "pitfalls": [
+        "Caches respect TTLs: an old answer can persist until the TTL expires."
+      ],
+      "tags": [
+        "dns"
+      ]
     },
     {
       "id": "networking.curl",
@@ -235,32 +579,93 @@
       "synopsis": "curl [options] url",
       "description": "Transfers data over HTTP(S) and many other protocols; ideal for health checks and API debugging.",
       "flags": [
-        { "flag": "-I", "description": "Fetch headers only (HEAD request)." },
-        { "flag": "-s", "description": "Silent: no progress bar." },
-        { "flag": "-o", "argument": "<file>", "description": "Write the body to a file (/dev/null to discard)." },
-        { "flag": "-w", "argument": "<format>", "description": "Print variables after the transfer.", "example": "curl -w \"%{http_code}\"" },
-        { "flag": "-v", "description": "Verbose: TLS handshake and headers." },
-        { "flag": "-k", "description": "Skip TLS verification (testing only)." },
-        { "flag": "-H", "argument": "<header>", "description": "Add a request header." }
+        {
+          "flag": "-I",
+          "description": "Fetch headers only (HEAD request)."
+        },
+        {
+          "flag": "-s",
+          "description": "Silent: no progress bar."
+        },
+        {
+          "flag": "-o",
+          "argument": "<file>",
+          "description": "Write the body to a file (/dev/null to discard)."
+        },
+        {
+          "flag": "-w",
+          "argument": "<format>",
+          "description": "Print variables after the transfer.",
+          "example": "curl -w \"%{http_code}\""
+        },
+        {
+          "flag": "-v",
+          "description": "Verbose: TLS handshake and headers."
+        },
+        {
+          "flag": "-k",
+          "description": "Skip TLS verification (testing only)."
+        },
+        {
+          "flag": "-H",
+          "argument": "<header>",
+          "description": "Add a request header."
+        }
       ],
       "examples": [
         {
           "id": "headers",
           "title": "Response headers",
           "scenario": "Check status and headers returned by https://example.com.",
-          "command": "curl -I https://example.com"
+          "command": "curl -I https://example.com",
+          "output": "HTTP/2 200\ncontent-type: text/html; charset=UTF-8\ncache-control: max-age=604800\nserver: ECAcc (nyd/D10E)",
+          "output_notes": [
+            {
+              "token": "HTTP/2 200",
+              "meaning": "Protocol version and status.",
+              "severity": "info",
+              "normal": "200 or an expected redirect.",
+              "anomaly": "5xx: server error; 4xx: client or auth problem."
+            },
+            {
+              "token": "cache-control: max-age=604800",
+              "meaning": "Clients may cache the response for 7 days.",
+              "severity": "info",
+              "anomaly": "Long caching on dynamic pages: users see stale content."
+            }
+          ]
         },
         {
           "id": "status-code",
           "title": "Status code only",
           "scenario": "Print only the HTTP status code of the local health endpoint.",
-          "command": "curl -s -o /dev/null -w \"%{http_code}\\n\" localhost:8000/health"
+          "command": "curl -s -o /dev/null -w \"%{http_code}\\n\" localhost:8000/health",
+          "output": "200",
+          "output_notes": [
+            {
+              "token": "200",
+              "meaning": "HTTP status of the health endpoint.",
+              "severity": "info",
+              "normal": "200",
+              "anomaly": "000: no HTTP response at all (connection failed); 5xx: app error."
+            }
+          ]
         },
         {
           "id": "total-time",
           "title": "Total request time",
           "scenario": "Measure how long the health endpoint takes in total.",
-          "command": "curl -s -o /dev/null -w \"%{time_total}\\n\" localhost:8000/health"
+          "command": "curl -s -o /dev/null -w \"%{time_total}\\n\" localhost:8000/health",
+          "output": "0.184522",
+          "output_notes": [
+            {
+              "token": "0.184522",
+              "meaning": "Total seconds for the whole request.",
+              "severity": "warning",
+              "normal": "Stable and well under the SLO.",
+              "anomaly": "Seconds: compare connect vs first byte to find the slow part."
+            }
+          ]
         },
         {
           "id": "full-timing",
@@ -274,15 +679,40 @@
           "id": "json-post",
           "title": "POST JSON",
           "scenario": "POST {\"ok\":true} as JSON to localhost:8000/api/ping.",
-          "command": "curl -H \"Content-Type: application/json\" -d '{\"ok\":true}' localhost:8000/api/ping"
+          "command": "curl -H \"Content-Type: application/json\" -d '{\"ok\":true}' localhost:8000/api/ping",
+          "output": "{\"pong\":true}",
+          "output_notes": [
+            {
+              "token": "{\"pong\":true}",
+              "meaning": "Response body returned by the API.",
+              "severity": "info"
+            }
+          ]
         }
       ],
       "use_cases": [
-        { "title": "Slow API", "situation": "Separate connection time from server processing time.", "severity": "incident" },
-        { "title": "Post-deploy smoke test", "situation": "Confirm the health endpoint returns 200.", "severity": "routine" }
+        {
+          "title": "Slow API",
+          "situation": "Separate connection time from server processing time.",
+          "severity": "incident"
+        },
+        {
+          "title": "Post-deploy smoke test",
+          "situation": "Confirm the health endpoint returns 200.",
+          "severity": "routine"
+        },
+        {
+          "title": "TLS certificate expired",
+          "situation": "curl -I fails with a certificate error before users notice.",
+          "severity": "critical"
+        }
       ],
-      "related": ["networking.nc"],
-      "tags": ["http"]
+      "related": [
+        "networking.nc"
+      ],
+      "tags": [
+        "http"
+      ]
     },
     {
       "id": "networking.nc",
@@ -291,11 +721,27 @@
       "synopsis": "nc [options] host port",
       "description": "netcat: tests whether a port accepts connections, or sends and receives raw data.",
       "flags": [
-        { "flag": "-z", "description": "Scan without sending data." },
-        { "flag": "-v", "description": "Verbose result." },
-        { "flag": "-w", "argument": "<seconds>", "description": "Connection timeout." },
-        { "flag": "-u", "description": "UDP instead of TCP." },
-        { "flag": "-l", "description": "Listen mode." }
+        {
+          "flag": "-z",
+          "description": "Scan without sending data."
+        },
+        {
+          "flag": "-v",
+          "description": "Verbose result."
+        },
+        {
+          "flag": "-w",
+          "argument": "<seconds>",
+          "description": "Connection timeout."
+        },
+        {
+          "flag": "-u",
+          "description": "UDP instead of TCP."
+        },
+        {
+          "flag": "-l",
+          "description": "Listen mode."
+        }
       ],
       "examples": [
         {
@@ -303,20 +749,48 @@
           "title": "Is the port open?",
           "scenario": "Check whether db.internal accepts TCP connections on port 5432, waiting 3 seconds at most.",
           "command": "nc -zv -w 3 db.internal 5432",
-          "output": "Connection to db.internal (10.0.0.12) 5432 port [tcp/postgresql] succeeded!"
+          "output": "Connection to db.internal (10.0.0.12) 5432 port [tcp/postgresql] succeeded!",
+          "output_notes": [
+            {
+              "token": "succeeded!",
+              "meaning": "The TCP handshake completed.",
+              "severity": "info",
+              "normal": "succeeded",
+              "anomaly": "'Connection refused': nothing listens; timeout: filtered."
+            }
+          ]
         },
         {
           "id": "listen",
           "title": "Temporary listener",
           "scenario": "Open a listener on port 9000 to test a firewall rule from another host.",
-          "command": "nc -l 9000"
+          "command": "nc -l 9000",
+          "no_output": true
         }
       ],
       "use_cases": [
-        { "title": "Firewall or service?", "situation": "A refused connection means the host answered; a timeout points to filtering.", "severity": "incident" }
+        {
+          "title": "Firewall or service?",
+          "situation": "A refused connection means the host answered; a timeout points to filtering.",
+          "severity": "incident"
+        },
+        {
+          "title": "Validate a firewall change",
+          "situation": "Open a temporary listener and connect from the other side before the real service exists.",
+          "severity": "routine"
+        },
+        {
+          "title": "Database unreachable from the app",
+          "situation": "Distinguish a filtered port (timeout) from a stopped database (refused).",
+          "severity": "incident"
+        }
       ],
-      "related": ["networking.ss"],
-      "tags": ["tcp"]
+      "related": [
+        "networking.ss"
+      ],
+      "tags": [
+        "tcp"
+      ]
     },
     {
       "id": "networking.tcpdump",
@@ -325,37 +799,107 @@
       "synopsis": "tcpdump [options] [filter]",
       "description": "Captures packets on an interface with BPF filters; can save to pcap for Wireshark.",
       "flags": [
-        { "flag": "-i", "argument": "<iface>", "description": "Interface (any for all)." },
-        { "flag": "-n", "description": "No name or port resolution." },
-        { "flag": "-c", "argument": "<count>", "description": "Stop after N packets." },
-        { "flag": "-w", "argument": "<file>", "description": "Write raw packets to a pcap file." },
-        { "flag": "-A", "description": "Print payload as ASCII." }
+        {
+          "flag": "-i",
+          "argument": "<iface>",
+          "description": "Interface (any for all)."
+        },
+        {
+          "flag": "-n",
+          "description": "No name or port resolution."
+        },
+        {
+          "flag": "-c",
+          "argument": "<count>",
+          "description": "Stop after N packets."
+        },
+        {
+          "flag": "-w",
+          "argument": "<file>",
+          "description": "Write raw packets to a pcap file."
+        },
+        {
+          "flag": "-A",
+          "description": "Print payload as ASCII."
+        }
       ],
       "examples": [
         {
           "id": "port-443",
           "title": "Traffic on a port",
           "scenario": "Capture 20 packets to or from port 443 on eth0, numerically.",
-          "command": "sudo tcpdump -i eth0 -n -c 20 port 443"
+          "command": "sudo tcpdump -i eth0 -n -c 20 port 443",
+          "output": "10:42:01.512 IP 198.51.100.7.51544 > 10.0.0.5.443: Flags [S], seq 2611, win 64240\n10:42:01.512 IP 10.0.0.5.443 > 198.51.100.7.51544: Flags [S.], seq 1, ack 2612\n10:42:01.540 IP 198.51.100.7.51544 > 10.0.0.5.443: Flags [.], ack 1",
+          "output_notes": [
+            {
+              "token": "Flags [S]",
+              "meaning": "SYN: a client starts a connection.",
+              "severity": "warning",
+              "anomaly": "SYNs without [S.] replies: host firewall or service down."
+            },
+            {
+              "token": "Flags [S.]",
+              "meaning": "SYN-ACK: the server accepted.",
+              "severity": "info"
+            }
+          ]
         },
         {
           "id": "host",
           "title": "Traffic with one host",
           "scenario": "Show traffic between this host and 10.0.0.12.",
-          "command": "sudo tcpdump -i any -n host 10.0.0.12"
+          "command": "sudo tcpdump -i any -n host 10.0.0.12",
+          "output": "10:42:05.001 IP 10.0.0.5.39012 > 10.0.0.12.5432: Flags [P.], length 98\n10:42:05.003 IP 10.0.0.12.5432 > 10.0.0.5.39012: Flags [R.], seq 0, ack 99",
+          "output_notes": [
+            {
+              "token": "Flags [R.]",
+              "meaning": "RST: the peer reset the connection.",
+              "severity": "critical",
+              "normal": "Rare.",
+              "anomaly": "Repeated resets: service closing connections or a firewall injecting RSTs."
+            }
+          ]
         },
         {
           "id": "save",
           "title": "Save for Wireshark",
           "scenario": "Save DNS traffic on eth0 to dns.pcap for later analysis.",
-          "command": "sudo tcpdump -i eth0 -w dns.pcap port 53"
+          "command": "sudo tcpdump -i eth0 -w dns.pcap port 53",
+          "output": "tcpdump: listening on eth0, link-type EN10MB (Ethernet), snapshot length 262144 bytes\n^C152 packets captured\n152 packets received by filter\n0 packets dropped by kernel",
+          "output_notes": [
+            {
+              "token": "0 packets dropped by kernel",
+              "meaning": "The capture kept up with traffic.",
+              "severity": "warning",
+              "normal": "0",
+              "anomaly": "Drops: filter more narrowly or write to faster disk."
+            }
+          ]
         }
       ],
       "use_cases": [
-        { "title": "Is the packet arriving?", "situation": "Prove whether requests reach the host before debugging the app.", "severity": "incident" }
+        {
+          "title": "Is the packet arriving?",
+          "situation": "Prove whether requests reach the host before debugging the app.",
+          "severity": "incident"
+        },
+        {
+          "title": "App says it sent the request",
+          "situation": "Capture shows whether packets actually leave the host.",
+          "severity": "incident"
+        },
+        {
+          "title": "DNS slowness",
+          "situation": "Capture port 53 to see slow or unanswered queries.",
+          "severity": "incident"
+        }
       ],
-      "pitfalls": ["Always filter on busy servers; unfiltered captures can drop packets and fill the disk."],
-      "tags": ["capture"]
+      "pitfalls": [
+        "Always filter on busy servers; unfiltered captures can drop packets and fill the disk."
+      ],
+      "tags": [
+        "capture"
+      ]
     },
     {
       "id": "networking.ssh",
@@ -364,37 +908,101 @@
       "synopsis": "ssh [options] [user@]host [command]",
       "description": "Connects to remote hosts, runs commands and forwards ports through encrypted tunnels.",
       "flags": [
-        { "flag": "-p", "argument": "<port>", "description": "Remote port." },
-        { "flag": "-i", "argument": "<key>", "description": "Identity (private key) file." },
-        { "flag": "-L", "argument": "local:host:port", "description": "Local port forwarding." },
-        { "flag": "-J", "argument": "<jump>", "description": "Connect through a jump host." },
-        { "flag": "-v", "description": "Verbose (debug authentication)." }
+        {
+          "flag": "-p",
+          "argument": "<port>",
+          "description": "Remote port."
+        },
+        {
+          "flag": "-i",
+          "argument": "<key>",
+          "description": "Identity (private key) file."
+        },
+        {
+          "flag": "-L",
+          "argument": "local:host:port",
+          "description": "Local port forwarding."
+        },
+        {
+          "flag": "-J",
+          "argument": "<jump>",
+          "description": "Connect through a jump host."
+        },
+        {
+          "flag": "-v",
+          "description": "Verbose (debug authentication)."
+        }
       ],
       "examples": [
         {
           "id": "port-key",
           "title": "Custom port and key",
           "scenario": "Connect as deploy to app.example.com on port 2222 with key ~/.ssh/deploy.",
-          "command": "ssh -p 2222 -i ~/.ssh/deploy deploy@app.example.com"
+          "command": "ssh -p 2222 -i ~/.ssh/deploy deploy@app.example.com",
+          "output": "Welcome to Ubuntu 24.04.1 LTS (GNU/Linux 6.8.0-49-generic x86_64)\nLast login: Thu Nov 20 18:02:11 2026 from 198.51.100.7\ndeploy@app:~$",
+          "output_notes": [
+            {
+              "token": "Last login",
+              "meaning": "Previous login time and source address.",
+              "severity": "warning",
+              "normal": "Your own recent session.",
+              "anomaly": "An unknown source address: investigate a possible compromise."
+            }
+          ]
         },
         {
           "id": "tunnel",
           "title": "Tunnel to a private database",
           "scenario": "Reach PostgreSQL on db.internal:5432 via bastion, exposed locally on 15432.",
-          "command": "ssh -L 15432:db.internal:5432 user@bastion"
+          "command": "ssh -L 15432:db.internal:5432 user@bastion",
+          "output": "Welcome to Ubuntu 24.04.1 LTS\nuser@bastion:~$",
+          "output_notes": [
+            {
+              "token": "user@bastion",
+              "meaning": "Shell on the bastion; the tunnel stays open while this session lives.",
+              "severity": "info",
+              "normal": "Use -N to open only the tunnel."
+            }
+          ]
         },
         {
           "id": "jump",
           "title": "Jump host",
           "scenario": "Connect to 10.0.0.20 through the bastion host in one command.",
-          "command": "ssh -J user@bastion user@10.0.0.20"
+          "command": "ssh -J user@bastion user@10.0.0.20",
+          "output": "user@app2:~$",
+          "output_notes": [
+            {
+              "token": "user@app2",
+              "meaning": "Shell on the target host reached through the bastion.",
+              "severity": "info"
+            }
+          ]
         }
       ],
       "use_cases": [
-        { "title": "Private service access", "situation": "Reach an internal database without opening firewall ports.", "severity": "routine" }
+        {
+          "title": "Private service access",
+          "situation": "Reach an internal database without opening firewall ports.",
+          "severity": "routine"
+        },
+        {
+          "title": "Key rejected",
+          "situation": "'Permission denied (publickey)' after rotating keys; -v shows which key was offered.",
+          "severity": "incident"
+        },
+        {
+          "title": "No direct route to a server",
+          "situation": "Reach a private host in one command through the bastion.",
+          "severity": "routine"
+        }
       ],
-      "pitfalls": ["Permission denied (publickey): check key permissions (600) and run ssh -v."],
-      "tags": ["remote"]
+      "pitfalls": [
+        "Permission denied (publickey): check key permissions (600) and run ssh -v."
+      ],
+      "tags": [
+        "remote"
+      ]
     },
     {
       "id": "networking.ethtool",
@@ -403,8 +1011,14 @@
       "synopsis": "ethtool [options] iface",
       "description": "Shows and tunes network interface hardware settings and statistics.",
       "flags": [
-        { "flag": "-S", "description": "NIC statistics (errors, drops)." },
-        { "flag": "-i", "description": "Driver information." }
+        {
+          "flag": "-S",
+          "description": "NIC statistics (errors, drops)."
+        },
+        {
+          "flag": "-i",
+          "description": "Driver information."
+        }
       ],
       "examples": [
         {
@@ -412,22 +1026,61 @@
           "title": "Link speed and duplex",
           "scenario": "Transfers are slow. Check negotiated speed and duplex of eth0.",
           "command": "ethtool eth0",
-          "output": "Speed: 100Mb/s\nDuplex: Half\nLink detected: yes",
+          "output": "Settings for eth0:\n\tSpeed: 100Mb/s\n\tDuplex: Half\n\tLink detected: yes",
           "output_notes": [
-            { "token": "Duplex: Half", "meaning": "Only one direction at a time.", "normal": "Full", "anomaly": "Half: auto-negotiation mismatch, causes collisions.", "severity": "critical" }
+            {
+              "token": "Duplex: Half",
+              "meaning": "Only one direction at a time.",
+              "severity": "critical",
+              "normal": "Full",
+              "anomaly": "Half: auto-negotiation mismatch, causes collisions."
+            },
+            {
+              "token": "Speed: 100Mb/s",
+              "meaning": "Negotiated link speed.",
+              "severity": "warning",
+              "normal": "1000Mb/s or more on server ports.",
+              "anomaly": "100Mb/s on a gigabit port: cable or negotiation problem."
+            }
           ]
         },
         {
           "id": "errors",
           "title": "Error counters",
           "scenario": "Look for errors or drops in eth0's statistics.",
-          "command": "ethtool -S eth0 | grep -iE \"err|drop\""
+          "command": "ethtool -S eth0 | grep -iE \"err|drop\"",
+          "output": "     rx_crc_errors: 18342\n     rx_dropped: 0\n     tx_errors: 0",
+          "output_notes": [
+            {
+              "token": "rx_crc_errors",
+              "meaning": "Frames received with a bad checksum.",
+              "severity": "critical",
+              "normal": "0",
+              "anomaly": "Increasing: cable, SFP or switch port problem."
+            }
+          ]
         }
       ],
       "use_cases": [
-        { "title": "Slow transfers on one host", "situation": "A bad cable or port often shows as low speed or errors.", "severity": "incident" }
+        {
+          "title": "Slow transfers on one host",
+          "situation": "A bad cable or port often shows as low speed or errors.",
+          "severity": "incident"
+        },
+        {
+          "title": "Duplex mismatch",
+          "situation": "A switch port forced to 100/full while the server negotiates: half duplex and collisions.",
+          "severity": "critical"
+        },
+        {
+          "title": "Bad cable",
+          "situation": "rx_crc_errors keep increasing on one host only.",
+          "severity": "incident"
+        }
       ],
-      "tags": ["interfaces"]
+      "tags": [
+        "interfaces"
+      ]
     }
   ],
   "procedures": [
@@ -437,15 +1090,53 @@
       "context": "The app server cannot reach the partner API at 203.0.113.10.",
       "goal": "Locate the failing layer: interface, gateway, path or remote port.",
       "steps": [
-        { "command": "ip -br addr", "purpose": "Interface up with an address" },
-        { "command": "ip route get 203.0.113.10", "purpose": "Route and source address used" },
-        { "command": "ping -c 3 192.168.1.1", "purpose": "Gateway reachable", "interpretation": "Failure here is local (L2/L3)." },
-        { "command": "traceroute -n 203.0.113.10", "purpose": "Where the path stops" },
-        { "command": "nc -zv -w 3 203.0.113.10 443", "purpose": "Remote port accepts TCP", "interpretation": "Timeout: filtered; refused: host up, service closed." }
+        {
+          "command": "ip -br addr",
+          "purpose": "Interface up with an address",
+          "output": "eth0  UP  192.168.1.15/24",
+          "interpretation": "Interface up with the expected address."
+        },
+        {
+          "command": "ip route get 203.0.113.10",
+          "purpose": "Route and source address used",
+          "output": "203.0.113.10 via 192.168.1.1 dev eth0 src 192.168.1.15",
+          "interpretation": "Traffic goes to the default gateway, as expected."
+        },
+        {
+          "command": "ping -c 3 192.168.1.1",
+          "purpose": "Gateway reachable",
+          "interpretation": "Failure here is local (L2/L3).",
+          "output": "3 packets transmitted, 3 received, 0% packet loss"
+        },
+        {
+          "command": "traceroute -n 203.0.113.10",
+          "purpose": "Where the path stops",
+          "output": " 1  192.168.1.1  0.5 ms\n 2  100.64.0.1  4.9 ms\n 3  * * *\n 4  * * *",
+          "interpretation": "The path dies after the ISP edge: likely outside your network."
+        },
+        {
+          "command": "nc -zv -w 3 203.0.113.10 443",
+          "purpose": "Remote port accepts TCP",
+          "interpretation": "Timeout: filtered; refused: host up, service closed.",
+          "output": "nc: connect to 203.0.113.10 port 443 (tcp) timed out: Operation now in progress"
+        }
       ],
-      "uses": ["networking.ip", "networking.ping", "networking.traceroute", "networking.nc"],
-      "use_cases": [{ "title": "Partner integration down", "situation": "Prove which side is failing before opening a ticket.", "severity": "incident" }],
-      "tags": ["routing"]
+      "uses": [
+        "networking.ip",
+        "networking.ping",
+        "networking.traceroute",
+        "networking.nc"
+      ],
+      "use_cases": [
+        {
+          "title": "Partner integration down",
+          "situation": "Prove which side is failing before opening a ticket.",
+          "severity": "incident"
+        }
+      ],
+      "tags": [
+        "routing"
+      ]
     },
     {
       "id": "networking.dns-mismatch",
@@ -453,12 +1144,45 @@
       "context": "Users reach the old server after api.example.com was moved to a new IP.",
       "goal": "Compare resolvers and find stale caches.",
       "steps": [
-        { "command": "dig +short api.example.com", "purpose": "Answer from the local resolver" },
-        { "command": "dig @1.1.1.1 api.example.com +short", "purpose": "Answer from a public resolver" },
-        { "command": "dig api.example.com", "purpose": "Full answer with TTL", "interpretation": "The TTL shows how long caches may keep the old address." }
+        {
+          "command": "dig +short api.example.com",
+          "purpose": "Answer from the local resolver",
+          "output": "203.0.113.10",
+          "interpretation": "The local resolver still returns the old address."
+        },
+        {
+          "command": "dig @1.1.1.1 api.example.com +short",
+          "purpose": "Answer from a public resolver",
+          "output": "198.51.100.20",
+          "interpretation": "The public resolver already has the new address."
+        },
+        {
+          "command": "dig api.example.com",
+          "purpose": "Full answer with TTL",
+          "interpretation": "The TTL shows how long caches may keep the old address.",
+          "output": "api.example.com.  2879  IN  A  203.0.113.10",
+          "output_notes": [
+            {
+              "token": "2879",
+              "meaning": "Seconds this cached answer remains valid.",
+              "severity": "info"
+            }
+          ]
+        }
       ],
-      "uses": ["networking.dig"],
-      "tags": ["dns"]
+      "uses": [
+        "networking.dig"
+      ],
+      "tags": [
+        "dns"
+      ],
+      "use_cases": [
+        {
+          "title": "Cutover to a new server",
+          "situation": "Half of the users still reach the old IP an hour after the DNS change.",
+          "severity": "incident"
+        }
+      ]
     },
     {
       "id": "networking.slow-api",
@@ -466,12 +1190,39 @@
       "context": "The API feels slow, but only from some hosts.",
       "goal": "Separate network latency from server processing time.",
       "steps": [
-        { "command": "ping -c 5 api.internal", "purpose": "Baseline network latency" },
-        { "command": "curl -s -o /dev/null -w \"%{time_connect}\\n\" api.internal/health", "purpose": "TCP connect time" },
-        { "command": "curl -s -o /dev/null -w \"%{time_starttransfer}\\n\" api.internal/health", "purpose": "Time to first byte", "interpretation": "Large gap between connect and first byte: the server is slow, not the network." }
+        {
+          "command": "ping -c 5 api.internal",
+          "purpose": "Baseline network latency",
+          "output": "rtt min/avg/max/mdev = 1.912/2.044/2.310/0.140 ms",
+          "interpretation": "Network latency is low and stable."
+        },
+        {
+          "command": "curl -s -o /dev/null -w \"%{time_connect}\\n\" api.internal/health",
+          "purpose": "TCP connect time",
+          "output": "0.002871",
+          "interpretation": "TCP connects in 3 ms: the network is not the bottleneck."
+        },
+        {
+          "command": "curl -s -o /dev/null -w \"%{time_starttransfer}\\n\" api.internal/health",
+          "purpose": "Time to first byte",
+          "interpretation": "Large gap between connect and first byte: the server is slow, not the network.",
+          "output": "2.418903"
+        }
       ],
-      "uses": ["networking.ping", "networking.curl"],
-      "tags": ["http"]
+      "uses": [
+        "networking.ping",
+        "networking.curl"
+      ],
+      "tags": [
+        "http"
+      ],
+      "use_cases": [
+        {
+          "title": "Slow for one office only",
+          "situation": "Users in one branch complain while monitoring from the datacenter is green.",
+          "severity": "incident"
+        }
+      ]
     },
     {
       "id": "networking.verify-listener",
@@ -479,12 +1230,40 @@
       "context": "A new service was deployed on port 8080 but clients time out.",
       "goal": "Check the listener locally, then the traffic on the wire.",
       "steps": [
-        { "command": "sudo ss -tlpn 'sport = :8080'", "purpose": "Listening address and process", "interpretation": "127.0.0.1:8080 means only local clients can connect." },
-        { "command": "curl -s -o /dev/null -w \"%{http_code}\\n\" localhost:8080", "purpose": "Works locally" },
-        { "command": "sudo tcpdump -i eth0 -n -c 10 port 8080", "purpose": "Remote SYNs arriving", "interpretation": "SYNs without replies: host firewall drops them." }
+        {
+          "command": "sudo ss -tlpn 'sport = :8080'",
+          "purpose": "Listening address and process",
+          "interpretation": "127.0.0.1:8080 means only local clients can connect.",
+          "output": "LISTEN 0 4096 127.0.0.1:8080 0.0.0.0:* users:((\"app\",pid=5120,fd=7))"
+        },
+        {
+          "command": "curl -s -o /dev/null -w \"%{http_code}\\n\" localhost:8080",
+          "purpose": "Works locally",
+          "output": "200",
+          "interpretation": "The app works locally; the problem is reachability from outside."
+        },
+        {
+          "command": "sudo tcpdump -i eth0 -n -c 10 port 8080",
+          "purpose": "Remote SYNs arriving",
+          "interpretation": "SYNs without replies: host firewall drops them.",
+          "output": "10:50:01.100 IP 198.51.100.7.40122 > 10.0.0.5.8080: Flags [S], seq 1\n10:50:02.101 IP 198.51.100.7.40122 > 10.0.0.5.8080: Flags [S], seq 1"
+        }
       ],
-      "uses": ["networking.ss", "networking.curl", "networking.tcpdump"],
-      "tags": ["sockets"]
+      "uses": [
+        "networking.ss",
+        "networking.curl",
+        "networking.tcpdump"
+      ],
+      "tags": [
+        "sockets"
+      ],
+      "use_cases": [
+        {
+          "title": "Service bound to localhost",
+          "situation": "A new service works with curl on the host but times out for every client.",
+          "severity": "incident"
+        }
+      ]
     },
     {
       "id": "networking.db-through-bastion",
@@ -492,12 +1271,40 @@
       "context": "You need psql access to db.internal, reachable only from the bastion host.",
       "goal": "Open a tunnel and test the forwarded port.",
       "steps": [
-        { "command": "ssh -N -L 15432:db.internal:5432 user@bastion", "purpose": "Open the tunnel (-N: no remote shell)" },
-        { "command": "nc -zv localhost 15432", "purpose": "Tunnel accepts connections" },
-        { "command": "psql -h localhost -p 15432 -U app appdb", "purpose": "Connect through the tunnel" }
+        {
+          "command": "ssh -N -L 15432:db.internal:5432 user@bastion",
+          "purpose": "Open the tunnel (-N: no remote shell)",
+          "no_output": true,
+          "interpretation": "With -N the command stays silent and holds the tunnel open."
+        },
+        {
+          "command": "nc -zv localhost 15432",
+          "purpose": "Tunnel accepts connections",
+          "output": "Connection to localhost (127.0.0.1) 15432 port [tcp/*] succeeded!",
+          "interpretation": "The local end of the tunnel accepts connections."
+        },
+        {
+          "command": "psql -h localhost -p 15432 -U app appdb",
+          "purpose": "Connect through the tunnel",
+          "output": "psql (16.4)\nappdb=>",
+          "interpretation": "Connected to the private database through the bastion."
+        }
       ],
-      "uses": ["networking.ssh", "networking.nc", "postgresql.psql"],
-      "tags": ["remote"]
+      "uses": [
+        "networking.ssh",
+        "networking.nc",
+        "postgresql.psql"
+      ],
+      "tags": [
+        "remote"
+      ],
+      "use_cases": [
+        {
+          "title": "Run a one-off migration",
+          "situation": "Apply a SQL script to a database with no public access.",
+          "severity": "routine"
+        }
+      ]
     }
   ]
 }

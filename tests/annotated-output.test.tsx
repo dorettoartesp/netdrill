@@ -45,3 +45,10 @@ describe('AnnotatedOutput without output', () => {
     expect(html).not.toContain('Wrap lines');
   });
 });
+
+describe('AnnotatedOutput for silent commands', () => {
+  it('says the command prints no output on success', () => {
+    const html = renderToStaticMarkup(<AnnotatedOutput command="chmod 600 key" segments={[]} noOutput selectedKey={null} onSelect={() => {}} />);
+    expect(html).toContain('Prints no output on success.');
+  });
+});

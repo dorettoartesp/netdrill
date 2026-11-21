@@ -197,6 +197,11 @@
                     ]
                   }
                 },
+                "no_output": {
+                  "default": false,
+                  "description": "true when the command prints nothing on success",
+                  "type": "boolean"
+                },
                 "drill": {
                   "default": true,
                   "type": "boolean"
@@ -368,6 +373,11 @@
                       "meaning"
                     ]
                   }
+                },
+                "no_output": {
+                  "default": false,
+                  "description": "true when the command prints nothing on success",
+                  "type": "boolean"
                 },
                 "interpretation": {
                   "type": "string",

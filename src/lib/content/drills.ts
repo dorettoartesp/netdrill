@@ -17,6 +17,8 @@ export interface DrillContent {
   isMultiLine: boolean;
   explanation?: string;
   output?: string;
+  /** True when the command (or every procedure step) prints nothing on success. */
+  noOutput: boolean;
   outputNotes: OutputNote[];
   useCases: UseCase[];
 }
@@ -57,6 +59,7 @@ export function deriveDrillContent(ref: DrillRef, doc: CommandDoc | ProcedureDoc
       isMultiLine: ex.command.includes('\n'),
       explanation: ex.explanation,
       output: ex.output,
+      noOutput: ex.no_output,
       outputNotes: ex.output_notes,
       useCases: cmd.use_cases,
     };
@@ -71,6 +74,7 @@ export function deriveDrillContent(ref: DrillRef, doc: CommandDoc | ProcedureDoc
     target,
     isMultiLine: target.includes('\n'),
     output: outputs.length ? outputs.join('\n') : undefined,
+    noOutput: proc.steps.every((s) => s.no_output),
     outputNotes: proc.steps.flatMap((s) => s.output_notes),
     useCases: proc.use_cases,
   };

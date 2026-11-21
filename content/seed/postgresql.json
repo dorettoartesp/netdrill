@@ -13,46 +13,143 @@
       "synopsis": "psql [options] [dbname [user]]",
       "description": "Connects to a PostgreSQL server, runs SQL and provides backslash meta-commands for inspection.",
       "flags": [
-        { "flag": "-h", "argument": "<host>", "description": "Server host." },
-        { "flag": "-p", "argument": "<port>", "description": "Server port (default 5432)." },
-        { "flag": "-U", "argument": "<user>", "description": "Database user." },
-        { "flag": "-d", "argument": "<db>", "description": "Database name." },
-        { "flag": "-c", "argument": "<sql>", "description": "Run one command and exit." },
-        { "flag": "-f", "argument": "<file>", "description": "Run commands from a file." },
-        { "flag": "-x", "description": "Expanded (vertical) output." }
+        {
+          "flag": "-h",
+          "argument": "<host>",
+          "description": "Server host."
+        },
+        {
+          "flag": "-p",
+          "argument": "<port>",
+          "description": "Server port (default 5432)."
+        },
+        {
+          "flag": "-U",
+          "argument": "<user>",
+          "description": "Database user."
+        },
+        {
+          "flag": "-d",
+          "argument": "<db>",
+          "description": "Database name."
+        },
+        {
+          "flag": "-c",
+          "argument": "<sql>",
+          "description": "Run one command and exit."
+        },
+        {
+          "flag": "-f",
+          "argument": "<file>",
+          "description": "Run commands from a file."
+        },
+        {
+          "flag": "-x",
+          "description": "Expanded (vertical) output."
+        }
       ],
       "examples": [
         {
           "id": "connect",
           "title": "Connect to a database",
           "scenario": "Connect to database appdb on db.internal as user app.",
-          "command": "psql -h db.internal -U app -d appdb"
+          "command": "psql -h db.internal -U app -d appdb",
+          "output": "Password for user app:\npsql (16.4)\nSSL connection (protocol: TLSv1.3, cipher: TLS_AES_256_GCM_SHA384)\nType \"help\" for help.\n\nappdb=>",
+          "output_notes": [
+            {
+              "token": "SSL connection",
+              "meaning": "The session is encrypted.",
+              "severity": "warning",
+              "normal": "Present for remote connections.",
+              "anomaly": "Missing: credentials and data travel in clear text."
+            },
+            {
+              "token": "appdb=>",
+              "meaning": "Prompt: database name; => means a regular role (# would be superuser).",
+              "severity": "info",
+              "normal": "=> for application work."
+            }
+          ]
         },
         {
           "id": "one-shot",
           "title": "Run one query and exit",
           "scenario": "Print the server version from a script, without opening the shell.",
-          "command": "psql -U app -d appdb -c \"SELECT version();\""
+          "command": "psql -U app -d appdb -c \"SELECT version();\"",
+          "output": "                        version\n--------------------------------------------------------\n PostgreSQL 16.4 on x86_64-pc-linux-gnu, compiled by gcc\n(1 row)",
+          "output_notes": [
+            {
+              "token": "PostgreSQL 16.4",
+              "meaning": "Server version.",
+              "severity": "info",
+              "normal": "A supported minor release.",
+              "anomaly": "Old minor: missing bug and security fixes."
+            }
+          ]
         },
         {
           "id": "run-file",
           "title": "Run a migration file",
           "scenario": "Execute migration.sql against appdb.",
-          "command": "psql -U app -d appdb -f migration.sql"
+          "command": "psql -U app -d appdb -f migration.sql",
+          "output": "BEGIN\nALTER TABLE\nCREATE INDEX\nCOMMIT",
+          "output_notes": [
+            {
+              "token": "COMMIT",
+              "meaning": "The transaction in the file completed.",
+              "severity": "info",
+              "normal": "COMMIT at the end.",
+              "anomaly": "ROLLBACK or an ERROR line: nothing was applied."
+            },
+            {
+              "token": "ALTER TABLE",
+              "meaning": "Command tag printed after each successful statement.",
+              "severity": "info"
+            }
+          ]
         },
         {
           "id": "local-postgres",
           "title": "Local superuser shell",
           "scenario": "On the database server, open psql as the postgres OS user.",
-          "command": "sudo -u postgres psql"
+          "command": "sudo -u postgres psql",
+          "output": "psql (16.4)\nType \"help\" for help.\n\npostgres=#",
+          "output_notes": [
+            {
+              "token": "postgres=#",
+              "meaning": "Superuser prompt (#).",
+              "severity": "warning",
+              "normal": "Use only for administration."
+            }
+          ]
         }
       ],
       "use_cases": [
-        { "title": "Ad-hoc diagnosis", "situation": "Open a session to inspect activity, locks and sizes during an incident.", "severity": "routine" }
+        {
+          "title": "Ad-hoc diagnosis",
+          "situation": "Open a session to inspect activity, locks and sizes during an incident.",
+          "severity": "routine"
+        },
+        {
+          "title": "Scripted health check",
+          "situation": "A cron job runs psql -c and alerts when the query fails.",
+          "severity": "routine"
+        },
+        {
+          "title": "Apply a hotfix migration",
+          "situation": "Run a reviewed SQL file against production with psql -f.",
+          "severity": "incident"
+        }
       ],
-      "pitfalls": ["Use ~/.pgpass instead of typing passwords on the command line (they end up in shell history)."],
-      "related": ["postgresql.meta-commands"],
-      "tags": ["client"]
+      "pitfalls": [
+        "Use ~/.pgpass instead of typing passwords on the command line (they end up in shell history)."
+      ],
+      "related": [
+        "postgresql.meta-commands"
+      ],
+      "tags": [
+        "client"
+      ]
     },
     {
       "id": "postgresql.meta-commands",
@@ -61,29 +158,162 @@
       "synopsis": "\\command [pattern]",
       "description": "psql-only commands (not SQL) that list databases, tables, indexes, roles and toggle output options.",
       "flags": [
-        { "flag": "\\l", "description": "List databases." },
-        { "flag": "\\c", "argument": "<db>", "description": "Connect to another database." },
-        { "flag": "\\dt", "description": "List tables; + adds size." },
-        { "flag": "\\d", "argument": "<table>", "description": "Describe a table (columns, indexes, constraints)." },
-        { "flag": "\\di", "description": "List indexes." },
-        { "flag": "\\du", "description": "List roles." },
-        { "flag": "\\x", "description": "Toggle expanded output." },
-        { "flag": "\\timing", "description": "Show execution time of each query." },
-        { "flag": "\\q", "description": "Quit psql." }
+        {
+          "flag": "\\l",
+          "description": "List databases."
+        },
+        {
+          "flag": "\\c",
+          "argument": "<db>",
+          "description": "Connect to another database."
+        },
+        {
+          "flag": "\\dt",
+          "description": "List tables; + adds size."
+        },
+        {
+          "flag": "\\d",
+          "argument": "<table>",
+          "description": "Describe a table (columns, indexes, constraints)."
+        },
+        {
+          "flag": "\\di",
+          "description": "List indexes."
+        },
+        {
+          "flag": "\\du",
+          "description": "List roles."
+        },
+        {
+          "flag": "\\x",
+          "description": "Toggle expanded output."
+        },
+        {
+          "flag": "\\timing",
+          "description": "Show execution time of each query."
+        },
+        {
+          "flag": "\\q",
+          "description": "Quit psql."
+        }
       ],
       "examples": [
-        { "id": "list-dbs", "title": "List databases", "scenario": "Inside psql, list every database with owner and encoding.", "command": "\\l" },
-        { "id": "tables-size", "title": "Tables with sizes", "scenario": "List tables in the current database including their sizes.", "command": "\\dt+" },
-        { "id": "describe", "title": "Describe a table", "scenario": "Show columns, indexes and constraints of the orders table.", "command": "\\d orders" },
-        { "id": "roles", "title": "List roles", "scenario": "Which roles exist and what attributes do they have?", "command": "\\du" },
-        { "id": "timing", "title": "Measure query time", "scenario": "Turn on timing so each query prints its duration.", "command": "\\timing on" },
-        { "id": "switch-db", "title": "Switch database", "scenario": "From the current session, connect to the reporting database.", "command": "\\c reporting" }
+        {
+          "id": "list-dbs",
+          "title": "List databases",
+          "scenario": "Inside psql, list every database with owner and encoding.",
+          "command": "\\l",
+          "output": "   Name    |  Owner   | Encoding | Collate\n-----------+----------+----------+---------\n appdb     | app      | UTF8     | C.UTF-8\n postgres  | postgres | UTF8     | C.UTF-8\n reporting | report   | UTF8     | C.UTF-8",
+          "output_notes": [
+            {
+              "token": "UTF8",
+              "meaning": "Database encoding.",
+              "severity": "warning",
+              "normal": "UTF8",
+              "anomaly": "SQL_ASCII: accepts invalid bytes and causes migration pain."
+            }
+          ]
+        },
+        {
+          "id": "tables-size",
+          "title": "Tables with sizes",
+          "scenario": "List tables in the current database including their sizes.",
+          "command": "\\dt+",
+          "output": " Schema |  Name  | Type  | Owner |  Size\n--------+--------+-------+-------+--------\n public | events | table | app   | 18 GB\n public | orders | table | app   | 512 MB",
+          "output_notes": [
+            {
+              "token": "18 GB",
+              "meaning": "Table size on disk.",
+              "severity": "warning",
+              "normal": "Proportional to the data you expect.",
+              "anomaly": "Much larger than expected: bloat or missing retention."
+            }
+          ]
+        },
+        {
+          "id": "describe",
+          "title": "Describe a table",
+          "scenario": "Show columns, indexes and constraints of the orders table.",
+          "command": "\\d orders",
+          "output": "                Table \"public.orders\"\n   Column    |  Type   | Nullable\n-------------+---------+----------\n id          | bigint  | not null\n customer_id | bigint  | not null\nIndexes:\n    \"orders_pkey\" PRIMARY KEY, btree (id)",
+          "output_notes": [
+            {
+              "token": "Indexes:",
+              "meaning": "Indexes defined on the table.",
+              "severity": "warning",
+              "normal": "One for every frequent filter column.",
+              "anomaly": "No index on customer_id while queries filter by it."
+            }
+          ]
+        },
+        {
+          "id": "roles",
+          "title": "List roles",
+          "scenario": "Which roles exist and what attributes do they have?",
+          "command": "\\du",
+          "output": " Role name |                         Attributes\n-----------+------------------------------------------------------------\n app       |\n postgres  | Superuser, Create role, Create DB, Replication, Bypass RLS\n report    |",
+          "output_notes": [
+            {
+              "token": "Superuser",
+              "meaning": "Unrestricted privileges.",
+              "severity": "critical",
+              "normal": "Only the postgres role.",
+              "anomaly": "Application roles with Superuser: privilege risk."
+            }
+          ]
+        },
+        {
+          "id": "timing",
+          "title": "Measure query time",
+          "scenario": "Turn on timing so each query prints its duration.",
+          "command": "\\timing on",
+          "output": "Timing is on.",
+          "output_notes": [
+            {
+              "token": "Timing is on.",
+              "meaning": "Each query now prints 'Time: … ms'.",
+              "severity": "info"
+            }
+          ]
+        },
+        {
+          "id": "switch-db",
+          "title": "Switch database",
+          "scenario": "From the current session, connect to the reporting database.",
+          "command": "\\c reporting",
+          "output": "You are now connected to database \"reporting\" as user \"app\".",
+          "output_notes": [
+            {
+              "token": "as user \"app\"",
+              "meaning": "Role used for the new connection.",
+              "severity": "info"
+            }
+          ]
+        }
       ],
       "use_cases": [
-        { "title": "Unknown schema", "situation": "Explore an unfamiliar database before writing queries.", "severity": "routine" }
+        {
+          "title": "Unknown schema",
+          "situation": "Explore an unfamiliar database before writing queries.",
+          "severity": "routine"
+        },
+        {
+          "title": "Missing index suspected",
+          "situation": "\\d orders shows which indexes exist before writing a new one.",
+          "severity": "routine"
+        },
+        {
+          "title": "Who can log in?",
+          "situation": "\\du lists roles and their attributes during an access review.",
+          "severity": "routine"
+        }
       ],
-      "related": ["postgresql.psql"],
-      "tags": ["client"]
+      "related": [
+        "postgresql.psql"
+      ],
+      "tags": [
+        "client"
+      ]
     },
     {
       "id": "postgresql.pg-isready",
@@ -92,8 +322,16 @@
       "synopsis": "pg_isready [options]",
       "description": "Returns the connection status of a server via exit code; ideal for health checks and scripts.",
       "flags": [
-        { "flag": "-h", "argument": "<host>", "description": "Server host." },
-        { "flag": "-p", "argument": "<port>", "description": "Server port." }
+        {
+          "flag": "-h",
+          "argument": "<host>",
+          "description": "Server host."
+        },
+        {
+          "flag": "-p",
+          "argument": "<port>",
+          "description": "Server port."
+        }
       ],
       "examples": [
         {
@@ -103,14 +341,36 @@
           "command": "pg_isready -h db.internal -p 5432",
           "output": "db.internal:5432 - accepting connections",
           "output_notes": [
-            { "token": "accepting connections", "meaning": "Exit code 0: server ready.", "normal": "accepting connections", "anomaly": "rejecting connections (1, e.g. starting up) or no response (2).", "severity": "info" }
+            {
+              "token": "accepting connections",
+              "meaning": "Exit code 0: server ready.",
+              "normal": "accepting connections",
+              "anomaly": "rejecting connections (1, e.g. starting up) or no response (2).",
+              "severity": "info"
+            }
           ]
         }
       ],
       "use_cases": [
-        { "title": "Startup ordering", "situation": "Wait in a script until the database is ready before starting the app.", "severity": "routine" }
+        {
+          "title": "Startup ordering",
+          "situation": "Wait in a script until the database is ready before starting the app.",
+          "severity": "routine"
+        },
+        {
+          "title": "Container start order",
+          "situation": "The app container waits for the database container before starting.",
+          "severity": "routine"
+        },
+        {
+          "title": "Failover check",
+          "situation": "Confirm the new primary accepts connections after a promotion.",
+          "severity": "incident"
+        }
       ],
-      "tags": ["health"]
+      "tags": [
+        "health"
+      ]
     },
     {
       "id": "postgresql.pg-stat-activity",
@@ -119,42 +379,115 @@
       "synopsis": "SELECT ... FROM pg_stat_activity;",
       "description": "System view with each connection's user, application, state, current query and wait event.",
       "flags": [
-        { "flag": "state", "description": "active, idle, idle in transaction…" },
-        { "flag": "wait_event_type", "description": "What the backend waits for (Lock, IO, Client…)." },
-        { "flag": "query_start", "description": "When the current query began." }
+        {
+          "flag": "state",
+          "description": "active, idle, idle in transaction…"
+        },
+        {
+          "flag": "wait_event_type",
+          "description": "What the backend waits for (Lock, IO, Client…)."
+        },
+        {
+          "flag": "query_start",
+          "description": "When the current query began."
+        }
       ],
       "examples": [
         {
           "id": "active",
           "title": "Running queries",
           "scenario": "List PID, user and query of every active backend.",
-          "command": "SELECT pid, usename, query FROM pg_stat_activity WHERE state = 'active';"
+          "command": "SELECT pid, usename, query FROM pg_stat_activity WHERE state = 'active';",
+          "output": " pid  | usename |                 query\n------+---------+---------------------------------------\n 4242 | report  | SELECT * FROM events WHERE payload ~ 'x'\n 4310 | app     | UPDATE orders SET status = $1 WHERE id = $2",
+          "output_notes": [
+            {
+              "token": "payload ~ 'x'",
+              "meaning": "Regex filter over a large table: likely a full scan.",
+              "severity": "warning",
+              "anomaly": "Long-running ad-hoc queries from reporting roles."
+            }
+          ]
         },
         {
           "id": "long-running",
           "title": "Queries running longer than 5 minutes",
           "scenario": "Find active queries running for more than 5 minutes.",
-          "command": "SELECT pid, now() - query_start AS age, query FROM pg_stat_activity\nWHERE state = 'active' AND now() - query_start > interval '5 minutes';"
+          "command": "SELECT pid, now() - query_start AS age, query FROM pg_stat_activity\nWHERE state = 'active' AND now() - query_start > interval '5 minutes';",
+          "output": " pid  |       age       |                query\n------+-----------------+--------------------------------------\n 4242 | 00:47:12.310    | SELECT * FROM events WHERE payload ~ 'x'",
+          "output_notes": [
+            {
+              "token": "00:47:12.310",
+              "meaning": "How long the query has been running.",
+              "severity": "critical",
+              "normal": "Seconds for OLTP queries.",
+              "anomaly": "Tens of minutes: cancel or investigate."
+            }
+          ]
         },
         {
           "id": "idle-in-tx",
           "title": "Idle in transaction",
           "scenario": "List sessions stuck 'idle in transaction', which hold locks and block vacuum.",
-          "command": "SELECT pid, usename, xact_start FROM pg_stat_activity\nWHERE state = 'idle in transaction';"
+          "command": "SELECT pid, usename, xact_start FROM pg_stat_activity\nWHERE state = 'idle in transaction';",
+          "output": " pid  | usename |          xact_start\n------+---------+-------------------------------\n 4377 | app     | 2026-11-21 08:02:11.418+00",
+          "output_notes": [
+            {
+              "token": "2026-11-21 08:02:11.418+00",
+              "meaning": "When the open transaction began.",
+              "severity": "critical",
+              "normal": "Seconds ago.",
+              "anomaly": "Hours ago: it holds locks and blocks vacuum."
+            }
+          ]
         },
         {
           "id": "by-state",
           "title": "Connections per state",
           "scenario": "Count connections grouped by state to spot connection leaks.",
-          "command": "SELECT state, count(*) FROM pg_stat_activity GROUP BY state;"
+          "command": "SELECT state, count(*) FROM pg_stat_activity GROUP BY state;",
+          "output": "        state        | count\n---------------------+-------\n active              |     7\n idle                |   181\n idle in transaction |     3",
+          "output_notes": [
+            {
+              "token": "idle                |   181",
+              "meaning": "Connected but doing nothing.",
+              "severity": "warning",
+              "normal": "Matches the pool size.",
+              "anomaly": "Approaching max_connections: leak or oversized pools."
+            },
+            {
+              "token": "idle in transaction",
+              "meaning": "Sessions holding an open transaction.",
+              "severity": "critical",
+              "normal": "0",
+              "anomaly": "Any for long: locks and bloat."
+            }
+          ]
         }
       ],
       "use_cases": [
-        { "title": "Database slow for everyone", "situation": "Look for long queries or many sessions waiting on locks.", "severity": "incident" },
-        { "title": "Too many connections", "situation": "Find which application is leaking idle connections.", "severity": "incident" }
+        {
+          "title": "Database slow for everyone",
+          "situation": "Look for long queries or many sessions waiting on locks.",
+          "severity": "incident"
+        },
+        {
+          "title": "Too many connections",
+          "situation": "Find which application is leaking idle connections.",
+          "severity": "incident"
+        },
+        {
+          "title": "Vacuum not cleaning",
+          "situation": "An old 'idle in transaction' session keeps dead rows from being removed.",
+          "severity": "incident"
+        }
       ],
-      "related": ["postgresql.pg-terminate-backend", "postgresql.pg-locks"],
-      "tags": ["diagnostics"]
+      "related": [
+        "postgresql.pg-terminate-backend",
+        "postgresql.pg-locks"
+      ],
+      "tags": [
+        "diagnostics"
+      ]
     },
     {
       "id": "postgresql.pg-terminate-backend",
@@ -167,21 +500,59 @@
           "id": "cancel",
           "title": "Cancel a query",
           "scenario": "Stop the query running in backend 4242 but keep its session.",
-          "command": "SELECT pg_cancel_backend(4242);"
+          "command": "SELECT pg_cancel_backend(4242);",
+          "output": " pg_cancel_backend\n-------------------\n t\n(1 row)",
+          "output_notes": [
+            {
+              "token": " t",
+              "meaning": "true: the cancel signal was sent.",
+              "severity": "info",
+              "normal": "t",
+              "anomaly": "f: no such backend or not permitted."
+            }
+          ]
         },
         {
           "id": "terminate",
           "title": "Terminate a session",
           "scenario": "Backend 4242 is idle in transaction and blocking others. Terminate it.",
-          "command": "SELECT pg_terminate_backend(4242);"
+          "command": "SELECT pg_terminate_backend(4242);",
+          "output": " pg_terminate_backend\n----------------------\n t\n(1 row)",
+          "output_notes": [
+            {
+              "token": " t",
+              "meaning": "true: the session was told to exit; its transaction rolls back.",
+              "severity": "warning"
+            }
+          ]
         }
       ],
       "use_cases": [
-        { "title": "Runaway report query", "situation": "Cancel a query saturating the server, then contact its owner.", "severity": "incident" }
+        {
+          "title": "Runaway report query",
+          "situation": "Cancel a query saturating the server, then contact its owner.",
+          "severity": "incident"
+        },
+        {
+          "title": "Migration blocked",
+          "situation": "A forgotten session in a transaction blocks ALTER TABLE; terminate it after confirming its owner.",
+          "severity": "incident"
+        },
+        {
+          "title": "Before dropping a database",
+          "situation": "Terminate remaining sessions so DROP DATABASE can proceed.",
+          "severity": "routine"
+        }
       ],
-      "pitfalls": ["Terminating rolls back the session's open transaction; prefer cancel first."],
-      "related": ["postgresql.pg-stat-activity"],
-      "tags": ["diagnostics"]
+      "pitfalls": [
+        "Terminating rolls back the session's open transaction; prefer cancel first."
+      ],
+      "related": [
+        "postgresql.pg-stat-activity"
+      ],
+      "tags": [
+        "diagnostics"
+      ]
     },
     {
       "id": "postgresql.pg-locks",
@@ -194,14 +565,43 @@
           "id": "blocked",
           "title": "Blocked sessions and their blockers",
           "scenario": "List every waiting backend with the PIDs that block it.",
-          "command": "SELECT pid, pg_blocking_pids(pid) AS blocked_by, query\nFROM pg_stat_activity WHERE cardinality(pg_blocking_pids(pid)) > 0;"
+          "command": "SELECT pid, pg_blocking_pids(pid) AS blocked_by, query\nFROM pg_stat_activity WHERE cardinality(pg_blocking_pids(pid)) > 0;",
+          "output": " pid  | blocked_by |                 query\n------+------------+-------------------------------------\n 4501 | {4377}     | ALTER TABLE orders ADD COLUMN note text\n 4502 | {4501}     | SELECT * FROM orders WHERE id = 10",
+          "output_notes": [
+            {
+              "token": "{4377}",
+              "meaning": "PID holding the lock this session waits for.",
+              "severity": "critical",
+              "normal": "Empty.",
+              "anomaly": "A chain: one idle transaction blocks a migration, which blocks every reader."
+            }
+          ]
         }
       ],
       "use_cases": [
-        { "title": "Migration stuck", "situation": "An ALTER TABLE waits for a lock held by a long transaction.", "severity": "incident" }
+        {
+          "title": "Migration stuck",
+          "situation": "An ALTER TABLE waits for a lock held by a long transaction.",
+          "severity": "incident"
+        },
+        {
+          "title": "Deploy hangs",
+          "situation": "The migration waits on a lock; find the blocking session.",
+          "severity": "incident"
+        },
+        {
+          "title": "Deadlock-prone code",
+          "situation": "Recurring lock chains between two jobs updating the same rows in different order.",
+          "severity": "routine"
+        }
       ],
-      "related": ["postgresql.pg-stat-activity", "postgresql.pg-terminate-backend"],
-      "tags": ["locks"]
+      "related": [
+        "postgresql.pg-stat-activity",
+        "postgresql.pg-terminate-backend"
+      ],
+      "tags": [
+        "locks"
+      ]
     },
     {
       "id": "postgresql.explain",
@@ -210,8 +610,14 @@
       "synopsis": "EXPLAIN [ANALYZE] [BUFFERS] statement;",
       "description": "EXPLAIN prints the planner's chosen plan; ANALYZE executes the query and adds real timings and row counts.",
       "flags": [
-        { "flag": "ANALYZE", "description": "Run the query and report actual time and rows." },
-        { "flag": "BUFFERS", "description": "Show shared buffer hits and reads." }
+        {
+          "flag": "ANALYZE",
+          "description": "Run the query and report actual time and rows."
+        },
+        {
+          "flag": "BUFFERS",
+          "description": "Show shared buffer hits and reads."
+        }
       ],
       "examples": [
         {
@@ -221,23 +627,65 @@
           "command": "EXPLAIN ANALYZE SELECT * FROM orders WHERE customer_id = 42;",
           "output": "Seq Scan on orders  (cost=0.00..18334.00 rows=96 width=64) (actual time=0.031..92.114 rows=104 loops=1)\n  Filter: (customer_id = 42)\n  Rows Removed by Filter: 999896\nExecution Time: 92.201 ms",
           "output_notes": [
-            { "token": "Seq Scan", "meaning": "Reads the whole table.", "normal": "Fine for small tables.", "anomaly": "On a large table with a selective filter: missing index.", "severity": "warning" },
-            { "token": "Rows Removed by Filter", "meaning": "Rows read and discarded.", "normal": "Small compared with rows returned.", "anomaly": "Huge: an index on the filter column would help.", "severity": "warning" }
+            {
+              "token": "Seq Scan",
+              "meaning": "Reads the whole table.",
+              "normal": "Fine for small tables.",
+              "anomaly": "On a large table with a selective filter: missing index.",
+              "severity": "warning"
+            },
+            {
+              "token": "Rows Removed by Filter",
+              "meaning": "Rows read and discarded.",
+              "normal": "Small compared with rows returned.",
+              "anomaly": "Huge: an index on the filter column would help.",
+              "severity": "warning"
+            }
           ]
         },
         {
           "id": "plan-only",
           "title": "Plan without running",
           "scenario": "Show the plan of a DELETE without executing it.",
-          "command": "EXPLAIN DELETE FROM sessions WHERE expires_at < now();"
+          "command": "EXPLAIN DELETE FROM sessions WHERE expires_at < now();",
+          "output": "Delete on sessions  (cost=0.00..4313.00 rows=0 width=0)\n  ->  Seq Scan on sessions  (cost=0.00..4313.00 rows=120000 width=6)\n        Filter: (expires_at < now())",
+          "output_notes": [
+            {
+              "token": "rows=120000",
+              "meaning": "Planner estimate of rows affected.",
+              "severity": "warning",
+              "normal": "Close to what you expect to delete.",
+              "anomaly": "Far larger: the filter is wrong or stats are stale."
+            }
+          ]
         }
       ],
       "use_cases": [
-        { "title": "Slow endpoint", "situation": "Confirm a missing index before adding it.", "severity": "incident" }
+        {
+          "title": "Slow endpoint",
+          "situation": "Confirm a missing index before adding it.",
+          "severity": "incident"
+        },
+        {
+          "title": "Plan changed after an upgrade",
+          "situation": "A query that used an index now does a seq scan; compare plans.",
+          "severity": "incident"
+        },
+        {
+          "title": "Review a risky DELETE",
+          "situation": "Check the plan of a large DELETE before running it.",
+          "severity": "routine"
+        }
       ],
-      "pitfalls": ["EXPLAIN ANALYZE executes the statement: wrap writes in BEGIN; ... ROLLBACK;."],
-      "related": ["postgresql.create-index"],
-      "tags": ["performance"]
+      "pitfalls": [
+        "EXPLAIN ANALYZE executes the statement: wrap writes in BEGIN; ... ROLLBACK;."
+      ],
+      "related": [
+        "postgresql.create-index"
+      ],
+      "tags": [
+        "performance"
+      ]
     },
     {
       "id": "postgresql.create-index",
@@ -250,21 +698,60 @@
           "id": "concurrently",
           "title": "Index on a busy table",
           "scenario": "Add an index on orders(customer_id) without blocking writes.",
-          "command": "CREATE INDEX CONCURRENTLY idx_orders_customer ON orders (customer_id);"
+          "command": "CREATE INDEX CONCURRENTLY idx_orders_customer ON orders (customer_id);",
+          "output": "CREATE INDEX",
+          "output_notes": [
+            {
+              "token": "CREATE INDEX",
+              "meaning": "Command tag: the index is built and valid.",
+              "severity": "info",
+              "normal": "CREATE INDEX",
+              "anomaly": "An ERROR leaves an INVALID index to drop."
+            }
+          ]
         },
         {
           "id": "list-indexes",
           "title": "Indexes of a table",
           "scenario": "List the index names and definitions of the orders table.",
-          "command": "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = 'orders';"
+          "command": "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = 'orders';",
+          "output": "      indexname       |                              indexdef\n----------------------+-------------------------------------------------------------------\n orders_pkey          | CREATE UNIQUE INDEX orders_pkey ON public.orders USING btree (id)\n idx_orders_customer  | CREATE INDEX idx_orders_customer ON public.orders USING btree (customer_id)",
+          "output_notes": [
+            {
+              "token": "idx_orders_customer",
+              "meaning": "The new index exists.",
+              "severity": "info"
+            }
+          ]
         }
       ],
       "use_cases": [
-        { "title": "Fix a seq scan in production", "situation": "Add the missing index without downtime.", "severity": "routine" }
+        {
+          "title": "Fix a seq scan in production",
+          "situation": "Add the missing index without downtime.",
+          "severity": "routine"
+        },
+        {
+          "title": "Seq scan in production",
+          "situation": "Add the missing index online during business hours.",
+          "severity": "routine"
+        },
+        {
+          "title": "Failed concurrent build",
+          "situation": "A build was interrupted and left an INVALID index that slows writes.",
+          "severity": "incident"
+        }
       ],
-      "pitfalls": ["If a concurrent build fails, it leaves an INVALID index; drop it and retry."],
-      "related": ["postgresql.explain"],
-      "tags": ["performance", "indexes"]
+      "pitfalls": [
+        "If a concurrent build fails, it leaves an INVALID index; drop it and retry."
+      ],
+      "related": [
+        "postgresql.explain"
+      ],
+      "tags": [
+        "performance",
+        "indexes"
+      ]
     },
     {
       "id": "postgresql.sizes",
@@ -277,19 +764,53 @@
           "id": "database",
           "title": "Size of the current database",
           "scenario": "How big is the current database?",
-          "command": "SELECT pg_size_pretty(pg_database_size(current_database()));"
+          "command": "SELECT pg_size_pretty(pg_database_size(current_database()));",
+          "output": " pg_size_pretty\n----------------\n 24 GB\n(1 row)",
+          "output_notes": [
+            {
+              "token": " 24 GB",
+              "meaning": "Total size of the current database.",
+              "severity": "info",
+              "normal": "Matches capacity planning."
+            }
+          ]
         },
         {
           "id": "largest-tables",
           "title": "Five largest tables",
           "scenario": "List the five largest tables including indexes and TOAST.",
-          "command": "SELECT relname, pg_size_pretty(pg_total_relation_size(relid))\nFROM pg_statio_user_tables ORDER BY pg_total_relation_size(relid) DESC LIMIT 5;"
+          "command": "SELECT relname, pg_size_pretty(pg_total_relation_size(relid))\nFROM pg_statio_user_tables ORDER BY pg_total_relation_size(relid) DESC LIMIT 5;",
+          "output": " relname | pg_size_pretty\n---------+----------------\n events  | 18 GB\n orders  | 512 MB\n users   | 96 MB",
+          "output_notes": [
+            {
+              "token": "events  | 18 GB",
+              "meaning": "Largest table including indexes and TOAST.",
+              "severity": "warning",
+              "anomaly": "One table dominating: retention or partitioning needed."
+            }
+          ]
         }
       ],
       "use_cases": [
-        { "title": "Disk filling up", "situation": "Find which tables grew before planning cleanup or archiving.", "severity": "incident" }
+        {
+          "title": "Disk filling up",
+          "situation": "Find which tables grew before planning cleanup or archiving.",
+          "severity": "incident"
+        },
+        {
+          "title": "Plan a disk resize",
+          "situation": "Measure database growth per month from size snapshots.",
+          "severity": "routine"
+        },
+        {
+          "title": "Unexpected growth",
+          "situation": "One events table grew 10 GB overnight after a logging change.",
+          "severity": "incident"
+        }
       ],
-      "tags": ["storage"]
+      "tags": [
+        "storage"
+      ]
     },
     {
       "id": "postgresql.vacuum",
@@ -298,29 +819,81 @@
       "synopsis": "VACUUM [(VERBOSE, ANALYZE)] [table];",
       "description": "Marks space of dead tuples reusable and, with ANALYZE, updates planner statistics. Autovacuum normally does this automatically.",
       "flags": [
-        { "flag": "ANALYZE", "description": "Also update planner statistics." },
-        { "flag": "VERBOSE", "description": "Print progress details." },
-        { "flag": "FULL", "description": "Rewrite the table to return space to the OS (exclusive lock)." }
+        {
+          "flag": "ANALYZE",
+          "description": "Also update planner statistics."
+        },
+        {
+          "flag": "VERBOSE",
+          "description": "Print progress details."
+        },
+        {
+          "flag": "FULL",
+          "description": "Rewrite the table to return space to the OS (exclusive lock)."
+        }
       ],
       "examples": [
         {
           "id": "analyze-table",
           "title": "Vacuum and analyze one table",
           "scenario": "After a large delete on orders, vacuum it and refresh its statistics.",
-          "command": "VACUUM (VERBOSE, ANALYZE) orders;"
+          "command": "VACUUM (VERBOSE, ANALYZE) orders;",
+          "output": "INFO:  vacuuming \"appdb.public.orders\"\nINFO:  finished vacuuming \"appdb.public.orders\": index scans: 1\ntuples: 412004 removed, 1000210 remain, 0 are dead but not yet removable\nVACUUM",
+          "output_notes": [
+            {
+              "token": "412004 removed",
+              "meaning": "Dead tuples whose space is now reusable.",
+              "severity": "info"
+            },
+            {
+              "token": "0 are dead but not yet removable",
+              "meaning": "Dead rows still visible to an old transaction.",
+              "severity": "warning",
+              "normal": "0",
+              "anomaly": "Large numbers: a long transaction blocks cleanup."
+            }
+          ]
         },
         {
           "id": "dead-tuples",
           "title": "Tables with most dead rows",
           "scenario": "Which tables have the most dead tuples and when were they last autovacuumed?",
-          "command": "SELECT relname, n_dead_tup, last_autovacuum FROM pg_stat_user_tables\nORDER BY n_dead_tup DESC LIMIT 5;"
+          "command": "SELECT relname, n_dead_tup, last_autovacuum FROM pg_stat_user_tables\nORDER BY n_dead_tup DESC LIMIT 5;",
+          "output": " relname | n_dead_tup |        last_autovacuum\n---------+------------+-------------------------------\n events  |    9821004 | 2026-11-14 03:12:44.1+00\n orders  |      12044 | 2026-11-21 09:40:02.8+00",
+          "output_notes": [
+            {
+              "token": "9821004",
+              "meaning": "Dead rows not yet vacuumed.",
+              "severity": "critical",
+              "normal": "Small fraction of live rows.",
+              "anomaly": "Millions with an old last_autovacuum: autovacuum cannot keep up."
+            }
+          ]
         }
       ],
       "use_cases": [
-        { "title": "Table bloat", "situation": "A frequently updated table keeps growing despite a stable row count.", "severity": "routine" }
+        {
+          "title": "Table bloat",
+          "situation": "A frequently updated table keeps growing despite a stable row count.",
+          "severity": "routine"
+        },
+        {
+          "title": "Planner using stale statistics",
+          "situation": "After a bulk load, plans are bad until ANALYZE runs.",
+          "severity": "incident"
+        },
+        {
+          "title": "Autovacuum falling behind",
+          "situation": "n_dead_tup keeps growing on a hot table.",
+          "severity": "incident"
+        }
       ],
-      "pitfalls": ["VACUUM FULL locks the table exclusively for the whole rewrite; avoid it during business hours."],
-      "tags": ["maintenance"]
+      "pitfalls": [
+        "VACUUM FULL locks the table exclusively for the whole rewrite; avoid it during business hours."
+      ],
+      "tags": [
+        "maintenance"
+      ]
     },
     {
       "id": "postgresql.pg-dump",
@@ -329,36 +902,71 @@
       "synopsis": "pg_dump [options] dbname",
       "description": "Exports a consistent snapshot of a database as SQL or in the custom format (-Fc) used by pg_restore.",
       "flags": [
-        { "flag": "-Fc", "description": "Custom compressed format (restorable selectively with pg_restore)." },
-        { "flag": "-f", "argument": "<file>", "description": "Output file." },
-        { "flag": "-t", "argument": "<table>", "description": "Only one table." },
-        { "flag": "--schema-only", "description": "Definitions without data." }
+        {
+          "flag": "-Fc",
+          "description": "Custom compressed format (restorable selectively with pg_restore)."
+        },
+        {
+          "flag": "-f",
+          "argument": "<file>",
+          "description": "Output file."
+        },
+        {
+          "flag": "-t",
+          "argument": "<table>",
+          "description": "Only one table."
+        },
+        {
+          "flag": "--schema-only",
+          "description": "Definitions without data."
+        }
       ],
       "examples": [
         {
           "id": "custom",
           "title": "Custom-format backup",
           "scenario": "Back up appdb in the custom format to appdb.dump.",
-          "command": "pg_dump -U app -Fc -f appdb.dump appdb"
+          "command": "pg_dump -U app -Fc -f appdb.dump appdb",
+          "no_output": true
         },
         {
           "id": "schema",
           "title": "Schema only",
           "scenario": "Export only the schema of appdb to schema.sql.",
-          "command": "pg_dump -U app --schema-only -f schema.sql appdb"
+          "command": "pg_dump -U app --schema-only -f schema.sql appdb",
+          "no_output": true
         },
         {
           "id": "one-table",
           "title": "One table",
           "scenario": "Back up only the orders table of appdb in custom format.",
-          "command": "pg_dump -U app -Fc -t orders -f orders.dump appdb"
+          "command": "pg_dump -U app -Fc -t orders -f orders.dump appdb",
+          "no_output": true
         }
       ],
       "use_cases": [
-        { "title": "Before a risky migration", "situation": "Take a restorable backup right before changing the schema.", "severity": "routine" }
+        {
+          "title": "Before a risky migration",
+          "situation": "Take a restorable backup right before changing the schema.",
+          "severity": "routine"
+        },
+        {
+          "title": "Copy production to staging",
+          "situation": "Dump one database and restore it into staging for debugging.",
+          "severity": "routine"
+        },
+        {
+          "title": "Accidental DELETE",
+          "situation": "Recover one table from last night's custom-format dump.",
+          "severity": "critical"
+        }
       ],
-      "related": ["postgresql.pg-restore"],
-      "tags": ["backup"]
+      "related": [
+        "postgresql.pg-restore"
+      ],
+      "tags": [
+        "backup"
+      ]
     },
     {
       "id": "postgresql.pg-restore",
@@ -367,36 +975,85 @@
       "synopsis": "pg_restore [options] dumpfile",
       "description": "Restores dumps made with pg_dump -Fc, optionally into another database, selectively and in parallel.",
       "flags": [
-        { "flag": "-d", "argument": "<db>", "description": "Target database." },
-        { "flag": "-l", "description": "List the archive contents." },
-        { "flag": "-j", "argument": "<jobs>", "description": "Parallel jobs." },
-        { "flag": "--clean", "description": "Drop objects before recreating them." }
+        {
+          "flag": "-d",
+          "argument": "<db>",
+          "description": "Target database."
+        },
+        {
+          "flag": "-l",
+          "description": "List the archive contents."
+        },
+        {
+          "flag": "-j",
+          "argument": "<jobs>",
+          "description": "Parallel jobs."
+        },
+        {
+          "flag": "--clean",
+          "description": "Drop objects before recreating them."
+        }
       ],
       "examples": [
         {
           "id": "restore",
           "title": "Restore into a database",
           "scenario": "Restore appdb.dump into the existing database appdb_restore.",
-          "command": "pg_restore -U app -d appdb_restore appdb.dump"
+          "command": "pg_restore -U app -d appdb_restore appdb.dump",
+          "no_output": true
         },
         {
           "id": "list",
           "title": "Inspect a dump",
           "scenario": "List what appdb.dump contains before restoring.",
-          "command": "pg_restore -l appdb.dump"
+          "command": "pg_restore -l appdb.dump",
+          "output": ";\n; Archive created at 2026-11-21 02:00:03 UTC\n;     dbname: appdb\n;     Format: CUSTOM\n;\n215; 1259 16390 TABLE public orders app\n3312; 0 16390 TABLE DATA public orders app",
+          "output_notes": [
+            {
+              "token": "Archive created at",
+              "meaning": "When the dump was taken.",
+              "severity": "warning",
+              "normal": "Recent.",
+              "anomaly": "Old timestamp: backups stopped running."
+            },
+            {
+              "token": "TABLE DATA public orders",
+              "meaning": "The archive contains the data of orders.",
+              "severity": "info"
+            }
+          ]
         },
         {
           "id": "parallel",
           "title": "Parallel restore",
           "scenario": "Restore appdb.dump into appdb_restore using 4 jobs.",
-          "command": "pg_restore -U app -j 4 -d appdb_restore appdb.dump"
+          "command": "pg_restore -U app -j 4 -d appdb_restore appdb.dump",
+          "no_output": true
         }
       ],
       "use_cases": [
-        { "title": "Restore test", "situation": "Prove backups are usable by restoring into a scratch database.", "severity": "routine" }
+        {
+          "title": "Restore test",
+          "situation": "Prove backups are usable by restoring into a scratch database.",
+          "severity": "routine"
+        },
+        {
+          "title": "Restore one table",
+          "situation": "Restore only the orders table from a full dump with -t.",
+          "severity": "incident"
+        },
+        {
+          "title": "Faster restores",
+          "situation": "Use -j to restore a large database in parallel within the maintenance window.",
+          "severity": "routine"
+        }
       ],
-      "related": ["postgresql.pg-dump"],
-      "tags": ["backup"]
+      "related": [
+        "postgresql.pg-dump"
+      ],
+      "tags": [
+        "backup"
+      ]
     },
     {
       "id": "postgresql.roles",
@@ -409,26 +1066,69 @@
           "id": "create-login",
           "title": "Create a login role",
           "scenario": "Create a login role named report with a password.",
-          "command": "CREATE ROLE report LOGIN PASSWORD 'change-me';"
+          "command": "CREATE ROLE report LOGIN PASSWORD 'change-me';",
+          "output": "CREATE ROLE",
+          "output_notes": [
+            {
+              "token": "CREATE ROLE",
+              "meaning": "Command tag: the role was created.",
+              "severity": "info"
+            }
+          ]
         },
         {
           "id": "read-only",
           "title": "Read-only access to a schema",
           "scenario": "Allow report to read every table in schema public.",
-          "command": "GRANT SELECT ON ALL TABLES IN SCHEMA public TO report;"
+          "command": "GRANT SELECT ON ALL TABLES IN SCHEMA public TO report;",
+          "output": "GRANT",
+          "output_notes": [
+            {
+              "token": "GRANT",
+              "meaning": "Privileges granted on the existing tables.",
+              "severity": "info",
+              "anomaly": "Future tables need ALTER DEFAULT PRIVILEGES."
+            }
+          ]
         },
         {
           "id": "connect",
           "title": "Allow connecting",
           "scenario": "Allow report to connect to database appdb.",
-          "command": "GRANT CONNECT ON DATABASE appdb TO report;"
+          "command": "GRANT CONNECT ON DATABASE appdb TO report;",
+          "output": "GRANT",
+          "output_notes": [
+            {
+              "token": "GRANT",
+              "meaning": "The role may now connect to the database.",
+              "severity": "info"
+            }
+          ]
         }
       ],
       "use_cases": [
-        { "title": "BI tool access", "situation": "Give an analytics tool read-only access without exposing the app user.", "severity": "routine" }
+        {
+          "title": "BI tool access",
+          "situation": "Give an analytics tool read-only access without exposing the app user.",
+          "severity": "routine"
+        },
+        {
+          "title": "Least privilege for an app",
+          "situation": "Give the application role only the rights it needs, not ownership of everything.",
+          "severity": "routine"
+        },
+        {
+          "title": "Departing user",
+          "situation": "Remove a person's role and reassign their objects.",
+          "severity": "routine"
+        }
       ],
-      "pitfalls": ["GRANT ... ON ALL TABLES covers existing tables only; use ALTER DEFAULT PRIVILEGES for future ones."],
-      "tags": ["security"]
+      "pitfalls": [
+        "GRANT ... ON ALL TABLES covers existing tables only; use ALTER DEFAULT PRIVILEGES for future ones."
+      ],
+      "tags": [
+        "security"
+      ]
     }
   ],
   "procedures": [
@@ -438,14 +1138,55 @@
       "context": "All requests touching the database became slow a few minutes ago.",
       "goal": "Find long queries or lock waits and relieve the pressure.",
       "steps": [
-        { "command": "SELECT state, count(*) FROM pg_stat_activity GROUP BY state;", "purpose": "Session overview" },
-        { "command": "SELECT pid, now() - query_start AS age, query FROM pg_stat_activity\nWHERE state = 'active' ORDER BY age DESC LIMIT 5;", "purpose": "Oldest running queries" },
-        { "command": "SELECT pid, pg_blocking_pids(pid) FROM pg_stat_activity\nWHERE cardinality(pg_blocking_pids(pid)) > 0;", "purpose": "Lock chains" },
-        { "command": "SELECT pg_cancel_backend(4242);", "purpose": "Cancel the offending query", "interpretation": "Escalate to pg_terminate_backend only if cancel does not help." }
+        {
+          "command": "SELECT state, count(*) FROM pg_stat_activity GROUP BY state;",
+          "purpose": "Session overview",
+          "output": " active | 63\n idle   | 120",
+          "output_notes": [
+            {
+              "token": "active | 63",
+              "meaning": "Many sessions working at once.",
+              "severity": "warning",
+              "normal": "A handful.",
+              "anomaly": "Dozens: something blocks or overloads the server."
+            }
+          ],
+          "interpretation": "63 active sessions is far above normal."
+        },
+        {
+          "command": "SELECT pid, now() - query_start AS age, query FROM pg_stat_activity\nWHERE state = 'active' ORDER BY age DESC LIMIT 5;",
+          "purpose": "Oldest running queries",
+          "output": " 4242 | 00:31:10 | UPDATE orders SET status = 'archived'",
+          "interpretation": "A 31-minute bulk UPDATE is the oldest query."
+        },
+        {
+          "command": "SELECT pid, pg_blocking_pids(pid) FROM pg_stat_activity\nWHERE cardinality(pg_blocking_pids(pid)) > 0;",
+          "purpose": "Lock chains",
+          "output": " 4501 | {4242}\n 4502 | {4242}",
+          "interpretation": "Sessions wait on 4242: it holds the locks."
+        },
+        {
+          "command": "SELECT pg_cancel_backend(4242);",
+          "purpose": "Cancel the offending query",
+          "interpretation": "Escalate to pg_terminate_backend only if cancel does not help.",
+          "output": " pg_cancel_backend\n t"
+        }
       ],
-      "uses": ["postgresql.pg-stat-activity", "postgresql.pg-locks", "postgresql.pg-terminate-backend"],
-      "use_cases": [{ "title": "Lock pile-up", "situation": "One long transaction blocks dozens of updates.", "severity": "critical" }],
-      "tags": ["diagnostics"]
+      "uses": [
+        "postgresql.pg-stat-activity",
+        "postgresql.pg-locks",
+        "postgresql.pg-terminate-backend"
+      ],
+      "use_cases": [
+        {
+          "title": "Lock pile-up",
+          "situation": "One long transaction blocks dozens of updates.",
+          "severity": "critical"
+        }
+      ],
+      "tags": [
+        "diagnostics"
+      ]
     },
     {
       "id": "postgresql.missing-index",
@@ -453,12 +1194,39 @@
       "context": "The orders page takes seconds to load for some customers.",
       "goal": "Confirm a sequential scan and add an index without downtime.",
       "steps": [
-        { "command": "EXPLAIN ANALYZE SELECT * FROM orders WHERE customer_id = 42;", "purpose": "Measure the current plan", "interpretation": "Seq Scan with many rows removed by filter." },
-        { "command": "CREATE INDEX CONCURRENTLY idx_orders_customer ON orders (customer_id);", "purpose": "Build the index online" },
-        { "command": "EXPLAIN ANALYZE SELECT * FROM orders WHERE customer_id = 42;", "purpose": "Confirm the new plan", "output": "Index Scan using idx_orders_customer on orders ... Execution Time: 0.180 ms" }
+        {
+          "command": "EXPLAIN ANALYZE SELECT * FROM orders WHERE customer_id = 42;",
+          "purpose": "Measure the current plan",
+          "interpretation": "Seq Scan with many rows removed by filter.",
+          "output": "Seq Scan on orders (actual time=0.03..92.11 rows=104)\n  Rows Removed by Filter: 999896"
+        },
+        {
+          "command": "CREATE INDEX CONCURRENTLY idx_orders_customer ON orders (customer_id);",
+          "purpose": "Build the index online",
+          "output": "CREATE INDEX",
+          "interpretation": "Built online; writes continued during the build."
+        },
+        {
+          "command": "EXPLAIN ANALYZE SELECT * FROM orders WHERE customer_id = 42;",
+          "purpose": "Confirm the new plan",
+          "output": "Index Scan using idx_orders_customer on orders ... Execution Time: 0.180 ms",
+          "interpretation": "Index scan in under a millisecond: the fix worked."
+        }
       ],
-      "uses": ["postgresql.explain", "postgresql.create-index"],
-      "tags": ["performance"]
+      "uses": [
+        "postgresql.explain",
+        "postgresql.create-index"
+      ],
+      "tags": [
+        "performance"
+      ],
+      "use_cases": [
+        {
+          "title": "Slow customer page",
+          "situation": "Support reports slow order history for large customers.",
+          "severity": "incident"
+        }
+      ]
     },
     {
       "id": "postgresql.backup-restore-test",
@@ -466,14 +1234,46 @@
       "context": "Monthly check that backups of appdb are restorable.",
       "goal": "Dump, restore into a scratch database and compare row counts.",
       "steps": [
-        { "command": "pg_dump -U app -Fc -f appdb.dump appdb", "purpose": "Take the backup" },
-        { "command": "createdb -U app appdb_restore", "purpose": "Create a scratch database" },
-        { "command": "pg_restore -U app -j 4 -d appdb_restore appdb.dump", "purpose": "Restore in parallel" },
-        { "command": "psql -U app -d appdb_restore -c \"SELECT count(*) FROM orders;\"", "purpose": "Sanity check the data" }
+        {
+          "command": "pg_dump -U app -Fc -f appdb.dump appdb",
+          "purpose": "Take the backup",
+          "no_output": true,
+          "interpretation": "pg_dump is silent on success."
+        },
+        {
+          "command": "createdb -U app appdb_restore",
+          "purpose": "Create a scratch database",
+          "no_output": true,
+          "interpretation": "Empty database ready for the restore."
+        },
+        {
+          "command": "pg_restore -U app -j 4 -d appdb_restore appdb.dump",
+          "purpose": "Restore in parallel",
+          "no_output": true,
+          "interpretation": "Silent restore; errors would print and the exit code would be non-zero."
+        },
+        {
+          "command": "psql -U app -d appdb_restore -c \"SELECT count(*) FROM orders;\"",
+          "purpose": "Sanity check the data",
+          "output": "  count\n---------\n 1000210\n(1 row)",
+          "interpretation": "Row count matches production: the backup is usable."
+        }
       ],
-      "uses": ["postgresql.pg-dump", "postgresql.pg-restore", "postgresql.psql"],
-      "use_cases": [{ "title": "Audit requirement", "situation": "Prove backups are tested regularly.", "severity": "routine" }],
-      "tags": ["backup"]
+      "uses": [
+        "postgresql.pg-dump",
+        "postgresql.pg-restore",
+        "postgresql.psql"
+      ],
+      "use_cases": [
+        {
+          "title": "Audit requirement",
+          "situation": "Prove backups are tested regularly.",
+          "severity": "routine"
+        }
+      ],
+      "tags": [
+        "backup"
+      ]
     },
     {
       "id": "postgresql.connection-leak",
@@ -481,12 +1281,47 @@
       "context": "New connections fail with FATAL: sorry, too many clients already.",
       "goal": "Find the source of idle connections and free slots.",
       "steps": [
-        { "command": "SHOW max_connections;", "purpose": "Configured limit" },
-        { "command": "SELECT application_name, state, count(*) FROM pg_stat_activity\nGROUP BY 1, 2 ORDER BY 3 DESC;", "purpose": "Connections per app and state", "interpretation": "Many idle sessions from one app: missing pool or leak." },
-        { "command": "SELECT pg_terminate_backend(pid) FROM pg_stat_activity\nWHERE state = 'idle' AND state_change < now() - interval '1 hour';", "purpose": "Free long-idle sessions" }
+        {
+          "command": "SHOW max_connections;",
+          "purpose": "Configured limit",
+          "output": " max_connections\n-----------------\n 200",
+          "interpretation": "The server allows 200 connections in total."
+        },
+        {
+          "command": "SELECT application_name, state, count(*) FROM pg_stat_activity\nGROUP BY 1, 2 ORDER BY 3 DESC;",
+          "purpose": "Connections per app and state",
+          "interpretation": "Many idle sessions from one app: missing pool or leak.",
+          "output": " app_worker | idle | 162\n api        | idle |  21",
+          "output_notes": [
+            {
+              "token": "162",
+              "meaning": "Idle connections held by app_worker.",
+              "severity": "critical",
+              "anomaly": "One app holding most slots: pool too big or leaking."
+            }
+          ]
+        },
+        {
+          "command": "SELECT pg_terminate_backend(pid) FROM pg_stat_activity\nWHERE state = 'idle' AND state_change < now() - interval '1 hour';",
+          "purpose": "Free long-idle sessions",
+          "output": " pg_terminate_backend\n t\n t\n(148 rows)",
+          "interpretation": "Freed the long-idle sessions; fix the pool size to stop it recurring."
+        }
       ],
-      "uses": ["postgresql.pg-stat-activity", "postgresql.pg-terminate-backend"],
-      "tags": ["connections"]
+      "uses": [
+        "postgresql.pg-stat-activity",
+        "postgresql.pg-terminate-backend"
+      ],
+      "tags": [
+        "connections"
+      ],
+      "use_cases": [
+        {
+          "title": "App deploy doubled the pool",
+          "situation": "Each instance opens 50 connections; scaling out exhausted max_connections.",
+          "severity": "incident"
+        }
+      ]
     },
     {
       "id": "postgresql.read-only-user",
@@ -494,14 +1329,50 @@
       "context": "The BI team needs read access to appdb without write privileges.",
       "goal": "Create the role, grant connect and read rights, including future tables.",
       "steps": [
-        { "command": "CREATE ROLE report LOGIN PASSWORD 'change-me';", "purpose": "Create the login role" },
-        { "command": "GRANT CONNECT ON DATABASE appdb TO report;", "purpose": "Allow connecting" },
-        { "command": "GRANT USAGE ON SCHEMA public TO report;", "purpose": "Allow using the schema" },
-        { "command": "GRANT SELECT ON ALL TABLES IN SCHEMA public TO report;", "purpose": "Read existing tables" },
-        { "command": "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO report;", "purpose": "Read future tables" }
+        {
+          "command": "CREATE ROLE report LOGIN PASSWORD 'change-me';",
+          "purpose": "Create the login role",
+          "output": "CREATE ROLE",
+          "interpretation": "Login role created."
+        },
+        {
+          "command": "GRANT CONNECT ON DATABASE appdb TO report;",
+          "purpose": "Allow connecting",
+          "output": "GRANT",
+          "interpretation": "Allowed to connect to appdb."
+        },
+        {
+          "command": "GRANT USAGE ON SCHEMA public TO report;",
+          "purpose": "Allow using the schema",
+          "output": "GRANT",
+          "interpretation": "Allowed to see objects in public."
+        },
+        {
+          "command": "GRANT SELECT ON ALL TABLES IN SCHEMA public TO report;",
+          "purpose": "Read existing tables",
+          "output": "GRANT",
+          "interpretation": "Can read every existing table."
+        },
+        {
+          "command": "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO report;",
+          "purpose": "Read future tables",
+          "output": "ALTER DEFAULT PRIVILEGES",
+          "interpretation": "Tables created later by the same owner are readable too."
+        }
       ],
-      "uses": ["postgresql.roles"],
-      "tags": ["security"]
+      "uses": [
+        "postgresql.roles"
+      ],
+      "tags": [
+        "security"
+      ],
+      "use_cases": [
+        {
+          "title": "BI dashboards",
+          "situation": "A reporting tool needs read access without the risk of writes.",
+          "severity": "routine"
+        }
+      ]
     },
     {
       "id": "postgresql.table-bloat",
@@ -509,12 +1380,39 @@
       "context": "The events table keeps growing although old rows are deleted daily.",
       "goal": "Confirm dead tuples and vacuum the table.",
       "steps": [
-        { "command": "SELECT relname, n_dead_tup, last_autovacuum FROM pg_stat_user_tables\nWHERE relname = 'events';", "purpose": "Dead tuples and last autovacuum" },
-        { "command": "SELECT pg_size_pretty(pg_total_relation_size('events'));", "purpose": "Current size" },
-        { "command": "VACUUM (VERBOSE, ANALYZE) events;", "purpose": "Reclaim space for reuse", "interpretation": "Space becomes reusable inside the table; the file does not shrink without VACUUM FULL." }
+        {
+          "command": "SELECT relname, n_dead_tup, last_autovacuum FROM pg_stat_user_tables\nWHERE relname = 'events';",
+          "purpose": "Dead tuples and last autovacuum",
+          "output": " events | 9821004 | 2026-11-14 03:12:44+00",
+          "interpretation": "Millions of dead rows and no autovacuum for a week."
+        },
+        {
+          "command": "SELECT pg_size_pretty(pg_total_relation_size('events'));",
+          "purpose": "Current size",
+          "output": " 18 GB",
+          "interpretation": "Size before cleanup, for comparison."
+        },
+        {
+          "command": "VACUUM (VERBOSE, ANALYZE) events;",
+          "purpose": "Reclaim space for reuse",
+          "interpretation": "Space becomes reusable inside the table; the file does not shrink without VACUUM FULL.",
+          "output": "INFO:  finished vacuuming \"appdb.public.events\"\ntuples: 9821004 removed, 2100400 remain\nVACUUM"
+        }
       ],
-      "uses": ["postgresql.vacuum", "postgresql.sizes"],
-      "tags": ["maintenance"]
+      "uses": [
+        "postgresql.vacuum",
+        "postgresql.sizes"
+      ],
+      "tags": [
+        "maintenance"
+      ],
+      "use_cases": [
+        {
+          "title": "Disk alert on the database volume",
+          "situation": "The events table grows daily although rows are deleted on schedule.",
+          "severity": "incident"
+        }
+      ]
     }
   ]
 }

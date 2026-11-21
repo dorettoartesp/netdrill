@@ -20,6 +20,8 @@ export interface QueueItem {
   explanation?: string;
   /** Realistic terminal output for the drill, when provided. */
   output_sample?: string;
+  /** True when the command prints nothing on success (no sample output by design). */
+  no_output: boolean;
   /** Structured annotations of tokens in the output. */
   output_notes: OutputNote[];
   /** Production use cases of the command or procedure. */
@@ -124,6 +126,7 @@ export async function buildSessionQueue(
       isMultiLine: content.isMultiLine,
       explanation: content.explanation,
       output_sample: content.output,
+      no_output: content.noOutput,
       output_notes: content.outputNotes,
       use_cases: content.useCases,
       is_favorite: Boolean(row.is_favorite),

@@ -24,7 +24,7 @@ describe('buildAuthoringPrompt', () => {
   });
 
   it('states the authoring rules', () => {
-    for (const rule of ['English', 'under 80 characters', '"drill": false', 'stable ids', 'Do not invent flags', 'Output only the JSON']) {
+    for (const rule of ['English', 'under 80 characters', '"drill": false', 'stable ids', 'Do not invent flags', 'Output only the JSON', '"no_output": true', 'at least 3 use cases', 'interpretation']) {
       expect(prompt).toContain(rule);
     }
   });

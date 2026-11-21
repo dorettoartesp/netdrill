@@ -99,3 +99,18 @@ describe('deriveDrillContent', () => {
     expect(() => deriveDrillContent({ id: 'linux.ss#missing', kind: 'example', position: 0 }, ss)).toThrow();
   });
 });
+
+describe('deriveDrillContent no_output', () => {
+  it('marks examples that print nothing on success', () => {
+    const p = parse({
+      format: 'netdrill.pack/v1', topic: { slug: 'linux', title: 'Linux' },
+      commands: [{ id: 'linux.chmod', name: 'chmod', summary: 's', synopsis: 'chmod', description: 'd',
+        examples: [{ id: 'x', title: 'x', scenario: 's', command: 'chmod 600 key', no_output: true }] }],
+    });
+    expect(deriveDrillContent({ id: 'linux.chmod#x', kind: 'example', position: 0 }, p.commands[0]).noOutput).toBe(true);
+  });
+
+  it('marks a procedure silent only when every step is silent', () => {
+    expect(deriveDrillContent({ id: 'linux.oom', kind: 'procedure', position: 0 }, oom).noOutput).toBe(false);
+  });
+});

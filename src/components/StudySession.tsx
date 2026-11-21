@@ -490,6 +490,7 @@ export function StudySession({
               <AnnotatedOutput
                 command={currentItem.target}
                 segments={parsedStdout.segments}
+                noOutput={currentItem.no_output}
                 selectedKey={selectedMetricKey}
                 onSelect={setSelectedMetricKey}
               />

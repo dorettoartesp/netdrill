@@ -13,10 +13,26 @@
       "synopsis": "config system interface\n    edit <name>\n        set <option> <value>\n    next\nend",
       "description": "Web UI: Network › Interfaces › (double-click an interface). Sets the IP address, alias, role and which management protocols (ping, https, ssh) the interface accepts.",
       "flags": [
-        { "flag": "set ip", "argument": "<ip> <mask>", "description": "Interface address. Web UI: IP/Netmask field." },
-        { "flag": "set allowaccess", "argument": "<protocols>", "description": "Management access list; replaces the whole list. Web UI: Administrative Access checkboxes." },
-        { "flag": "set alias", "argument": "<text>", "description": "Friendly name. Web UI: Alias." },
-        { "flag": "set status", "argument": "up|down", "description": "Enable or disable the interface. Web UI: Status toggle." }
+        {
+          "flag": "set ip",
+          "argument": "<ip> <mask>",
+          "description": "Interface address. Web UI: IP/Netmask field."
+        },
+        {
+          "flag": "set allowaccess",
+          "argument": "<protocols>",
+          "description": "Management access list; replaces the whole list. Web UI: Administrative Access checkboxes."
+        },
+        {
+          "flag": "set alias",
+          "argument": "<text>",
+          "description": "Friendly name. Web UI: Alias."
+        },
+        {
+          "flag": "set status",
+          "argument": "up|down",
+          "description": "Enable or disable the interface. Web UI: Status toggle."
+        }
       ],
       "examples": [
         {
@@ -24,28 +40,51 @@
           "title": "Set the LAN address",
           "scenario": "Give port1 the address 192.168.10.1/24 (Web UI: Network › Interfaces › port1 › IP/Netmask).",
           "command": "config system interface\n    edit \"port1\"\n        set ip 192.168.10.1 255.255.255.0\n    next\nend",
-          "explanation": "edit enters the interface; next saves it; end leaves the config section."
+          "explanation": "edit enters the interface; next saves it; end leaves the config section.",
+          "no_output": true
         },
         {
           "id": "allowaccess",
           "title": "Management access",
           "scenario": "Allow ping, HTTPS and SSH on port1 (Web UI: Administrative Access checkboxes).",
           "command": "config system interface\n    edit \"port1\"\n        set allowaccess ping https ssh\n    next\nend",
-          "explanation": "allowaccess replaces the full list; include every protocol you want to keep."
+          "explanation": "allowaccess replaces the full list; include every protocol you want to keep.",
+          "no_output": true
         },
         {
           "id": "alias",
           "title": "Name the interface",
           "scenario": "Set the alias of port1 to LAN (Web UI: Alias field).",
-          "command": "config system interface\n    edit \"port1\"\n        set alias \"LAN\"\n    next\nend"
+          "command": "config system interface\n    edit \"port1\"\n        set alias \"LAN\"\n    next\nend",
+          "no_output": true
         }
       ],
       "use_cases": [
-        { "title": "Locked out of the GUI", "situation": "HTTPS was removed from allowaccess; restore it from the console.", "severity": "incident" }
+        {
+          "title": "Locked out of the GUI",
+          "situation": "HTTPS was removed from allowaccess; restore it from the console.",
+          "severity": "incident"
+        },
+        {
+          "title": "New LAN addressing",
+          "situation": "The office moves to 192.168.10.0/24 and the FortiGate keeps its old gateway address.",
+          "severity": "routine"
+        },
+        {
+          "title": "Ping to the gateway fails",
+          "situation": "Users cannot ping the FortiGate because ping is missing from allowaccess.",
+          "severity": "routine"
+        }
       ],
-      "pitfalls": ["Never remove https/ssh from the interface you are connected through."],
-      "related": ["fortigate.show"],
-      "tags": ["interfaces"]
+      "pitfalls": [
+        "Never remove https/ssh from the interface you are connected through."
+      ],
+      "related": [
+        "fortigate.show"
+      ],
+      "tags": [
+        "interfaces"
+      ]
     },
     {
       "id": "fortigate.firewall-address",
@@ -54,36 +93,73 @@
       "synopsis": "config firewall address\n    edit <name>\n        set subnet <ip> <mask>\n    next\nend",
       "description": "Web UI: Policy & Objects › Addresses › Create New › Address. Objects are referenced by name in policies.",
       "flags": [
-        { "flag": "set subnet", "argument": "<ip> <mask>", "description": "Host (/32) or network. Web UI: IP/Netmask." },
-        { "flag": "set type fqdn", "description": "Resolve by DNS name. Web UI: Type = FQDN." },
-        { "flag": "set fqdn", "argument": "<name>", "description": "The DNS name." },
-        { "flag": "set comment", "argument": "<text>", "description": "Free-text comment." }
+        {
+          "flag": "set subnet",
+          "argument": "<ip> <mask>",
+          "description": "Host (/32) or network. Web UI: IP/Netmask."
+        },
+        {
+          "flag": "set type fqdn",
+          "description": "Resolve by DNS name. Web UI: Type = FQDN."
+        },
+        {
+          "flag": "set fqdn",
+          "argument": "<name>",
+          "description": "The DNS name."
+        },
+        {
+          "flag": "set comment",
+          "argument": "<text>",
+          "description": "Free-text comment."
+        }
       ],
       "examples": [
         {
           "id": "host",
           "title": "Host object",
           "scenario": "Create an address srv-web for host 10.0.10.20 (Web UI: Addresses › Create New › Address).",
-          "command": "config firewall address\n    edit \"srv-web\"\n        set subnet 10.0.10.20 255.255.255.255\n    next\nend"
+          "command": "config firewall address\n    edit \"srv-web\"\n        set subnet 10.0.10.20 255.255.255.255\n    next\nend",
+          "no_output": true
         },
         {
           "id": "subnet",
           "title": "Subnet object",
           "scenario": "Create an address net-servers for 10.0.10.0/24.",
-          "command": "config firewall address\n    edit \"net-servers\"\n        set subnet 10.0.10.0 255.255.255.0\n    next\nend"
+          "command": "config firewall address\n    edit \"net-servers\"\n        set subnet 10.0.10.0 255.255.255.0\n    next\nend",
+          "no_output": true
         },
         {
           "id": "fqdn",
           "title": "FQDN object",
           "scenario": "Create an FQDN address api-partner for api.example.com (Web UI: Type = FQDN).",
-          "command": "config firewall address\n    edit \"api-partner\"\n        set type fqdn\n        set fqdn \"api.example.com\"\n    next\nend"
+          "command": "config firewall address\n    edit \"api-partner\"\n        set type fqdn\n        set fqdn \"api.example.com\"\n    next\nend",
+          "no_output": true
         }
       ],
       "use_cases": [
-        { "title": "New server", "situation": "Create the object before writing the policy that allows it.", "severity": "routine" }
+        {
+          "title": "New server",
+          "situation": "Create the object before writing the policy that allows it.",
+          "severity": "routine"
+        },
+        {
+          "title": "Partner API changes IPs",
+          "situation": "Use an FQDN object so the policy follows DNS instead of hard-coded addresses.",
+          "severity": "routine"
+        },
+        {
+          "title": "Audit readability",
+          "situation": "Named objects make policies readable for reviewers instead of raw IPs.",
+          "severity": "routine"
+        }
       ],
-      "related": ["fortigate.firewall-addrgrp", "fortigate.firewall-policy"],
-      "tags": ["objects"]
+      "related": [
+        "fortigate.firewall-addrgrp",
+        "fortigate.firewall-policy"
+      ],
+      "tags": [
+        "objects"
+      ]
     },
     {
       "id": "fortigate.firewall-addrgrp",
@@ -92,29 +168,57 @@
       "synopsis": "config firewall addrgrp\n    edit <name>\n        set member <addr> ...\n    next\nend",
       "description": "Web UI: Policy & Objects › Addresses › Create New › Address Group. One policy can then cover many objects.",
       "flags": [
-        { "flag": "set member", "argument": "<names>", "description": "Replaces the member list. Web UI: Members." },
-        { "flag": "append member", "argument": "<name>", "description": "Adds members without retyping the list." }
+        {
+          "flag": "set member",
+          "argument": "<names>",
+          "description": "Replaces the member list. Web UI: Members."
+        },
+        {
+          "flag": "append member",
+          "argument": "<name>",
+          "description": "Adds members without retyping the list."
+        }
       ],
       "examples": [
         {
           "id": "create",
           "title": "Create a group",
           "scenario": "Create grp-web with members srv-web1 and srv-web2 (Web UI: Address Group › Members).",
-          "command": "config firewall addrgrp\n    edit \"grp-web\"\n        set member \"srv-web1\" \"srv-web2\"\n    next\nend"
+          "command": "config firewall addrgrp\n    edit \"grp-web\"\n        set member \"srv-web1\" \"srv-web2\"\n    next\nend",
+          "no_output": true
         },
         {
           "id": "append",
           "title": "Add a member",
           "scenario": "Add srv-web3 to grp-web without removing the existing members.",
           "command": "config firewall addrgrp\n    edit \"grp-web\"\n        append member \"srv-web3\"\n    next\nend",
-          "explanation": "set member would replace the list; append adds to it."
+          "explanation": "set member would replace the list; append adds to it.",
+          "no_output": true
         }
       ],
       "use_cases": [
-        { "title": "Scale out", "situation": "A new web server joins the pool already allowed by policy.", "severity": "routine" }
+        {
+          "title": "Scale out",
+          "situation": "A new web server joins the pool already allowed by policy.",
+          "severity": "routine"
+        },
+        {
+          "title": "Policy sprawl",
+          "situation": "Replace five near-identical policies with one policy using a group.",
+          "severity": "routine"
+        },
+        {
+          "title": "Server replaced",
+          "situation": "Swap a member in the group; every policy using it follows.",
+          "severity": "routine"
+        }
       ],
-      "related": ["fortigate.firewall-address"],
-      "tags": ["objects"]
+      "related": [
+        "fortigate.firewall-address"
+      ],
+      "tags": [
+        "objects"
+      ]
     },
     {
       "id": "fortigate.service-custom",
@@ -123,28 +227,56 @@
       "synopsis": "config firewall service custom\n    edit <name>\n        set tcp-portrange <ports>\n    next\nend",
       "description": "Web UI: Policy & Objects › Services › Create New › Service. Built-in services (HTTP, HTTPS, SSH, DNS…) already exist.",
       "flags": [
-        { "flag": "set tcp-portrange", "argument": "<port[-port]>", "description": "TCP destination ports." },
-        { "flag": "set udp-portrange", "argument": "<port[-port]>", "description": "UDP destination ports." }
+        {
+          "flag": "set tcp-portrange",
+          "argument": "<port[-port]>",
+          "description": "TCP destination ports."
+        },
+        {
+          "flag": "set udp-portrange",
+          "argument": "<port[-port]>",
+          "description": "UDP destination ports."
+        }
       ],
       "examples": [
         {
           "id": "tcp",
           "title": "TCP service",
           "scenario": "Create a service TCP-8443 for TCP port 8443 (Web UI: Services › Create New).",
-          "command": "config firewall service custom\n    edit \"TCP-8443\"\n        set tcp-portrange 8443\n    next\nend"
+          "command": "config firewall service custom\n    edit \"TCP-8443\"\n        set tcp-portrange 8443\n    next\nend",
+          "no_output": true
         },
         {
           "id": "udp-range",
           "title": "UDP range",
           "scenario": "Create a service RTP-media for UDP ports 10000 to 20000.",
-          "command": "config firewall service custom\n    edit \"RTP-media\"\n        set udp-portrange 10000-20000\n    next\nend"
+          "command": "config firewall service custom\n    edit \"RTP-media\"\n        set udp-portrange 10000-20000\n    next\nend",
+          "no_output": true
         }
       ],
       "use_cases": [
-        { "title": "Application on a non-standard port", "situation": "Allow only the port the application uses instead of ALL.", "severity": "routine" }
+        {
+          "title": "Application on a non-standard port",
+          "situation": "Allow only the port the application uses instead of ALL.",
+          "severity": "routine"
+        },
+        {
+          "title": "Policy allows ALL",
+          "situation": "Tighten a policy that used service ALL to the single port the application needs.",
+          "severity": "incident"
+        },
+        {
+          "title": "VoIP media ports",
+          "situation": "Allow the RTP range used by the PBX between voice VLAN and provider.",
+          "severity": "routine"
+        }
       ],
-      "related": ["fortigate.firewall-policy"],
-      "tags": ["objects"]
+      "related": [
+        "fortigate.firewall-policy"
+      ],
+      "tags": [
+        "objects"
+      ]
     },
     {
       "id": "fortigate.firewall-policy",
@@ -153,49 +285,98 @@
       "synopsis": "config firewall policy\n    edit <id>\n        set <option> <value>\n    next\nend",
       "description": "Web UI: Policy & Objects › Firewall Policy › Create New. Policies are evaluated top-down; the first match wins. 'edit 0' creates a policy with the next free ID.",
       "flags": [
-        { "flag": "set srcintf / dstintf", "description": "Incoming and outgoing interfaces. Web UI: Incoming/Outgoing Interface." },
-        { "flag": "set srcaddr / dstaddr", "description": "Address objects. Web UI: Source/Destination." },
-        { "flag": "set service", "description": "Services. Web UI: Service." },
-        { "flag": "set action", "argument": "accept|deny", "description": "Web UI: Action." },
-        { "flag": "set schedule", "description": "Usually \"always\". Web UI: Schedule." },
-        { "flag": "set nat enable", "description": "Source NAT to the outgoing interface IP. Web UI: NAT toggle." },
-        { "flag": "set logtraffic all", "description": "Log all sessions. Web UI: Log Allowed Traffic = All Sessions." },
-        { "flag": "set status disable", "description": "Disable without deleting. Web UI: right-click › Set Status." }
+        {
+          "flag": "set srcintf / dstintf",
+          "description": "Incoming and outgoing interfaces. Web UI: Incoming/Outgoing Interface."
+        },
+        {
+          "flag": "set srcaddr / dstaddr",
+          "description": "Address objects. Web UI: Source/Destination."
+        },
+        {
+          "flag": "set service",
+          "description": "Services. Web UI: Service."
+        },
+        {
+          "flag": "set action",
+          "argument": "accept|deny",
+          "description": "Web UI: Action."
+        },
+        {
+          "flag": "set schedule",
+          "description": "Usually \"always\". Web UI: Schedule."
+        },
+        {
+          "flag": "set nat enable",
+          "description": "Source NAT to the outgoing interface IP. Web UI: NAT toggle."
+        },
+        {
+          "flag": "set logtraffic all",
+          "description": "Log all sessions. Web UI: Log Allowed Traffic = All Sessions."
+        },
+        {
+          "flag": "set status disable",
+          "description": "Disable without deleting. Web UI: right-click › Set Status."
+        }
       ],
       "examples": [
         {
           "id": "lan-to-wan",
           "title": "LAN to Internet (HTTPS)",
           "scenario": "Allow HTTPS from lan to wan1 with NAT (Web UI: Firewall Policy › Create New).",
-          "command": "config firewall policy\n    edit 0\n        set name \"lan-to-wan-https\"\n        set srcintf \"lan\"\n        set dstintf \"wan1\"\n        set srcaddr \"all\"\n        set dstaddr \"all\"\n        set service \"HTTPS\"\n        set action accept\n        set schedule \"always\"\n        set nat enable\n    next\nend"
+          "command": "config firewall policy\n    edit 0\n        set name \"lan-to-wan-https\"\n        set srcintf \"lan\"\n        set dstintf \"wan1\"\n        set srcaddr \"all\"\n        set dstaddr \"all\"\n        set service \"HTTPS\"\n        set action accept\n        set schedule \"always\"\n        set nat enable\n    next\nend",
+          "no_output": true
         },
         {
           "id": "disable",
           "title": "Disable a policy",
           "scenario": "Temporarily disable policy 5 without deleting it (Web UI: right-click › Set Status › Disable).",
-          "command": "config firewall policy\n    edit 5\n        set status disable\n    next\nend"
+          "command": "config firewall policy\n    edit 5\n        set status disable\n    next\nend",
+          "no_output": true
         },
         {
           "id": "move",
           "title": "Reorder policies",
           "scenario": "Move policy 7 above policy 2 (Web UI: drag the row in the policy list).",
           "command": "config firewall policy\n    move 7 before 2\nend",
-          "explanation": "Order matters: the first matching policy is applied."
+          "explanation": "Order matters: the first matching policy is applied.",
+          "no_output": true
         },
         {
           "id": "log-all",
           "title": "Log every session",
           "scenario": "Make policy 5 log all sessions, not only security events.",
-          "command": "config firewall policy\n    edit 5\n        set logtraffic all\n    next\nend"
+          "command": "config firewall policy\n    edit 5\n        set logtraffic all\n    next\nend",
+          "no_output": true
         }
       ],
       "use_cases": [
-        { "title": "New application access", "situation": "Open exactly one service between two zones.", "severity": "routine" },
-        { "title": "Traffic blocked unexpectedly", "situation": "A broader deny above the new policy matches first; reorder.", "severity": "incident" }
+        {
+          "title": "New application access",
+          "situation": "Open exactly one service between two zones.",
+          "severity": "routine"
+        },
+        {
+          "title": "Traffic blocked unexpectedly",
+          "situation": "A broader deny above the new policy matches first; reorder.",
+          "severity": "incident"
+        },
+        {
+          "title": "Emergency block",
+          "situation": "Disable a policy immediately during a security incident without losing its configuration.",
+          "severity": "critical"
+        }
       ],
-      "pitfalls": ["A new policy is appended at the bottom; check that no earlier policy matches first."],
-      "related": ["fortigate.firewall-address", "fortigate.debug-flow"],
-      "tags": ["policy"]
+      "pitfalls": [
+        "A new policy is appended at the bottom; check that no earlier policy matches first."
+      ],
+      "related": [
+        "fortigate.firewall-address",
+        "fortigate.debug-flow"
+      ],
+      "tags": [
+        "policy"
+      ]
     },
     {
       "id": "fortigate.router-static",
@@ -204,30 +385,66 @@
       "synopsis": "config router static\n    edit <id>\n        set dst <ip> <mask>\n        set gateway <ip>\n        set device <iface>\n    next\nend",
       "description": "Web UI: Network › Static Routes › Create New. 'edit 0' adds a route with the next free ID; without dst it is the default route.",
       "flags": [
-        { "flag": "set dst", "argument": "<ip> <mask>", "description": "Destination. Web UI: Destination." },
-        { "flag": "set gateway", "argument": "<ip>", "description": "Next hop. Web UI: Gateway Address." },
-        { "flag": "set device", "argument": "<iface>", "description": "Outgoing interface. Web UI: Interface." },
-        { "flag": "set distance", "argument": "<n>", "description": "Administrative distance (lower wins)." }
+        {
+          "flag": "set dst",
+          "argument": "<ip> <mask>",
+          "description": "Destination. Web UI: Destination."
+        },
+        {
+          "flag": "set gateway",
+          "argument": "<ip>",
+          "description": "Next hop. Web UI: Gateway Address."
+        },
+        {
+          "flag": "set device",
+          "argument": "<iface>",
+          "description": "Outgoing interface. Web UI: Interface."
+        },
+        {
+          "flag": "set distance",
+          "argument": "<n>",
+          "description": "Administrative distance (lower wins)."
+        }
       ],
       "examples": [
         {
           "id": "default",
           "title": "Default route",
           "scenario": "Send all Internet traffic to 203.0.113.1 via wan1 (Web UI: Static Routes › Create New, Destination 0.0.0.0/0).",
-          "command": "config router static\n    edit 0\n        set gateway 203.0.113.1\n        set device \"wan1\"\n    next\nend"
+          "command": "config router static\n    edit 0\n        set gateway 203.0.113.1\n        set device \"wan1\"\n    next\nend",
+          "no_output": true
         },
         {
           "id": "subnet",
           "title": "Route to a branch network",
           "scenario": "Reach 10.20.0.0/16 through 192.168.1.254 on port2.",
-          "command": "config router static\n    edit 0\n        set dst 10.20.0.0 255.255.0.0\n        set gateway 192.168.1.254\n        set device \"port2\"\n    next\nend"
+          "command": "config router static\n    edit 0\n        set dst 10.20.0.0 255.255.0.0\n        set gateway 192.168.1.254\n        set device \"port2\"\n    next\nend",
+          "no_output": true
         }
       ],
       "use_cases": [
-        { "title": "New remote site", "situation": "Add the route before the policy, or replies will leave by the default route.", "severity": "routine" }
+        {
+          "title": "New remote site",
+          "situation": "Add the route before the policy, or replies will leave by the default route.",
+          "severity": "routine"
+        },
+        {
+          "title": "ISP change",
+          "situation": "Point the default route to the new ISP gateway on wan1.",
+          "severity": "incident"
+        },
+        {
+          "title": "Replies take the wrong path",
+          "situation": "Traffic to a branch leaves by the Internet because the static route is missing.",
+          "severity": "incident"
+        }
       ],
-      "related": ["fortigate.routing-table"],
-      "tags": ["routing"]
+      "related": [
+        "fortigate.routing-table"
+      ],
+      "tags": [
+        "routing"
+      ]
     },
     {
       "id": "fortigate.firewall-vip",
@@ -236,33 +453,73 @@
       "synopsis": "config firewall vip\n    edit <name>\n        set extip <ip>\n        set mappedip <ip>\n    next\nend",
       "description": "Web UI: Policy & Objects › Virtual IPs › Create New. Maps a public address/port to an internal server; a policy with the VIP as destination is still required.",
       "flags": [
-        { "flag": "set extip", "argument": "<ip>", "description": "Public address. Web UI: External IP address." },
-        { "flag": "set extintf", "argument": "<iface>", "description": "Interface receiving the traffic. Web UI: Interface." },
-        { "flag": "set mappedip", "argument": "<ip>", "description": "Internal server. Web UI: Map to IPv4 address." },
-        { "flag": "set portforward enable", "description": "Translate a port. Web UI: Port Forwarding toggle." },
-        { "flag": "set extport / mappedport", "description": "External and internal ports." }
+        {
+          "flag": "set extip",
+          "argument": "<ip>",
+          "description": "Public address. Web UI: External IP address."
+        },
+        {
+          "flag": "set extintf",
+          "argument": "<iface>",
+          "description": "Interface receiving the traffic. Web UI: Interface."
+        },
+        {
+          "flag": "set mappedip",
+          "argument": "<ip>",
+          "description": "Internal server. Web UI: Map to IPv4 address."
+        },
+        {
+          "flag": "set portforward enable",
+          "description": "Translate a port. Web UI: Port Forwarding toggle."
+        },
+        {
+          "flag": "set extport / mappedport",
+          "description": "External and internal ports."
+        }
       ],
       "examples": [
         {
           "id": "https-forward",
           "title": "Publish an internal web server",
           "scenario": "Forward 203.0.113.10:443 on wan1 to 10.0.10.20:443 (Web UI: Virtual IPs › Create New, Port Forwarding on).",
-          "command": "config firewall vip\n    edit \"vip-web\"\n        set extip 203.0.113.10\n        set extintf \"wan1\"\n        set mappedip \"10.0.10.20\"\n        set portforward enable\n        set extport 443\n        set mappedport 443\n    next\nend"
+          "command": "config firewall vip\n    edit \"vip-web\"\n        set extip 203.0.113.10\n        set extintf \"wan1\"\n        set mappedip \"10.0.10.20\"\n        set portforward enable\n        set extport 443\n        set mappedport 443\n    next\nend",
+          "no_output": true
         },
         {
           "id": "policy",
           "title": "Policy for the VIP",
           "scenario": "Allow HTTPS from wan1 to the VIP vip-web on internal interface lan.",
           "command": "config firewall policy\n    edit 0\n        set name \"wan-to-web\"\n        set srcintf \"wan1\"\n        set dstintf \"lan\"\n        set srcaddr \"all\"\n        set dstaddr \"vip-web\"\n        set service \"HTTPS\"\n        set action accept\n        set schedule \"always\"\n    next\nend",
-          "explanation": "The destination is the VIP object, not the server's internal address."
+          "explanation": "The destination is the VIP object, not the server's internal address.",
+          "no_output": true
         }
       ],
       "use_cases": [
-        { "title": "Publish a service", "situation": "Expose an internal server on one public port only.", "severity": "routine" }
+        {
+          "title": "Publish a service",
+          "situation": "Expose an internal server on one public port only.",
+          "severity": "routine"
+        },
+        {
+          "title": "VIP without policy",
+          "situation": "The VIP exists but connections time out: no inbound policy references it.",
+          "severity": "incident"
+        },
+        {
+          "title": "Move a published server",
+          "situation": "Change only mappedip when the internal server gets a new address.",
+          "severity": "routine"
+        }
       ],
-      "pitfalls": ["Without the matching policy the VIP does nothing; NAT is usually disabled on inbound VIP policies."],
-      "related": ["fortigate.firewall-policy"],
-      "tags": ["nat"]
+      "pitfalls": [
+        "Without the matching policy the VIP does nothing; NAT is usually disabled on inbound VIP policies."
+      ],
+      "related": [
+        "fortigate.firewall-policy"
+      ],
+      "tags": [
+        "nat"
+      ]
     },
     {
       "id": "fortigate.system-dns",
@@ -276,13 +533,30 @@
           "title": "Set DNS servers",
           "scenario": "Use 1.1.1.1 and 8.8.8.8 as DNS servers (Web UI: Network › DNS › Specify).",
           "command": "config system dns\n    set primary 1.1.1.1\n    set secondary 8.8.8.8\nend",
-          "explanation": "This section has no edit/next: it is a single global setting."
+          "explanation": "This section has no edit/next: it is a single global setting.",
+          "no_output": true
         }
       ],
       "use_cases": [
-        { "title": "FQDN objects unresolved", "situation": "FQDN addresses stay empty when DNS servers are unreachable.", "severity": "incident" }
+        {
+          "title": "FQDN objects unresolved",
+          "situation": "FQDN addresses stay empty when DNS servers are unreachable.",
+          "severity": "incident"
+        },
+        {
+          "title": "FortiGuard updates failing",
+          "situation": "Signature updates fail because the configured DNS servers are unreachable.",
+          "severity": "incident"
+        },
+        {
+          "title": "Internal names",
+          "situation": "Point the FortiGate to the internal DNS so FQDN objects resolve private names.",
+          "severity": "routine"
+        }
       ],
-      "tags": ["dns"]
+      "tags": [
+        "dns"
+      ]
     },
     {
       "id": "fortigate.show",
@@ -291,18 +565,86 @@
       "synopsis": "show [full-configuration] <section> [entry]",
       "description": "Prints configuration in CLI format. Web UI equivalent: the edit page of each object, or the configuration backup (admin menu › Configuration › Backup).",
       "flags": [
-        { "flag": "full-configuration", "description": "Include default values, not only changed ones." },
-        { "flag": "| grep", "argument": "<text>", "description": "Filter the output lines." }
+        {
+          "flag": "full-configuration",
+          "description": "Include default values, not only changed ones."
+        },
+        {
+          "flag": "| grep",
+          "argument": "<text>",
+          "description": "Filter the output lines."
+        }
       ],
       "examples": [
-        { "id": "policy", "title": "One policy", "scenario": "Show the configuration of firewall policy 5.", "command": "show firewall policy 5" },
-        { "id": "interface-full", "title": "Interface with defaults", "scenario": "Show port1 including default values.", "command": "show full-configuration system interface port1" },
-        { "id": "grep", "title": "Search the configuration", "scenario": "Find where srv-web is referenced in firewall policies.", "command": "show firewall policy | grep -f srv-web", "explanation": "-f prints the whole matching block, not just the line." }
+        {
+          "id": "policy",
+          "title": "One policy",
+          "scenario": "Show the configuration of firewall policy 5.",
+          "command": "show firewall policy 5",
+          "output": "config firewall policy\n    edit 5\n        set name \"lan-to-wan-https\"\n        set srcintf \"lan\"\n        set dstintf \"wan1\"\n        set action accept\n        set srcaddr \"all\"\n        set dstaddr \"all\"\n        set schedule \"always\"\n        set service \"HTTPS\"\n        set nat enable\n    next\nend",
+          "output_notes": [
+            {
+              "token": "set nat enable",
+              "meaning": "Source NAT to the wan1 address.",
+              "severity": "warning",
+              "normal": "Enabled for LAN to Internet.",
+              "anomaly": "Disabled on Internet policies: replies never come back."
+            }
+          ]
+        },
+        {
+          "id": "interface-full",
+          "title": "Interface with defaults",
+          "scenario": "Show port1 including default values.",
+          "command": "show full-configuration system interface port1",
+          "output": "config system interface\n    edit \"port1\"\n        set vdom \"root\"\n        set ip 192.168.10.1 255.255.255.0\n        set allowaccess ping https ssh\n        set status up\n        set mtu 1500\n    next\nend",
+          "output_notes": [
+            {
+              "token": "set allowaccess ping https ssh",
+              "meaning": "Management protocols accepted on this interface.",
+              "severity": "critical",
+              "normal": "Only what is needed, on trusted interfaces.",
+              "anomaly": "https/ssh on wan1: management exposed to the Internet."
+            }
+          ]
+        },
+        {
+          "id": "grep",
+          "title": "Search the configuration",
+          "scenario": "Find where srv-web is referenced in firewall policies.",
+          "command": "show firewall policy | grep -f srv-web",
+          "explanation": "-f prints the whole matching block, not just the line.",
+          "output": "config firewall policy\n    edit 12\n        set name \"lan-to-web\"\n        set dstaddr \"srv-web\"\n    next\nend",
+          "output_notes": [
+            {
+              "token": "edit 12",
+              "meaning": "Policy 12 references srv-web.",
+              "severity": "info",
+              "anomaly": "Delete the object only after updating these policies."
+            }
+          ]
+        }
       ],
       "use_cases": [
-        { "title": "Change review", "situation": "Read the exact configuration before and after an edit.", "severity": "routine" }
+        {
+          "title": "Change review",
+          "situation": "Read the exact configuration before and after an edit.",
+          "severity": "routine"
+        },
+        {
+          "title": "Before and after a change",
+          "situation": "Save show output before editing to compare and roll back exactly.",
+          "severity": "routine"
+        },
+        {
+          "title": "Where is this object used?",
+          "situation": "Find every policy referencing an address before deleting it.",
+          "severity": "routine"
+        }
       ],
-      "tags": ["config"]
+      "tags": [
+        "config"
+      ]
     },
     {
       "id": "fortigate.system-status",
@@ -318,14 +660,36 @@
           "command": "get system status",
           "output": "Version: FortiGate-60F v7.4.4,build2662,240514 (GA.F)\nSerial-Number: FGT60FTK2209XXXX\nOperation Mode: NAT",
           "output_notes": [
-            { "token": "v7.4.4", "meaning": "Running FortiOS version.", "normal": "A supported GA release.", "anomaly": "End-of-support branch or a build with known PSIRT advisories.", "severity": "info" }
+            {
+              "token": "v7.4.4",
+              "meaning": "Running FortiOS version.",
+              "normal": "A supported GA release.",
+              "anomaly": "End-of-support branch or a build with known PSIRT advisories.",
+              "severity": "info"
+            }
           ]
         }
       ],
       "use_cases": [
-        { "title": "Before an upgrade or a support ticket", "situation": "Confirm the exact build and serial.", "severity": "routine" }
+        {
+          "title": "Before an upgrade or a support ticket",
+          "situation": "Confirm the exact build and serial.",
+          "severity": "routine"
+        },
+        {
+          "title": "Support ticket",
+          "situation": "Fortinet support asks for the exact build and serial.",
+          "severity": "routine"
+        },
+        {
+          "title": "Vulnerability advisory",
+          "situation": "Check whether the running version is affected by a published PSIRT.",
+          "severity": "critical"
+        }
       ],
-      "tags": ["system"]
+      "tags": [
+        "system"
+      ]
     },
     {
       "id": "fortigate.routing-table",
@@ -334,14 +698,69 @@
       "synopsis": "get router info routing-table [all|details <ip>]",
       "description": "Web UI: Dashboard › Network › Routing widget (or the Static & Dynamic Routing monitor). Shows the routes actually in use.",
       "examples": [
-        { "id": "all", "title": "All routes", "scenario": "Display the full active routing table.", "command": "get router info routing-table all" },
-        { "id": "details", "title": "Route for one destination", "scenario": "Which route is used to reach 10.20.0.5?", "command": "get router info routing-table details 10.20.0.5" }
+        {
+          "id": "all",
+          "title": "All routes",
+          "scenario": "Display the full active routing table.",
+          "command": "get router info routing-table all",
+          "output": "Routing table for VRF=0\nS*      0.0.0.0/0 [10/0] via 203.0.113.1, wan1, [1/0]\nC       192.168.10.0/24 is directly connected, port1\nS       10.20.0.0/16 [10/0] via 192.168.1.254, port2, [1/0]",
+          "output_notes": [
+            {
+              "token": "S*",
+              "meaning": "Static route that is a candidate default.",
+              "severity": "info",
+              "normal": "One active default route.",
+              "anomaly": "Missing S*: no Internet access."
+            },
+            {
+              "token": "[10/0]",
+              "meaning": "Administrative distance / metric.",
+              "severity": "info",
+              "normal": "10 for static routes.",
+              "anomaly": "Equal distance on two defaults: ECMP or flapping."
+            }
+          ]
+        },
+        {
+          "id": "details",
+          "title": "Route for one destination",
+          "scenario": "Which route is used to reach 10.20.0.5?",
+          "command": "get router info routing-table details 10.20.0.5",
+          "output": "Routing table for VRF=0\nRouting entry for 10.20.0.0/16\n  Known via \"static\", distance 10, metric 0, best\n  * vrf 0 192.168.1.254, via port2",
+          "output_notes": [
+            {
+              "token": "best",
+              "meaning": "This route is selected.",
+              "severity": "info",
+              "normal": "best",
+              "anomaly": "Absent: another route wins."
+            }
+          ]
+        }
       ],
       "use_cases": [
-        { "title": "Branch unreachable", "situation": "Confirm the static route is active and not overridden.", "severity": "incident" }
+        {
+          "title": "Branch unreachable",
+          "situation": "Confirm the static route is active and not overridden.",
+          "severity": "incident"
+        },
+        {
+          "title": "Two default routes",
+          "situation": "After adding a second ISP, check which default route is active.",
+          "severity": "incident"
+        },
+        {
+          "title": "VPN route missing",
+          "situation": "Confirm the route to the remote subnet is installed while the tunnel is up.",
+          "severity": "incident"
+        }
       ],
-      "related": ["fortigate.router-static"],
-      "tags": ["routing"]
+      "related": [
+        "fortigate.router-static"
+      ],
+      "tags": [
+        "routing"
+      ]
     },
     {
       "id": "fortigate.session-list",
@@ -354,15 +773,61 @@
           "id": "filter-list",
           "title": "Sessions to a server",
           "scenario": "List sessions whose destination is 10.0.10.20 (Web UI: FortiView Sessions, filter by destination).",
-          "command": "diagnose sys session filter dst 10.0.10.20\ndiagnose sys session list"
+          "command": "diagnose sys session filter dst 10.0.10.20\ndiagnose sys session list",
+          "output": "session info: proto=6 proto_state=01 duration=12 expire=3587 timeout=3600\npolicy_id=12 policy_dir=0 tunnel=/\norgin->sink: org pre->post, reply pre->post dev=5->7/7->5\nhook=pre dir=org act=dnat 198.51.100.7:51544->203.0.113.10:443(10.0.10.20:443)\ntotal session 1",
+          "output_notes": [
+            {
+              "token": "policy_id=12",
+              "meaning": "Policy that accepted the session.",
+              "severity": "warning",
+              "normal": "The policy you expect.",
+              "anomaly": "Another policy ID: an earlier rule matches first."
+            },
+            {
+              "token": "act=dnat",
+              "meaning": "Destination NAT applied (VIP).",
+              "severity": "info"
+            },
+            {
+              "token": "proto_state=01",
+              "meaning": "TCP established.",
+              "severity": "warning",
+              "normal": "01 for working TCP sessions.",
+              "anomaly": "Stuck in SYN states (e.g. 02): no reply from the server."
+            }
+          ]
         },
-        { "id": "clear-filter", "title": "Reset the filter", "scenario": "Clear the session filter after troubleshooting.", "command": "diagnose sys session filter clear" }
+        {
+          "id": "clear-filter",
+          "title": "Reset the filter",
+          "scenario": "Clear the session filter after troubleshooting.",
+          "command": "diagnose sys session filter clear",
+          "no_output": true
+        }
       ],
       "use_cases": [
-        { "title": "Is traffic passing?", "situation": "Confirm sessions exist for a flow and which policy they matched.", "severity": "incident" }
+        {
+          "title": "Is traffic passing?",
+          "situation": "Confirm sessions exist for a flow and which policy they matched.",
+          "severity": "incident"
+        },
+        {
+          "title": "Published server unreachable",
+          "situation": "No session appears for the VIP: traffic does not reach the policy.",
+          "severity": "incident"
+        },
+        {
+          "title": "Policy cleanup",
+          "situation": "See which policy IDs real traffic matches before removing old rules.",
+          "severity": "routine"
+        }
       ],
-      "pitfalls": ["Listing without a filter on a busy unit prints thousands of sessions."],
-      "tags": ["diagnostics"]
+      "pitfalls": [
+        "Listing without a filter on a busy unit prints thousands of sessions."
+      ],
+      "tags": [
+        "diagnostics"
+      ]
     },
     {
       "id": "fortigate.debug-flow",
@@ -378,17 +843,50 @@
           "command": "diagnose debug reset\ndiagnose debug flow filter addr 10.0.10.20\ndiagnose debug flow show function-name enable\ndiagnose debug flow trace start 20\ndiagnose debug enable",
           "output": "id=65308 trace_id=1 func=print_pkt_detail line=5845 msg=\"vd-root:0 received a packet(proto=6, 192.168.10.50:51544->10.0.10.20:443)\"\nid=65308 trace_id=1 func=fw_forward_handler line=881 msg=\"Denied by forward policy check (policy 0)\"",
           "output_notes": [
-            { "token": "Denied by forward policy check (policy 0)", "meaning": "No policy matched; the implicit deny dropped it.", "normal": "Allowed by policy N", "anomaly": "policy 0: create or reorder a policy.", "severity": "critical" }
+            {
+              "token": "Denied by forward policy check (policy 0)",
+              "meaning": "No policy matched; the implicit deny dropped it.",
+              "normal": "Allowed by policy N",
+              "anomaly": "policy 0: create or reorder a policy.",
+              "severity": "critical"
+            }
           ]
         },
-        { "id": "stop", "title": "Stop debugging", "scenario": "Turn debugging off and clear the filters.", "command": "diagnose debug disable\ndiagnose debug reset" }
+        {
+          "id": "stop",
+          "title": "Stop debugging",
+          "scenario": "Turn debugging off and clear the filters.",
+          "command": "diagnose debug disable\ndiagnose debug reset",
+          "no_output": true
+        }
       ],
       "use_cases": [
-        { "title": "Why is it blocked?", "situation": "Prove whether routing, policy or NAT drops the flow.", "severity": "incident" }
+        {
+          "title": "Why is it blocked?",
+          "situation": "Prove whether routing, policy or NAT drops the flow.",
+          "severity": "incident"
+        },
+        {
+          "title": "Asymmetric routing",
+          "situation": "Debug flow shows 'reverse path check fail' when replies return on another interface.",
+          "severity": "incident"
+        },
+        {
+          "title": "Prove a fix",
+          "situation": "Re-run the trace after a policy change to show the traffic is now allowed.",
+          "severity": "routine"
+        }
       ],
-      "pitfalls": ["Always disable and reset debugging when finished."],
-      "related": ["fortigate.firewall-policy", "fortigate.sniffer"],
-      "tags": ["diagnostics"]
+      "pitfalls": [
+        "Always disable and reset debugging when finished."
+      ],
+      "related": [
+        "fortigate.firewall-policy",
+        "fortigate.sniffer"
+      ],
+      "tags": [
+        "diagnostics"
+      ]
     },
     {
       "id": "fortigate.sniffer",
@@ -397,24 +895,87 @@
       "synopsis": "diagnose sniffer packet <iface> '<filter>' <verbosity> <count> <timestamp>",
       "description": "Web UI: Network › Diagnostics › Packet Capture (7.4; Network › Packet Capture in 7.0/7.2). Shows whether packets arrive and leave on each interface.",
       "flags": [
-        { "flag": "<iface>", "description": "Interface name, or any." },
-        { "flag": "'<filter>'", "description": "tcpdump-style filter in quotes." },
-        { "flag": "4", "description": "Verbosity 4: headers with interface names." },
-        { "flag": "l", "description": "Timestamp in local time." }
+        {
+          "flag": "<iface>",
+          "description": "Interface name, or any."
+        },
+        {
+          "flag": "'<filter>'",
+          "description": "tcpdump-style filter in quotes."
+        },
+        {
+          "flag": "4",
+          "description": "Verbosity 4: headers with interface names."
+        },
+        {
+          "flag": "l",
+          "description": "Timestamp in local time."
+        }
       ],
       "examples": [
         {
           "id": "host-port",
           "title": "Capture a flow",
           "scenario": "Capture 20 packets on any interface for host 10.0.10.20 port 443, with interface names.",
-          "command": "diagnose sniffer packet any 'host 10.0.10.20 and port 443' 4 20 l"
+          "command": "diagnose sniffer packet any 'host 10.0.10.20 and port 443' 4 20 l",
+          "output": "interfaces=[any]\nfilters=[host 10.0.10.20 and port 443]\n2026-11-21 10:42:01.512 port1 in 192.168.10.50.51544 -> 10.0.10.20.443: syn 2611\n2026-11-21 10:42:01.512 port3 out 192.168.10.50.51544 -> 10.0.10.20.443: syn 2611\n2026-11-21 10:42:01.513 port3 in 10.0.10.20.443 -> 192.168.10.50.51544: syn 1 ack 2612",
+          "output_notes": [
+            {
+              "token": "port1 in",
+              "meaning": "Packet entered the FortiGate on port1.",
+              "severity": "info",
+              "anomaly": "Never appears: traffic does not reach the firewall."
+            },
+            {
+              "token": "port3 out",
+              "meaning": "Packet forwarded out of port3.",
+              "severity": "warning",
+              "anomaly": "'in' without 'out': dropped by policy or routing."
+            },
+            {
+              "token": "syn 1 ack 2612",
+              "meaning": "Server answered with SYN-ACK.",
+              "severity": "info"
+            }
+          ]
         },
-        { "id": "icmp", "title": "Capture pings", "scenario": "Capture ICMP on wan1 to verify ping replies.", "command": "diagnose sniffer packet wan1 'icmp' 4 10" }
+        {
+          "id": "icmp",
+          "title": "Capture pings",
+          "scenario": "Capture ICMP on wan1 to verify ping replies.",
+          "command": "diagnose sniffer packet wan1 'icmp' 4 10",
+          "output": "interfaces=[wan1]\nfilters=[icmp]\n2.103415 203.0.113.2 -> 8.8.8.8: icmp: echo request\n2.115022 8.8.8.8 -> 203.0.113.2: icmp: echo reply",
+          "output_notes": [
+            {
+              "token": "echo reply",
+              "meaning": "Upstream answers pings.",
+              "severity": "info",
+              "normal": "One reply per request.",
+              "anomaly": "Requests without replies: upstream problem."
+            }
+          ]
+        }
       ],
       "use_cases": [
-        { "title": "Does it reach the firewall?", "situation": "Confirm packets enter on one interface and leave on the other.", "severity": "incident" }
+        {
+          "title": "Does it reach the firewall?",
+          "situation": "Confirm packets enter on one interface and leave on the other.",
+          "severity": "incident"
+        },
+        {
+          "title": "Server not answering",
+          "situation": "SYNs leave toward the server but no SYN-ACK returns.",
+          "severity": "incident"
+        },
+        {
+          "title": "ISP not replying",
+          "situation": "Echo requests leave wan1 with no replies: upstream issue.",
+          "severity": "incident"
+        }
       ],
-      "tags": ["diagnostics"]
+      "tags": [
+        "diagnostics"
+      ]
     },
     {
       "id": "fortigate.execute-ping",
@@ -423,19 +984,72 @@
       "synopsis": "execute ping <host>\nexecute traceroute <host>",
       "description": "Web UI: use the CLI Console (>_ icon at the top right). execute ping-options sets the source address.",
       "examples": [
-        { "id": "ping", "title": "Ping from the firewall", "scenario": "Ping 8.8.8.8 from the FortiGate itself.", "command": "execute ping 8.8.8.8" },
+        {
+          "id": "ping",
+          "title": "Ping from the firewall",
+          "scenario": "Ping 8.8.8.8 from the FortiGate itself.",
+          "command": "execute ping 8.8.8.8",
+          "output": "PING 8.8.8.8 (8.8.8.8): 56 data bytes\n64 bytes from 8.8.8.8: icmp_seq=0 ttl=117 time=11.2 ms\n--- 8.8.8.8 ping statistics ---\n5 packets transmitted, 5 packets received, 0% packet loss",
+          "output_notes": [
+            {
+              "token": "0% packet loss",
+              "meaning": "All requests answered.",
+              "severity": "warning",
+              "normal": "0%",
+              "anomaly": "Any loss on a healthy uplink: ISP or interface issue."
+            }
+          ]
+        },
         {
           "id": "source",
           "title": "Ping from the LAN address",
           "scenario": "Ping 10.20.0.5 using source 192.168.10.1, to test a route as LAN traffic.",
-          "command": "execute ping-options source 192.168.10.1\nexecute ping 10.20.0.5"
+          "command": "execute ping-options source 192.168.10.1\nexecute ping 10.20.0.5",
+          "output": "PING 10.20.0.5 (10.20.0.5): 56 data bytes\n--- 10.20.0.5 ping statistics ---\n5 packets transmitted, 0 packets received, 100% packet loss",
+          "output_notes": [
+            {
+              "token": "100% packet loss",
+              "meaning": "No replies from the branch host.",
+              "severity": "critical",
+              "anomaly": "With the route present: check the remote side or the branch firewall."
+            }
+          ]
         },
-        { "id": "traceroute", "title": "Traceroute", "scenario": "Trace the path from the FortiGate to 8.8.8.8.", "command": "execute traceroute 8.8.8.8" }
+        {
+          "id": "traceroute",
+          "title": "Traceroute",
+          "scenario": "Trace the path from the FortiGate to 8.8.8.8.",
+          "command": "execute traceroute 8.8.8.8",
+          "output": "traceroute to 8.8.8.8 (8.8.8.8), 32 hops max, 3 probe packets per hop, 72 byte packets\n 1  203.0.113.1  1.102 ms  0.988 ms  1.010 ms\n 2  198.51.100.1  4.871 ms  4.902 ms  4.880 ms\n 3  8.8.8.8  11.203 ms  11.017 ms  10.996 ms",
+          "output_notes": [
+            {
+              "token": "203.0.113.1",
+              "meaning": "First hop: the ISP gateway.",
+              "severity": "info"
+            }
+          ]
+        }
       ],
       "use_cases": [
-        { "title": "ISP down?", "situation": "Test upstream reachability directly from the edge.", "severity": "incident" }
+        {
+          "title": "ISP down?",
+          "situation": "Test upstream reachability directly from the edge.",
+          "severity": "incident"
+        },
+        {
+          "title": "Is it the firewall or the ISP?",
+          "situation": "Ping the ISP gateway from the FortiGate itself.",
+          "severity": "incident"
+        },
+        {
+          "title": "Test a branch route",
+          "situation": "Ping with the LAN address as source to follow the real policy and route.",
+          "severity": "routine"
+        }
       ],
-      "tags": ["diagnostics"]
+      "tags": [
+        "diagnostics"
+      ]
     }
   ],
   "procedures": [
@@ -445,13 +1059,47 @@
       "context": "The intranet server 10.0.10.20 must be reachable from the Internet on 203.0.113.10:443.",
       "goal": "Create the VIP and the inbound policy, then verify.",
       "steps": [
-        { "command": "config firewall vip\n    edit \"vip-web\"\n        set extip 203.0.113.10\n        set extintf \"wan1\"\n        set mappedip \"10.0.10.20\"\n    next\nend", "purpose": "Virtual IP (Web UI: Policy & Objects › Virtual IPs)" },
-        { "command": "config firewall policy\n    edit 0\n        set name \"wan-to-web\"\n        set srcintf \"wan1\"\n        set dstintf \"lan\"\n        set srcaddr \"all\"\n        set dstaddr \"vip-web\"\n        set service \"HTTPS\"\n        set action accept\n        set schedule \"always\"\n    next\nend", "purpose": "Inbound policy (Web UI: Firewall Policy › Create New)" },
-        { "command": "diagnose sys session filter dst 10.0.10.20\ndiagnose sys session list", "purpose": "Sessions are created", "interpretation": "Sessions with the VIP translated to 10.0.10.20 confirm the publication works." }
+        {
+          "command": "config firewall vip\n    edit \"vip-web\"\n        set extip 203.0.113.10\n        set extintf \"wan1\"\n        set mappedip \"10.0.10.20\"\n    next\nend",
+          "purpose": "Virtual IP (Web UI: Policy & Objects › Virtual IPs)",
+          "no_output": true,
+          "interpretation": "The VIP object exists; it does nothing until a policy uses it."
+        },
+        {
+          "command": "config firewall policy\n    edit 0\n        set name \"wan-to-web\"\n        set srcintf \"wan1\"\n        set dstintf \"lan\"\n        set srcaddr \"all\"\n        set dstaddr \"vip-web\"\n        set service \"HTTPS\"\n        set action accept\n        set schedule \"always\"\n    next\nend",
+          "purpose": "Inbound policy (Web UI: Firewall Policy › Create New)",
+          "no_output": true,
+          "interpretation": "Inbound HTTPS to the VIP is now allowed."
+        },
+        {
+          "command": "diagnose sys session filter dst 10.0.10.20\ndiagnose sys session list",
+          "purpose": "Sessions are created",
+          "interpretation": "Sessions with the VIP translated to 10.0.10.20 confirm the publication works.",
+          "output": "policy_id=21 ... act=dnat 198.51.100.7:51544->203.0.113.10:443(10.0.10.20:443)\ntotal session 1",
+          "output_notes": [
+            {
+              "token": "act=dnat",
+              "meaning": "The VIP translated the destination.",
+              "severity": "info"
+            }
+          ]
+        }
       ],
-      "uses": ["fortigate.firewall-vip", "fortigate.firewall-policy", "fortigate.session-list"],
-      "use_cases": [{ "title": "New public service", "situation": "Expose one service without opening the whole server.", "severity": "routine" }],
-      "tags": ["nat"]
+      "uses": [
+        "fortigate.firewall-vip",
+        "fortigate.firewall-policy",
+        "fortigate.session-list"
+      ],
+      "use_cases": [
+        {
+          "title": "New public service",
+          "situation": "Expose one service without opening the whole server.",
+          "severity": "routine"
+        }
+      ],
+      "tags": [
+        "nat"
+      ]
     },
     {
       "id": "fortigate.why-blocked",
@@ -459,13 +1107,54 @@
       "context": "Users on the LAN cannot reach 10.0.10.20:443.",
       "goal": "Prove whether packets arrive and which policy decision drops them.",
       "steps": [
-        { "command": "diagnose sniffer packet any 'host 10.0.10.20 and port 443' 4 10 l", "purpose": "Packets arrive and leave?" },
-        { "command": "diagnose debug reset\ndiagnose debug flow filter addr 10.0.10.20\ndiagnose debug flow trace start 10\ndiagnose debug enable", "purpose": "Trace the decision", "interpretation": "'policy 0' means no policy matched; reorder or add one." },
-        { "command": "diagnose debug disable\ndiagnose debug reset", "purpose": "Always stop debugging" }
+        {
+          "command": "diagnose sniffer packet any 'host 10.0.10.20 and port 443' 4 10 l",
+          "purpose": "Packets arrive and leave?",
+          "output": "port1 in 192.168.10.50.51544 -> 10.0.10.20.443: syn 2611\nport1 in 192.168.10.50.51544 -> 10.0.10.20.443: syn 2611",
+          "output_notes": [
+            {
+              "token": "port1 in",
+              "meaning": "The SYN reaches the FortiGate.",
+              "severity": "warning",
+              "anomaly": "Only 'in', never 'out': the FortiGate drops it."
+            }
+          ],
+          "interpretation": "Packets arrive but are never forwarded."
+        },
+        {
+          "command": "diagnose debug reset\ndiagnose debug flow filter addr 10.0.10.20\ndiagnose debug flow trace start 10\ndiagnose debug enable",
+          "purpose": "Trace the decision",
+          "interpretation": "'policy 0' means no policy matched; reorder or add one.",
+          "output": "msg=\"Denied by forward policy check (policy 0)\"",
+          "output_notes": [
+            {
+              "token": "(policy 0)",
+              "meaning": "Implicit deny: no policy matched.",
+              "severity": "critical"
+            }
+          ]
+        },
+        {
+          "command": "diagnose debug disable\ndiagnose debug reset",
+          "purpose": "Always stop debugging",
+          "no_output": true,
+          "interpretation": "Debugging stopped; leaving it on costs CPU."
+        }
       ],
-      "uses": ["fortigate.sniffer", "fortigate.debug-flow"],
-      "use_cases": [{ "title": "Ticket: application unreachable", "situation": "Answer with evidence instead of guessing at rules.", "severity": "incident" }],
-      "tags": ["diagnostics"]
+      "uses": [
+        "fortigate.sniffer",
+        "fortigate.debug-flow"
+      ],
+      "use_cases": [
+        {
+          "title": "Ticket: application unreachable",
+          "situation": "Answer with evidence instead of guessing at rules.",
+          "severity": "incident"
+        }
+      ],
+      "tags": [
+        "diagnostics"
+      ]
     },
     {
       "id": "fortigate.new-lan-segment",
@@ -473,12 +1162,41 @@
       "context": "port3 will serve a new servers network 10.0.30.0/24.",
       "goal": "Address the interface, create the object and allow Internet access.",
       "steps": [
-        { "command": "config system interface\n    edit \"port3\"\n        set ip 10.0.30.1 255.255.255.0\n        set allowaccess ping\n    next\nend", "purpose": "Interface address (Web UI: Network › Interfaces › port3)" },
-        { "command": "config firewall address\n    edit \"net-servers2\"\n        set subnet 10.0.30.0 255.255.255.0\n    next\nend", "purpose": "Address object" },
-        { "command": "config firewall policy\n    edit 0\n        set name \"servers2-to-wan\"\n        set srcintf \"port3\"\n        set dstintf \"wan1\"\n        set srcaddr \"net-servers2\"\n        set dstaddr \"all\"\n        set service \"ALL\"\n        set action accept\n        set schedule \"always\"\n        set nat enable\n    next\nend", "purpose": "Outbound policy with NAT" }
+        {
+          "command": "config system interface\n    edit \"port3\"\n        set ip 10.0.30.1 255.255.255.0\n        set allowaccess ping\n    next\nend",
+          "purpose": "Interface address (Web UI: Network › Interfaces › port3)",
+          "no_output": true,
+          "interpretation": "port3 now answers as 10.0.30.1 (ping only)."
+        },
+        {
+          "command": "config firewall address\n    edit \"net-servers2\"\n        set subnet 10.0.30.0 255.255.255.0\n    next\nend",
+          "purpose": "Address object",
+          "no_output": true,
+          "interpretation": "The subnet can be referenced in policies."
+        },
+        {
+          "command": "config firewall policy\n    edit 0\n        set name \"servers2-to-wan\"\n        set srcintf \"port3\"\n        set dstintf \"wan1\"\n        set srcaddr \"net-servers2\"\n        set dstaddr \"all\"\n        set service \"ALL\"\n        set action accept\n        set schedule \"always\"\n        set nat enable\n    next\nend",
+          "purpose": "Outbound policy with NAT",
+          "no_output": true,
+          "interpretation": "Servers on port3 reach the Internet through NAT; verify with a session list."
+        }
       ],
-      "uses": ["fortigate.system-interface", "fortigate.firewall-address", "fortigate.firewall-policy"],
-      "tags": ["interfaces", "policy"]
+      "uses": [
+        "fortigate.system-interface",
+        "fortigate.firewall-address",
+        "fortigate.firewall-policy"
+      ],
+      "tags": [
+        "interfaces",
+        "policy"
+      ],
+      "use_cases": [
+        {
+          "title": "New server room",
+          "situation": "A second server network goes live and needs Internet access for updates.",
+          "severity": "routine"
+        }
+      ]
     },
     {
       "id": "fortigate.branch-route",
@@ -486,12 +1204,40 @@
       "context": "The branch network 10.20.0.0/16 is reachable through 192.168.1.254 on port2.",
       "goal": "Add the static route and confirm it is active and reachable.",
       "steps": [
-        { "command": "config router static\n    edit 0\n        set dst 10.20.0.0 255.255.0.0\n        set gateway 192.168.1.254\n        set device \"port2\"\n    next\nend", "purpose": "Static route (Web UI: Network › Static Routes)" },
-        { "command": "get router info routing-table details 10.20.0.5", "purpose": "Route is installed" },
-        { "command": "execute ping-options source 192.168.10.1\nexecute ping 10.20.0.5", "purpose": "Reachable as LAN traffic" }
+        {
+          "command": "config router static\n    edit 0\n        set dst 10.20.0.0 255.255.0.0\n        set gateway 192.168.1.254\n        set device \"port2\"\n    next\nend",
+          "purpose": "Static route (Web UI: Network › Static Routes)",
+          "no_output": true,
+          "interpretation": "Route added; confirm it is installed next."
+        },
+        {
+          "command": "get router info routing-table details 10.20.0.5",
+          "purpose": "Route is installed",
+          "output": "Routing entry for 10.20.0.0/16\n  Known via \"static\", distance 10, metric 0, best\n  * vrf 0 192.168.1.254, via port2",
+          "interpretation": "The route is active via port2."
+        },
+        {
+          "command": "execute ping-options source 192.168.10.1\nexecute ping 10.20.0.5",
+          "purpose": "Reachable as LAN traffic",
+          "output": "5 packets transmitted, 5 packets received, 0% packet loss",
+          "interpretation": "The branch answers when traffic is sourced from the LAN address."
+        }
       ],
-      "uses": ["fortigate.router-static", "fortigate.routing-table", "fortigate.execute-ping"],
-      "tags": ["routing"]
+      "uses": [
+        "fortigate.router-static",
+        "fortigate.routing-table",
+        "fortigate.execute-ping"
+      ],
+      "tags": [
+        "routing"
+      ],
+      "use_cases": [
+        {
+          "title": "New branch office",
+          "situation": "The MPLS link to the branch is up but users cannot reach branch servers.",
+          "severity": "routine"
+        }
+      ]
     },
     {
       "id": "fortigate.restore-gui-access",
@@ -499,13 +1245,47 @@
       "context": "After an edit, the web UI on port1 no longer opens; you are on the serial console.",
       "goal": "Check management access on port1 and re-enable HTTPS.",
       "steps": [
-        { "command": "show system interface port1", "purpose": "Current allowaccess list", "interpretation": "https missing from allowaccess explains the lockout." },
-        { "command": "config system interface\n    edit \"port1\"\n        set allowaccess ping https ssh\n    next\nend", "purpose": "Restore management protocols" },
-        { "command": "get system status", "purpose": "Confirm the unit and version" }
+        {
+          "command": "show system interface port1",
+          "purpose": "Current allowaccess list",
+          "interpretation": "https missing from allowaccess explains the lockout.",
+          "output": "config system interface\n    edit \"port1\"\n        set ip 192.168.10.1 255.255.255.0\n        set allowaccess ping ssh\n    next\nend",
+          "output_notes": [
+            {
+              "token": "set allowaccess ping ssh",
+              "meaning": "https is missing.",
+              "severity": "critical"
+            }
+          ]
+        },
+        {
+          "command": "config system interface\n    edit \"port1\"\n        set allowaccess ping https ssh\n    next\nend",
+          "purpose": "Restore management protocols",
+          "no_output": true,
+          "interpretation": "https is back; the web UI opens again."
+        },
+        {
+          "command": "get system status",
+          "purpose": "Confirm the unit and version",
+          "output": "Version: FortiGate-60F v7.4.4,build2662,240514 (GA.F)\nOperation Mode: NAT",
+          "interpretation": "Confirms you are on the right unit and version."
+        }
       ],
-      "uses": ["fortigate.show", "fortigate.system-interface", "fortigate.system-status"],
-      "use_cases": [{ "title": "Self-inflicted lockout", "situation": "allowaccess was replaced instead of extended.", "severity": "critical" }],
-      "tags": ["interfaces"]
+      "uses": [
+        "fortigate.show",
+        "fortigate.system-interface",
+        "fortigate.system-status"
+      ],
+      "use_cases": [
+        {
+          "title": "Self-inflicted lockout",
+          "situation": "allowaccess was replaced instead of extended.",
+          "severity": "critical"
+        }
+      ],
+      "tags": [
+        "interfaces"
+      ]
     }
   ]
 }
