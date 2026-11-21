@@ -46,6 +46,15 @@ export function AnnotatedOutput({ command, segments, selectedKey, onSelect }: An
     });
   };
 
+  if (segments.length === 0) {
+    return (
+      <section className="shrink-0 rounded-lg border border-gray-800 bg-[#05070a] px-3 py-4 font-sans">
+        <code className="block font-mono text-[13px] font-bold text-cyan-300 break-all">$ {command}</code>
+        <p className="m-0 mt-2 text-xs text-slate-400">No sample output for this drill.</p>
+      </section>
+    );
+  }
+
   return (
     <section className="shrink-0 bg-[#05070a] border border-gray-800 rounded-lg overflow-hidden">
       <div className="flex items-center justify-between gap-2 pl-3 border-b border-gray-800">

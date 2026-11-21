@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { QueueItem, toMetricNotes } from '@/lib/session';
+import { QueueItem, toMetricNotes, findResumeIndex } from '@/lib/session';
 import { compareBlock } from '@/lib/validator';
 import { parseAnnotatedOutput } from '@/lib/telemetry-glossary';
 import { TimerHeader } from './TimerHeader';
@@ -86,38 +86,27 @@ export function StudySession({
     () => new Set(initialQueue.filter((i) => i.needs_review).map((i) => i.id))
   );
 
-  // Resume saved question index on initial mount
+  // Resume the saved drill on mount (by id: the queue order changes between loads)
   useEffect(() => {
     try {
       const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (
-          typeof parsed.index === 'number' &&
-          parsed.index >= 0 &&
-          parsed.index < initialQueue.length
-        ) {
-          setCurrentIndex(parsed.index);
-        }
-      }
+      if (saved) setCurrentIndex(findResumeIndex(initialQueue, JSON.parse(saved)));
     } catch {
       // Ignore localStorage errors
     }
-  }, [storageKey, initialQueue.length]);
+  }, [storageKey, initialQueue]);
 
-  // Persist current question index whenever it changes
+  // Persist the current drill id whenever it changes
   useEffect(() => {
     try {
-      if (!isSessionFinished) {
-        localStorage.setItem(
-          storageKey,
-          JSON.stringify({ index: currentIndex, timestamp: Date.now() })
-        );
+      const drillId = queue[currentIndex]?.id;
+      if (!isSessionFinished && drillId) {
+        localStorage.setItem(storageKey, JSON.stringify({ drillId, timestamp: Date.now() }));
       }
     } catch {
       // Ignore localStorage errors
     }
-  }, [currentIndex, isSessionFinished, storageKey]);
+  }, [currentIndex, isSessionFinished, storageKey, queue]);
 
   const currentItem = queue[currentIndex];
   const isCurrentFavorite = currentItem ? favorites.has(currentItem.id) : false;

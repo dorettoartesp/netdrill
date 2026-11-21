@@ -72,14 +72,19 @@ export async function getAvailableTopics(db: Client): Promise<TopicSummary[]> {
 }
 
 /**
- * Builds the session queue: reviewed drills that are due first, then never-reviewed drills,
- * then the rest by due date; ties keep document creation order and drill position.
+ * Builds the session queue: reviewed drills that are due first (most overdue first), then
+ * never-reviewed drills in random order (mixing topics and commands), then the rest by due date.
  *
  * @param db - libSQL client with schema v2.
  * @param topicFilter - Optional topic slug(s).
+ * @param random - Random source for shuffling new drills (injectable for tests).
  * @returns Ordered queue items.
  */
-export async function buildSessionQueue(db: Client, topicFilter?: string | string[]): Promise<QueueItem[]> {
+export async function buildSessionQueue(
+  db: Client,
+  topicFilter?: string | string[],
+  random: () => number = Math.random
+): Promise<QueueItem[]> {
   const now = new Date().toISOString();
   const slugs = (Array.isArray(topicFilter) ? topicFilter : topicFilter ? [topicFilter] : [])
     .map((s) => s.trim().toLowerCase())
@@ -103,7 +108,8 @@ export async function buildSessionQueue(db: Client, topicFilter?: string | strin
   });
 
   const bodies = new Map<string, CommandDoc | ProcedureDoc>();
-  return rs.rows.map((row) => {
+  const ordered = orderQueue(rs.rows.map((row) => ({ row, rank: Number(row.rank) })), random);
+  return ordered.map(({ row }) => {
     const documentId = String(row.document_id);
     if (!bodies.has(documentId)) bodies.set(documentId, JSON.parse(String(row.body)));
     const kind = String(row.kind) as QueueItem['kind'];
@@ -142,4 +148,35 @@ export function toMetricNotes(notes: OutputNote[]): MetricDefinition[] {
     anomalyAlert: n.anomaly ?? '—',
     severity: n.severity,
   }));
+}
+
+/**
+ * Orders queue rows: rank 1 (due) and rank 3 (scheduled later) keep their incoming order,
+ * rank 2 (never reviewed) is shuffled with Fisher-Yates so sessions mix topics and commands.
+ *
+ * @param rows - Rows carrying a numeric `rank`, already sorted by the database.
+ * @param random - Random source in [0, 1).
+ * @returns A new array; the input is not modified.
+ */
+export function orderQueue<T extends { rank: number }>(rows: readonly T[], random: () => number): T[] {
+  const fresh = rows.filter((r) => r.rank === 2);
+  for (let i = fresh.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [fresh[i], fresh[j]] = [fresh[j], fresh[i]];
+  }
+  return [...rows.filter((r) => r.rank === 1), ...fresh, ...rows.filter((r) => r.rank !== 1 && r.rank !== 2)];
+}
+
+/**
+ * Finds where a saved session should resume, by drill id (queue order changes between loads).
+ *
+ * @param queue - Current queue.
+ * @param saved - Parsed saved state (`{ drillId }`); anything else starts from the beginning.
+ * @returns The index of the saved drill, or 0.
+ */
+export function findResumeIndex(queue: ReadonlyArray<{ id: string }>, saved: unknown): number {
+  const drillId = (saved as { drillId?: unknown } | null)?.drillId;
+  if (typeof drillId !== 'string') return 0;
+  const index = queue.findIndex((q) => q.id === drillId);
+  return index >= 0 ? index : 0;
 }

@@ -36,3 +36,12 @@ describe('AnnotatedOutput', () => {
     expect(render('stat_d')).toMatch(/<button[^>]*data-metric="stat_d"[^>]*aria-pressed="true"|<button[^>]*aria-pressed="true"[^>]*data-metric="stat_d"/);
   });
 });
+
+describe('AnnotatedOutput without output', () => {
+  it('explains that the drill has no sample output instead of rendering an empty box', () => {
+    const html = renderToStaticMarkup(<AnnotatedOutput command="chmod 600 key" segments={[]} selectedKey={null} onSelect={() => {}} />);
+    expect(html).toContain('No sample output for this drill.');
+    expect(html).not.toContain('data-output="raw"');
+    expect(html).not.toContain('Wrap lines');
+  });
+});

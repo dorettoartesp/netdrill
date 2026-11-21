@@ -93,3 +93,50 @@ describe('toMetricNotes', () => {
     expect(toMetricNotes([{ token: 'X', meaning: 'm', severity: 'info' }])[0]).toMatchObject({ normalBaseline: '—', anomalyAlert: '—' });
   });
 });
+
+import { orderQueue, findResumeIndex } from '../src/lib/session';
+
+describe('orderQueue', () => {
+  const rows = [
+    { id: 'due-b', rank: 1 },
+    { id: 'due-a', rank: 1 },
+    { id: 'docker-1', rank: 2 },
+    { id: 'docker-2', rank: 2 },
+    { id: 'linux-1', rank: 2 },
+    { id: 'pg-1', rank: 2 },
+    { id: 'later-1', rank: 3 },
+    { id: 'later-2', rank: 3 },
+  ];
+
+  it('keeps due drills first and later drills last, in their incoming order', () => {
+    const out = orderQueue(rows, () => 0.5).map((r) => r.id);
+    expect(out.slice(0, 2)).toEqual(['due-b', 'due-a']);
+    expect(out.slice(-2)).toEqual(['later-1', 'later-2']);
+  });
+
+  it('shuffles never-reviewed drills', () => {
+    const seq = [0.9, 0.1, 0.6];
+    let i = 0;
+    const out = orderQueue(rows, () => seq[i++ % seq.length]).map((r) => r.id).slice(2, 6);
+    expect(out.sort()).toEqual(['docker-1', 'docker-2', 'linux-1', 'pg-1']);
+    expect(orderQueue(rows, () => seq[i++ % seq.length]).map((r) => r.id).slice(2, 6)).not.toEqual(['docker-1', 'docker-2', 'linux-1', 'pg-1']);
+  });
+
+  it('does not mutate the input', () => {
+    const copy = rows.map((r) => r.id);
+    orderQueue(rows, Math.random);
+    expect(rows.map((r) => r.id)).toEqual(copy);
+  });
+});
+
+describe('findResumeIndex', () => {
+  const queue = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
+  it('finds the saved drill wherever it now is', () => {
+    expect(findResumeIndex(queue, { drillId: 'c' })).toBe(2);
+  });
+  it('starts at 0 for unknown, missing or legacy saved state', () => {
+    expect(findResumeIndex(queue, { drillId: 'zzz' })).toBe(0);
+    expect(findResumeIndex(queue, null)).toBe(0);
+    expect(findResumeIndex(queue, { index: 2 })).toBe(0);
+  });
+});
